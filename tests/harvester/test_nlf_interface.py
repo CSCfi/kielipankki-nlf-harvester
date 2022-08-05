@@ -2,8 +2,6 @@
 Tests for PMH_API
 """
 
-import pytest
-
 from harvester.nlf_interface import PMH_API
 
 
