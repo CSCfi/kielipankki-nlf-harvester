@@ -34,6 +34,9 @@ def two_page_set_id():
 
 
 def _text_from_file(filename):
+    """
+    Read the contents of the given file into a string.
+    """
     with open(filename, encoding='utf-8') as infile:
         return infile.read()
 
@@ -44,6 +47,9 @@ def _text_from_file(filename):
 def two_page_pmh_response(two_page_set_id):
     """
     Patch a GET request for a data set with two pages worth of records.
+
+    :return: Information about the data set
+    :rtype: dict
     """
     first_page = _text_from_file(f'tests/data/{two_page_set_id}-part1.xml')
     last_page = _text_from_file(f'tests/data/{two_page_set_id}-part2.xml')
@@ -59,4 +65,9 @@ def two_page_pmh_response(two_page_set_id):
                          f'?verb=ListRecords'
                          f'&resumptionToken=59zS9njRIN')
         mocker.get(last_page_url, text=last_page)
-        yield
+
+        yield {
+                'length': 106,
+                'first_id': '379973',
+                'last_id': '380082',
+                }
