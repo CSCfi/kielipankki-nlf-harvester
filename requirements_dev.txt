@@ -2,4 +2,5 @@
 flake8
 pylint
 pytest
+pytest-cov
 requests_mock
