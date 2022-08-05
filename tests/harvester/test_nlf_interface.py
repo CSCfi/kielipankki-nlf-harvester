@@ -24,10 +24,11 @@ def _check_result(ids, expected_info):
     assert ids[-1] == expected_info['last_id']
 
 
-def test_binding_ids_from_two_page_response(two_page_pmh_response):
+def test_binding_ids_from_two_page_response(oai_pmh_api_url,
+                                            two_page_pmh_response):
     """
     Ensure that binding IDs are extracted correctly from a two-page response.
     """
-    api = PMH_API('https://digi.kansalliskirjasto.fi/interfaces/OAI-PMH')
+    api = PMH_API(oai_pmh_api_url)
     ids = list(api.binding_ids('col-681'))
     _check_result(ids, two_page_pmh_response)
