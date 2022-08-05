@@ -1,5 +1,5 @@
 -r requirements.txt
-pytest
-pylint
 flake8
+pylint
+pytest
 requests_mock
