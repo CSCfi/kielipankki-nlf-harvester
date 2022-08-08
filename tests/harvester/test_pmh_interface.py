@@ -2,7 +2,7 @@
 Tests for PMH_API
 """
 
-from harvester.nlf_interface import PMH_API
+from harvester.pmh_interface import PMH_API
 
 
 def _check_result(ids, expected_info):

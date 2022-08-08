@@ -4,7 +4,7 @@ Command line interface for the harvester
 
 import click
 
-from harvester.nlf_interface import PMH_API
+from harvester.pmh_interface import PMH_API
 
 
 @click.group()
