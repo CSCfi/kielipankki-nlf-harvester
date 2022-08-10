@@ -19,3 +19,19 @@ If harvesting the default NLF API, the url can be omitted. E.g.
 ```
 python harvester_cli.py binding-ids col-681
 ```
+
+
+## Development
+
+### Installing Development Requirements
+To install additional requirements needed when development work, install
+requirements from `requirements_dev.txt`.
+
+### Generating Documentation
+The module supports creating documentation from docstrings using Sphinx. The generated docs are very rudimentary at this point, but they can be generated as follows:
+```
+sphinx-apidoc -o docs/ harvester
+cd docs
+make html
+```
+Afterwards the documentation can be viewed from ``docs/_build/index.html``.

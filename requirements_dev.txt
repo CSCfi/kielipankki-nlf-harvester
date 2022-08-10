@@ -4,3 +4,4 @@ pylint
 pytest
 pytest-cov
 requests_mock
+sphinx
