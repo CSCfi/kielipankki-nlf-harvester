@@ -1,0 +1,7 @@
+-r requirements.txt
+flake8
+pylint
+pytest
+pytest-cov
+requests_mock
+sphinx
