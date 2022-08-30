@@ -6,8 +6,8 @@ bindings, downloading them and checking their integrity.
 ## Getting Started
 
 ### Requirements
-This package is guaranteed to work with Python 3.8, but any version starting
-from 3.6 is likely to work. In addition, you need pip and virtualenv. The rest
+This package is guaranteed to work with Python 3.6, but newer versions are
+likely to work too. In addition, you need pip and virtualenv. The rest
 of the requirements can then be installed with `make requirements`.
 
 ### Quickstart
@@ -25,7 +25,24 @@ python harvester_cli.py binding-ids col-681
 
 ### Installing Development Requirements
 To install additional requirements needed when development work, install
-requirements from `requirements_dev.txt`.
+requirements from `requirements_dev.txt`. Using a virtualenv for this is
+recommended:
+```
+virtualenv .venv -p python3
+. .venv/bin/activate
+pip install -r requirements_dev.txt
+```
+
+### Running Unit Tests
+Without coverage information:
+```
+python -m pytest
+```
+
+With coverage:
+```
+python -m pytest --cov=harvester
+```
 
 ### Generating Documentation
 The module supports creating documentation from docstrings using Sphinx. The generated docs are very rudimentary at this point, but they can be generated as follows:
