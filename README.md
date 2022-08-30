@@ -7,8 +7,8 @@ bindings, downloading them and checking their integrity.
 
 ### Requirements
 This package is guaranteed to work with Python 3.6, but newer versions are
-likely to work too. In addition, you need pip and virtualenv. The rest
-of the requirements can then be installed with `make requirements`.
+likely to work too. In addition, you need pip and virtualenv. The rest of the
+requirements can then be installed with `make requirements`.
 
 ### Quickstart
 Print all binding IDs in a collection:
@@ -45,7 +45,9 @@ python -m pytest --cov=harvester
 ```
 
 ### Generating Documentation
-The module supports creating documentation from docstrings using Sphinx. The generated docs are very rudimentary at this point, but they can be generated as follows:
+The module supports creating documentation from docstrings using Sphinx. The
+generated docs are very rudimentary at this point, but they can be generated as
+follows:
 ```
 sphinx-apidoc -o docs/ harvester
 cd docs
