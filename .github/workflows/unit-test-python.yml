@@ -19,6 +19,6 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Install required Python packages
-      run: pip3 install -r requirements_dev.txt
+      run: pip3 install -r requirements_dev.txt --user
     - name: Test with pytest
       run: python3 -m pytest
