@@ -3,9 +3,9 @@ Test fixtures
 """
 
 import pytest
-
 import requests_mock
-
+import builtins
+from unittest.mock import mock_open, patch
 
 
 @pytest.fixture(autouse=True)
@@ -75,6 +75,37 @@ def two_page_pmh_response(oai_pmh_api_url, two_page_set_id):
 
         yield {
                 'length': 106,
-                'first_id': '379973',
-                'last_id': '380082',
+                'first_id': 'https://digi.kansalliskirjasto.fi/sanomalehti/binding/379973',
+                'last_id': 'https://digi.kansalliskirjasto.fi/sanomalehti/binding/380082',
                 }
+
+
+@pytest.fixture
+def mets_binding_id():
+    """
+    Return a binding ID for testing fetching METS files.
+    """
+    return "https://digi.kansalliskirjasto.fi/sanomalehti/binding/379973"
+
+
+@pytest.fixture
+def expected_mets_response(mets_binding_id, tmp_path):
+    """
+    Patch a GET request for fetching a METS file for a given binding id.
+    """
+    id = mets_binding_id.split('/')[-1]
+    mets_content = _text_from_file(f'tests/data/{id}_METS.xml')
+
+    with requests_mock.Mocker() as mocker:
+        mets_url = f'https://digi.kansalliskirjasto.fi/sanomalehti/binding/{id}/mets.xml?full=true'
+        mocker.get(mets_url, text=mets_content)
+        yield mets_content
+
+    m = mock_open()
+    with patch('builtins.open', m):
+        with open(f'{tmp_path}/{id}_METS.xml', 'w') as file:
+            file.write(mets_content)
+    
+    m.assert_called_once_with(f'{tmp_path}/{id}_METS.xml', 'w')
+    handle = m()
+    handle.write.assert_called_once_with(mets_content)
