@@ -5,6 +5,7 @@ Command line interface for the harvester
 import click
 
 from harvester.pmh_interface import PMH_API
+from harvester.mets_parser import METSParser
 
 
 @click.group()
@@ -37,6 +38,18 @@ def binding_ids(ctx, set_id):
     ids = ctx.obj['API'].binding_ids(set_id)
     for id_ in ids:
         click.echo(id_)
+
+
+@cli.command
+@click.argument('mets_file_path')
+@click.option('--encoding', default='utf-8')
+def checksums(mets_file_path, encoding):
+    """
+    Output checksums for all files listed in the METS document.
+    """
+    parser = METSParser(mets_file_path, encoding)
+    for checksum in parser.checksums():
+        click.echo(checksum)
 
 
 if __name__ == '__main__':
