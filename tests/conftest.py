@@ -4,8 +4,6 @@ Test fixtures
 
 import pytest
 import requests_mock
-import builtins
-from unittest.mock import mock_open, patch
 
 
 @pytest.fixture(autouse=True)
@@ -81,7 +79,7 @@ def two_page_pmh_response(oai_pmh_api_url, two_page_set_id):
 
 
 @pytest.fixture
-def mets_binding_id():
+def mets_dc_identifier():
     """
     Return a binding ID for testing fetching METS files.
     """
@@ -89,23 +87,18 @@ def mets_binding_id():
 
 
 @pytest.fixture
-def expected_mets_response(mets_binding_id, tmp_path):
+def expected_mets_response(mets_dc_identifier):
     """
     Patch a GET request for fetching a METS file for a given binding id.
+
+    :return: Content of a METS file
+    :rtype: str
     """
-    id = mets_binding_id.split('/')[-1]
-    mets_content = _text_from_file(f'tests/data/{id}_METS.xml')
+    binding_id = mets_dc_identifier.split('/')[-1]
+    mets_content = _text_from_file(f'tests/data/{binding_id}_METS.xml')
 
     with requests_mock.Mocker() as mocker:
-        mets_url = f'https://digi.kansalliskirjasto.fi/sanomalehti/binding/{id}/mets.xml?full=true'
+        mets_url = (f'https://digi.kansalliskirjasto.fi/sanomalehti/'
+                    f'binding/{binding_id}/mets.xml?full=true')
         mocker.get(mets_url, text=mets_content)
         yield mets_content
-
-    m = mock_open()
-    with patch('builtins.open', m):
-        with open(f'{tmp_path}/{id}_METS.xml', 'w') as file:
-            file.write(mets_content)
-    
-    m.assert_called_once_with(f'{tmp_path}/{id}_METS.xml', 'w')
-    handle = m()
-    handle.write.assert_called_once_with(mets_content)

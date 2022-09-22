@@ -17,31 +17,41 @@ class PMH_API():
         """
         self._sickle = Sickle(url)
 
-    def binding_ids(self, set_id):
+
+    def dc_identifiers(self, set_id):
         """
-        Iterate over all binding IDs in the given set.
+        Iterate over all DC identifiers in the given set.
 
         :param set_id: Set (also known as collection) identifier
         """
         records = self._sickle.ListRecords(metadataPrefix='oai_dc', set=set_id)
         for record in records:
-            #yield record.header.identifier.split(':')[-1]
             yield record.metadata['identifier'][0]
 
-    def fetch_mets(self, binding_id, folder_path, file_name=None):
+    
+    def binding_id_from_dc(self, dc_identifier):
+        """
+        Parse binding ID from dc_identifier URL.
+
+        :param dc_identifier: DC identifier of a record
+        """
+        return dc_identifier.split("/")[-1]
+    
+
+    def fetch_mets(self, dc_identifier, folder_path, file_name=None):
         """
         Fetch METS as an XML document given a binding ID and save to disk.
 
-        :param binding_id: Binding identifier
+        :param dc_identifier: DC identifier of a record
         :param folder_path: Path to folder to which the METS file will be stored
         :param file_name: Name of the file to which the METS will be stored (optional parameter)
         """
 
-        mets_url = f"{binding_id}/mets.xml?full=true"
+        mets_url = f"{dc_identifier}/mets.xml?full=true"
         xml_response = requests.get(mets_url)
 
         if not file_name:
-            path = f'{folder_path}/{binding_id.split("/")[-1]}_METS.xml'
+            path = f'{folder_path}/{self.binding_id_from_dc(dc_identifier)}_METS.xml'
         else:
             path = f'{folder_path}/{file_name}'
 
@@ -56,8 +66,7 @@ class PMH_API():
 
         :param set_id: Set (also known as collection) identifier
         """
-        binding_id_iterator = self.binding_ids(set_id)
+        dc_iterator = self.dc_identifiers(set_id)
 
-        for binding_id in binding_id_iterator:
-            self.fetch_mets(binding_id, folder_path)
-
+        for identifier in dc_iterator:
+            self.fetch_mets(identifier, folder_path)
