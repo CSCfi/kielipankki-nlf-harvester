@@ -55,7 +55,8 @@ class PMH_API():
         else:
             path = f'{folder_path}/{file_name}'
 
-        open(path, "w").write(xml_response.text)
+        with open(path, "w") as file:
+            file.write(xml_response.text)
 
         return xml_response.text
 
