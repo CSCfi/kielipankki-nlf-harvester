@@ -10,6 +10,9 @@ class PMH_API():
     """
     Interface for fetching data from an OAI-PMH API
     """
+    # The name of the class follows the recommendation of PEP-8 to capitalize
+    # all letters of an abbreviation. PMHAPI would be hard to read though, so
+    # the underscore was added for clarity pylint: disable=invalid-name
 
     def __init__(self, url):
         """
