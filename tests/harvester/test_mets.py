@@ -5,7 +5,7 @@ Tests for the METSParser
 import pytest
 from lxml import etree
 
-from harvester.mets_parser import METSParser, METSLocationParseError
+from harvester.mets import METS, METSLocationParseError
 
 
 @pytest.fixture
@@ -54,8 +54,8 @@ def test_checksums(simple_mets):
     """
     Test checksum parsing when there's one location for each file.
     """
-    parser = METSParser(simple_mets)
-    checksums = list(parser.checksums())
+    mets = METS(simple_mets)
+    checksums = list(mets.checksums())
     assert checksums[0] == {
             'checksum': 'ab64aff5f8375ca213eeaee260edcefe',
             'algorithm': 'MD5',
@@ -77,7 +77,7 @@ def test_checksums_exception_on_two_locations_for_a_file(
     the pipeline (e.g. trying to use a URL to determine the location of a file
     in a zip package).
     """
-    parser = METSParser(mets_with_multiple_file_locations)
+    mets = METS(mets_with_multiple_file_locations)
     with pytest.raises(METSLocationParseError):
-        for _ in parser.checksums():
+        for _ in mets.checksums():
             pass

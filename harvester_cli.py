@@ -5,7 +5,7 @@ Command line interface for the harvester
 import click
 
 from harvester.pmh_interface import PMH_API
-from harvester.mets_parser import METSParser
+from harvester.mets import METS
 
 
 @click.group()
@@ -47,8 +47,8 @@ def checksums(mets_file_path, encoding):
     """
     Output checksums for all files listed in the METS document.
     """
-    parser = METSParser(mets_file_path, encoding)
-    for checksum in parser.checksums():
+    mets = METS(mets_file_path, encoding)
+    for checksum in mets.checksums():
         click.echo(checksum)
 
 

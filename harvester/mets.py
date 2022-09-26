@@ -1,5 +1,5 @@
 """
-Tools for extracting information from METS files.
+Tools for reading and interpreting METS files.
 """
 
 from lxml import etree
@@ -10,18 +10,18 @@ from lxml import etree
 # pylint: disable=c-extension-no-member
 
 
-class METSParser:
+class METS:
     """
-    An interface for fetching data from METS files.
+    An interface for handling METS files.
     """
     # This is expected to change when the software develops
     # pylint: disable=too-few-public-methods
 
     def __init__(self, mets_path, encoding="utf-8"):
         """
-        Create a new parser.
+        Create a new METS file object.
 
-        :param mets_path: Path to the METS file to be parsed.
+        :param mets_path: Path to the METS file.
         :param encoding: Text encoding of the METS file. Defaults to utf-8.
         """
         self.mets_path = mets_path
