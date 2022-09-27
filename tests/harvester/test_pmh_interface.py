@@ -2,9 +2,9 @@
 Tests for PMH_API
 """
 
-from harvester.pmh_interface import PMH_API
-import pytest
 import builtins
+
+from harvester.pmh_interface import PMH_API
 
 
 def _check_result(ids, expected_info):
@@ -45,7 +45,7 @@ def test_fetch_mets_with_filename(
     oai_pmh_api_url, mets_dc_identifier, expected_mets_response, tmp_path, mocker
 ):
     """
-    Ensure that a valid METS file is fetched and written to disk with file_name parameter.
+    Ensure that a valid METS file is fetched and written to disk with file_name.
     """
     api = PMH_API(oai_pmh_api_url)
     binding_id = api.binding_id_from_dc(mets_dc_identifier)
@@ -59,7 +59,7 @@ def test_fetch_mets_without_filename(
     oai_pmh_api_url, mets_dc_identifier, expected_mets_response, tmp_path, mocker
 ):
     """
-    Ensure that a valid METS file is fetched and written to disk without file_name parameter.
+    Ensure that a valid METS file is fetched and written to disk without file_name.
     """
     api = PMH_API(oai_pmh_api_url)
     binding_id = api.binding_id_from_dc(mets_dc_identifier)
@@ -71,7 +71,10 @@ def test_fetch_mets_without_filename(
 
 def test_fetch_all_mets_for_set(oai_pmh_api_url, two_page_set_id, tmp_path, mocker):
     """
-    Ensure that fetch_mets is called the correct number of times during a fetch_all_mets_for_set call.
+    Test fetching all METS files in a collection
+
+    This is done by checking that fetch_mets is called the correct number of times
+    during a fetch_all_mets_for_set call.
     """
     api = PMH_API(oai_pmh_api_url)
     mocker.patch("harvester.pmh_interface.PMH_API.fetch_mets")
@@ -79,4 +82,7 @@ def test_fetch_all_mets_for_set(oai_pmh_api_url, two_page_set_id, tmp_path, mock
         "harvester.pmh_interface.PMH_API.dc_identifiers", return_value=range(106)
     )
     api.fetch_all_mets_for_set(two_page_set_id, tmp_path)
+
+    # pylint does not know about the extra functions from mocker
+    # pylint: disable=no-member
     assert api.fetch_mets.call_count == 106

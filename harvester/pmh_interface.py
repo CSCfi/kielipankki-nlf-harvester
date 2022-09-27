@@ -45,7 +45,8 @@ class PMH_API:
 
         :param dc_identifier: DC identifier of a record
         :param folder_path: Path to folder to which the METS file will be stored
-        :param file_name: Name of the file to which the METS will be stored (optional parameter)
+        :param file_name: Name of the file to which the METS will be stored (optional
+            parameter)
         """
 
         mets_url = f"{dc_identifier}/mets.xml?full=true"
