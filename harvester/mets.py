@@ -26,6 +26,7 @@ class METS:
         """
         self.mets_path = mets_path
         self.encoding = encoding
+        self._checksums = None
 
     def _file_location(self, file_element):
         """
@@ -45,6 +46,30 @@ class METS:
                     )
         return children[0].attrib['{http://www.w3.org/TR/xlink}href']
 
+    def _ensure_checksums(self):
+        """
+        Make sure that self.checksums is populated
+        """
+        if self._checksums:
+            return
+
+        with open(self.mets_path, 'r', encoding=self.encoding) as mets_file:
+            mets_tree = etree.parse(mets_file)
+        files = mets_tree.xpath(
+                'mets:fileSec/mets:fileGrp/mets:file',
+                namespaces={'mets': 'http://www.loc.gov/METS/'}
+                )
+
+        self._checksums = []
+        for file_element in files:
+            self._checksums.append(
+                    {
+                        'checksum': file_element.attrib['CHECKSUM'],
+                        'algorithm': file_element.attrib['CHECKSUMTYPE'],
+                        'location': self._file_location(file_element),
+                        }
+                    )
+
     def checksums(self):
         """
         Iterate over all checksums listed in METS.
@@ -53,19 +78,9 @@ class METS:
             checksums and the algorithms used when calculating them.
         :rtype: Iterator[dict]
         """
-        with open(self.mets_path, 'r', encoding=self.encoding) as mets_file:
-            mets_tree = etree.parse(mets_file)
-        files = mets_tree.xpath(
-                'mets:fileSec/mets:fileGrp/mets:file',
-                namespaces={'mets': 'http://www.loc.gov/METS/'}
-                )
-        for file_element in files:
-
-            yield {
-                    'checksum': file_element.attrib['CHECKSUM'],
-                    'algorithm': file_element.attrib['CHECKSUMTYPE'],
-                    'location': self._file_location(file_element),
-                    }
+        self._ensure_checksums()
+        for checksum in self._checksums:
+            yield checksum
 
 
 class METSLocationParseError(ValueError):
