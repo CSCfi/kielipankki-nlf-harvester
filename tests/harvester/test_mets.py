@@ -13,7 +13,7 @@ def simple_mets():
     """
     METS with one location for each file
     """
-    return 'tests/data/379973_METS.xml'
+    return "tests/data/379973_METS.xml"
 
 
 # Pylint does not understand fixtures
@@ -29,21 +29,21 @@ def mets_with_multiple_file_locations(simple_mets, tmp_path):
     # an accurate view into the lxml library. This disables false alarms.
     # pylint: disable=c-extension-no-member
 
-    with open(simple_mets, 'r', encoding='utf-8') as mets_file:
+    with open(simple_mets, "r", encoding="utf-8") as mets_file:
         mets_tree = etree.parse(mets_file)
     files = mets_tree.xpath(
-            'mets:fileSec/mets:fileGrp/mets:file',
-            namespaces={
-                'mets': 'http://www.loc.gov/METS/',
-                }
-            )
+        "mets:fileSec/mets:fileGrp/mets:file",
+        namespaces={
+            "mets": "http://www.loc.gov/METS/",
+        },
+    )
     double_location_file = files[0]
     etree.SubElement(
-            double_location_file,
-            'FLocat',
-            LOCTYPE='OTHER',
-            href='content/not/important/here',
-            )
+        double_location_file,
+        "FLocat",
+        LOCTYPE="OTHER",
+        href="content/not/important/here",
+    )
 
     mets_output_path = tmp_path / "mets.xml"
     mets_tree.write(mets_output_path)
@@ -57,19 +57,20 @@ def test_checksums(simple_mets):
     mets = METS(simple_mets)
     checksums = list(mets.checksums())
     assert checksums[0] == {
-            'checksum': 'ab64aff5f8375ca213eeaee260edcefe',
-            'algorithm': 'MD5',
-            'location': 'file://./preservation_img/pr-00001.jp2'
-            }
+        "checksum": "ab64aff5f8375ca213eeaee260edcefe",
+        "algorithm": "MD5",
+        "location": "file://./preservation_img/pr-00001.jp2",
+    }
     assert checksums[-1] == {
-            'checksum': 'a462f99b087161579104902c19d7746d',
-            'algorithm': 'MD5',
-            'location': 'file://./alto/00004.xml'
-            }
+        "checksum": "a462f99b087161579104902c19d7746d",
+        "algorithm": "MD5",
+        "location": "file://./alto/00004.xml",
+    }
 
 
 def test_checksums_exception_on_two_locations_for_a_file(
-        mets_with_multiple_file_locations):
+    mets_with_multiple_file_locations,
+):
     """
     Ensure that ambiguous location for a file is not ignored.
 

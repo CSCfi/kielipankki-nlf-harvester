@@ -14,6 +14,7 @@ class METS:
     """
     An interface for handling METS files.
     """
+
     # This is expected to change when the software develops
     # pylint: disable=too-few-public-methods
 
@@ -41,10 +42,8 @@ class METS:
         """
         children = file_element.getchildren()
         if len(children) != 1:
-            raise METSLocationParseError(
-                    "Expected 1 location, found {len(children)}"
-                    )
-        return children[0].attrib['{http://www.w3.org/TR/xlink}href']
+            raise METSLocationParseError("Expected 1 location, found {len(children)}")
+        return children[0].attrib["{http://www.w3.org/TR/xlink}href"]
 
     def _ensure_checksums(self):
         """
@@ -53,22 +52,22 @@ class METS:
         if self._checksums:
             return
 
-        with open(self.mets_path, 'r', encoding=self.encoding) as mets_file:
+        with open(self.mets_path, "r", encoding=self.encoding) as mets_file:
             mets_tree = etree.parse(mets_file)
         files = mets_tree.xpath(
-                'mets:fileSec/mets:fileGrp/mets:file',
-                namespaces={'mets': 'http://www.loc.gov/METS/'}
-                )
+            "mets:fileSec/mets:fileGrp/mets:file",
+            namespaces={"mets": "http://www.loc.gov/METS/"},
+        )
 
         self._checksums = []
         for file_element in files:
             self._checksums.append(
-                    {
-                        'checksum': file_element.attrib['CHECKSUM'],
-                        'algorithm': file_element.attrib['CHECKSUMTYPE'],
-                        'location': self._file_location(file_element),
-                        }
-                    )
+                {
+                    "checksum": file_element.attrib["CHECKSUM"],
+                    "algorithm": file_element.attrib["CHECKSUMTYPE"],
+                    "location": self._file_location(file_element),
+                }
+            )
 
     def checksums(self):
         """
