@@ -50,25 +50,37 @@ def mets_with_multiple_file_locations(simple_mets, tmp_path):
     return mets_output_path
 
 
-def test_checksums(simple_mets):
+def test_file_checksum_parsing(simple_mets):
     """
     Test checksum parsing when there's one location for each file.
     """
     mets = METS(simple_mets)
-    checksums = list(mets.checksums())
-    assert checksums[0] == {
-        "checksum": "ab64aff5f8375ca213eeaee260edcefe",
-        "algorithm": "MD5",
-        "location": "file://./preservation_img/pr-00001.jp2",
-    }
-    assert checksums[-1] == {
-        "checksum": "a462f99b087161579104902c19d7746d",
-        "algorithm": "MD5",
-        "location": "file://./alto/00004.xml",
-    }
+    files = list(mets.files())
+
+    first_file = files[0]
+    assert first_file.checksum == "ab64aff5f8375ca213eeaee260edcefe"
+    assert first_file.algorithm == "MD5"
+
+    last_file = files[-1]
+    assert last_file.checksum == "a462f99b087161579104902c19d7746d"
+    assert last_file.algorithm == "MD5"
 
 
-def test_checksums_exception_on_two_locations_for_a_file(
+def test_file_location_parsing(simple_mets):
+    """
+    Test file location parsing when there's one location for each file.
+    """
+    mets = METS(simple_mets)
+    files = list(mets.files())
+
+    first_file = files[0]
+    assert first_file.location_xlink == "file://./preservation_img/pr-00001.jp2"
+
+    last_file = files[-1]
+    assert last_file.location_xlink == "file://./alto/00004.xml"
+
+
+def test_files_exception_on_two_locations_for_a_file(
     mets_with_multiple_file_locations,
 ):
     """
@@ -80,5 +92,5 @@ def test_checksums_exception_on_two_locations_for_a_file(
     """
     mets = METS(mets_with_multiple_file_locations)
     with pytest.raises(METSLocationParseError):
-        for _ in mets.checksums():
+        for _ in mets.files():
             pass

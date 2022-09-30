@@ -4,6 +4,8 @@ Tools for reading and interpreting METS files.
 
 from lxml import etree
 
+from harvester.file import File
+
 
 # Due to security reasons related to executing C code, pylint does not have an
 # accurate view into the lxml library. This disables false alarms.
@@ -27,7 +29,7 @@ class METS:
         """
         self.mets_path = mets_path
         self.encoding = encoding
-        self._checksums = None
+        self._files = None
 
     def _file_location(self, file_element):
         """
@@ -45,11 +47,11 @@ class METS:
             raise METSLocationParseError("Expected 1 location, found {len(children)}")
         return children[0].attrib["{http://www.w3.org/TR/xlink}href"]
 
-    def _ensure_checksums(self):
+    def _ensure_files(self):
         """
-        Make sure that self.checksums is populated
+        Make sure that self.files is populated
         """
-        if self._checksums:
+        if self._files:
             return
 
         with open(self.mets_path, "r", encoding=self.encoding) as mets_file:
@@ -59,27 +61,27 @@ class METS:
             namespaces={"mets": "http://www.loc.gov/METS/"},
         )
 
-        self._checksums = []
+        self._files = []
         for file_element in files:
-            self._checksums.append(
-                {
-                    "checksum": file_element.attrib["CHECKSUM"],
-                    "algorithm": file_element.attrib["CHECKSUMTYPE"],
-                    "location": self._file_location(file_element),
-                }
+            self._files.append(
+                File(
+                    checksum=file_element.attrib["CHECKSUM"],
+                    algorithm=file_element.attrib["CHECKSUMTYPE"],
+                    location_xlink=self._file_location(file_element),
+                    content_type=None,
+                )
             )
 
-    def checksums(self):
+    def files(self):
         """
-        Iterate over all checksums listed in METS.
+        Iterate over all files listed in METS.
 
-        :return: All files listed in the METS document, together with their
-            checksums and the algorithms used when calculating them.
-        :rtype: Iterator[dict]
+        :return: All files listed in the METS document
+        :rtype: Iterator[:class:`~harvester.file.File`]
         """
-        self._ensure_checksums()
-        for checksum in self._checksums:
-            yield checksum
+        self._ensure_files()
+        for file in self._files:
+            yield file
 
 
 class METSLocationParseError(ValueError):
