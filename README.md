@@ -20,6 +20,8 @@ If harvesting the default NLF API, the url can be omitted. E.g.
 python harvester_cli.py binding-ids col-681
 ```
 
+For more commands, see `python harvester_cli.py --help`.
+
 
 ## Development
 
