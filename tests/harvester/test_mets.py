@@ -6,6 +6,7 @@ import pytest
 from lxml import etree
 
 from harvester.mets import METS, METSLocationParseError
+from harvester.file import ContentType
 
 
 @pytest.fixture
@@ -80,6 +81,20 @@ def test_file_location_parsing(simple_mets):
     assert last_file.location_xlink == "file://./alto/00004.xml"
 
 
+def test_file_content_type_parsing(simple_mets):
+    """
+    Test content type parsing when there's one location for each file.
+    """
+    mets = METS(simple_mets)
+    files = list(mets.files())
+
+    first_file = files[0]
+    assert first_file.content_type == ContentType.ACCESS_IMAGE
+
+    last_file = files[-1]
+    assert last_file.content_type == ContentType.ALTO_XML
+
+
 def test_files_exception_on_two_locations_for_a_file(
     mets_with_multiple_file_locations,
 ):
@@ -94,3 +109,13 @@ def test_files_exception_on_two_locations_for_a_file(
     with pytest.raises(METSLocationParseError):
         for _ in mets.files():
             pass
+
+
+def test_alto_files(simple_mets):
+    """
+    Ensure that an accurate list of alto files is returned.
+    """
+    mets = METS(simple_mets)
+    alto_files = list(mets.alto_files())
+    assert len(alto_files) == 4
+    assert all(file.content_type == ContentType.ALTO_XML for file in alto_files)

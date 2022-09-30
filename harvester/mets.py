@@ -4,7 +4,7 @@ Tools for reading and interpreting METS files.
 
 from lxml import etree
 
-from harvester.file import File
+from harvester.file import File, ContentType
 
 
 # Due to security reasons related to executing C code, pylint does not have an
@@ -63,14 +63,28 @@ class METS:
 
         self._files = []
         for file_element in files:
+            parent = file_element.getparent()
             self._files.append(
                 File(
                     checksum=file_element.attrib["CHECKSUM"],
                     algorithm=file_element.attrib["CHECKSUMTYPE"],
                     location_xlink=self._file_location(file_element),
-                    content_type=None,
+                    content_type=self._get_content_type(parent.attrib["USE"]),
                 )
             )
+
+    def _get_content_type(self, use):
+        """
+        Get ContentType for a file.
+
+        :param use: USE attribute of the file group
+        """
+        use_to_type = {
+            "alto": ContentType.ALTO_XML,
+            "Text": ContentType.ALTO_XML,
+            "Images": ContentType.ACCESS_IMAGE,
+        }
+        return use_to_type[use]
 
     def files(self):
         """
@@ -81,6 +95,20 @@ class METS:
         """
         self._ensure_files()
         for file in self._files:
+            yield file
+
+    def alto_files(self):
+        """
+        Iterate over all alto files listed in METS.
+
+        :return: All alto files listed in METS document
+        :rtype: :rtype: Iterator[:class:`~harvester.file.File`]
+        """
+
+        alto_files = [
+            file for file in self.files() if file.content_type == ContentType.ALTO_XML
+        ]
+        for file in alto_files:
             yield file
 
 
