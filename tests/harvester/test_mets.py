@@ -9,20 +9,12 @@ from harvester.file import METSLocationParseError
 from harvester.mets import METS
 
 
-@pytest.fixture
-def simple_mets():
-    """
-    METS with one location for each file
-    """
-    return "tests/data/379973_METS.xml"
-
-
 # Pylint does not understand fixtures
 # pylint: disable=redefined-outer-name
 
 
 @pytest.fixture
-def mets_with_multiple_file_locations(simple_mets, tmp_path):
+def mets_with_multiple_file_locations(simple_mets_path, tmp_path):
     """
     Return a path to METS file that has a file with two locations
     """
@@ -30,7 +22,7 @@ def mets_with_multiple_file_locations(simple_mets, tmp_path):
     # an accurate view into the lxml library. This disables false alarms.
     # pylint: disable=c-extension-no-member
 
-    with open(simple_mets, "r", encoding="utf-8") as mets_file:
+    with open(simple_mets_path, "r", encoding="utf-8") as mets_file:
         mets_tree = etree.parse(mets_file)
     files = mets_tree.xpath(
         "mets:fileSec/mets:fileGrp/mets:file",
@@ -51,11 +43,11 @@ def mets_with_multiple_file_locations(simple_mets, tmp_path):
     return mets_output_path
 
 
-def test_file_checksum_parsing(simple_mets):
+def test_file_checksum_parsing(simple_mets_path):
     """
     Test checksum parsing when there's one location for each file.
     """
-    mets = METS(simple_mets)
+    mets = METS(simple_mets_path)
     files = list(mets.files())
 
     first_file = files[0]
@@ -67,11 +59,11 @@ def test_file_checksum_parsing(simple_mets):
     assert last_file.algorithm == "MD5"
 
 
-def test_file_location_parsing(simple_mets):
+def test_file_location_parsing(simple_mets_path):
     """
     Test file location parsing when there's one location for each file.
     """
-    mets = METS(simple_mets)
+    mets = METS(simple_mets_path)
     files = list(mets.files())
 
     first_file = files[0]
