@@ -50,6 +50,20 @@ class File:
             location_xlink=location,
         )
 
+    def download_url(self, dc_identifier):
+        """
+        The URL from which this file can be downloaded from NLF.
+
+        :param dc_identifier: Dublin Core identifier for the binding to which this file
+            belongs. These identifiers are of form
+            https://digi.kansalliskirjasto.fi/sanomalehti/binding/[BINDING ID] and thus
+            the base of the download URL.
+        :type dc_identifier: String
+        """
+        raise NotImplementedError(
+            "download_url must be defined separately for each subclass of File"
+        )
+
 
 class UnknownTypeFile(File):
     """
@@ -63,6 +77,21 @@ class ALTOFile(File):
     """
     An XML file with contents of a page described using the ALTO schema.
     """
+
+    def download_url(self, dc_identifier):
+        """
+        The URL from which this file can be downloaded from NLF.
+
+        :param dc_identifier: Dublin Core identifier for the binding to which this file
+            belongs. These identifiers are of form
+            https://digi.kansalliskirjasto.fi/sanomalehti/binding/[BINDING ID] and thus
+            the base of the download URL. Note that this functionality relies on the
+            identifier not having a trailing slash (as seems to be the case in NLF
+            data).
+        :type dc_identifier: String
+        """
+        href_filename = self.location_xlink.rsplit("/", maxsplit=1)[-1]
+        return f"{dc_identifier}/page-{href_filename}"
 
 
 class METSLocationParseError(ValueError):
