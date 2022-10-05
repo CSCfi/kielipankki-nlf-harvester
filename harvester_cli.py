@@ -35,7 +35,7 @@ def binding_ids(ctx, set_id):
     # pylint does not understand that variables are inherited from the command
     # group
     # pylint: disable=undefined-variable
-    ids = ctx.obj["API"].binding_ids(set_id)
+    ids = ctx.obj["API"].dc_identifiers(set_id)
     for id_ in ids:
         click.echo(id_)
 
@@ -48,8 +48,8 @@ def checksums(mets_file_path, encoding):
     Output checksums for all files listed in the METS document.
     """
     mets = METS(mets_file_path, encoding)
-    for checksum in mets.checksums():
-        click.echo(checksum)
+    for file in mets.files():
+        click.echo(file.checksum)
 
 
 if __name__ == "__main__":
