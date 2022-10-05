@@ -3,15 +3,13 @@ Representation of a single file (e.g. an XML file with OCR results for a
 page from a newspaper, or a jpeg showing the scanned page).
 """
 
-from enum import Enum
-
 
 class File:
     """
-    A file originating from NLF.
-    """  # TODO
+    A shared base class for files originating from NLF.
+    """
 
-    def __init__(self, checksum, algorithm, location_xlink, content_type):
+    def __init__(self, checksum, algorithm, location_xlink):
         """
         Create a new file
 
@@ -27,16 +25,47 @@ class File:
         self.checksum = checksum
         self.algorithm = algorithm
         self.location_xlink = location_xlink
-        self.content_type = content_type
+
+    @classmethod
+    def file_from_element(cls, file_element):
+        """
+        Return new subclass object representing the given file element.
+
+        :param file_element: A ``file`` element from METS. The
+            information for the parent and child elements must be
+            accessible too.
+        :type file_element: :class:`lxml.etree._Element`
+        """
+        children = file_element.getchildren()
+        if len(children) != 1:
+            raise METSLocationParseError("Expected 1 location, found {len(children)}")
+        location = children[0].attrib["{http://www.w3.org/TR/xlink}href"]
+
+        if True:
+            file_cls = UnknownTypeFile
+
+        return file_cls(
+            checksum=file_element.attrib["CHECKSUM"],
+            algorithm=file_element.attrib["CHECKSUMTYPE"],
+            location_xlink=location,
+        )
 
 
-class ContentType(Enum):
+class UnknownTypeFile(File):
     """
-    The supported types of :class:`~harvester.file.File`.
+    Temporary class for files whose type is not known.
 
-    These do not represent the file type as such, e.g. "image/jpeg", but the type of the
-    content instead.
+    To be deleted when we figure out the file type detection.
     """
 
-    ALTO_XML = "alto"
-    ACCESS_IMAGE = "access_img"
+
+class ALTOFile(File):
+    """
+    An XML file with contents of a page described using the ALTO schema.
+    """
+
+
+class METSLocationParseError(ValueError):
+    """
+    Exception raised when location of a file cannot be determined.
+    """

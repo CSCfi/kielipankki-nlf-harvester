@@ -42,10 +42,6 @@ class METS:
         :raises METSLocationParseError: Raised if the location cannot be
                 determined, e.g. too many locations.
         """
-        children = file_element.getchildren()
-        if len(children) != 1:
-            raise METSLocationParseError("Expected 1 location, found {len(children)}")
-        return children[0].attrib["{http://www.w3.org/TR/xlink}href"]
 
     def _ensure_files(self):
         """
@@ -63,14 +59,7 @@ class METS:
 
         self._files = []
         for file_element in files:
-            self._files.append(
-                File(
-                    checksum=file_element.attrib["CHECKSUM"],
-                    algorithm=file_element.attrib["CHECKSUMTYPE"],
-                    location_xlink=self._file_location(file_element),
-                    content_type=None,
-                )
-            )
+            self._files.append(File.file_from_element(file_element))
 
     def files(self):
         """
@@ -82,9 +71,3 @@ class METS:
         self._ensure_files()
         for file in self._files:
             yield file
-
-
-class METSLocationParseError(ValueError):
-    """
-    Exception raised when location of a file cannot be determined.
-    """

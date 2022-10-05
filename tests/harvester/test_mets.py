@@ -5,7 +5,8 @@ Tests for the METSParser
 import pytest
 from lxml import etree
 
-from harvester.mets import METS, METSLocationParseError
+from harvester.file import METSLocationParseError
+from harvester.mets import METS
 
 
 @pytest.fixture
