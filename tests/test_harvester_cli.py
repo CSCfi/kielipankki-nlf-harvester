@@ -5,10 +5,22 @@ This means that the bare minimum is likely often enough: as long as the method a
 parameter names are ok, things are likely fine.
 """
 
+import os
+import sys
+
+import pytest
+
 from click.testing import CliRunner
 from harvester_cli import cli
 
 
+requires_37 = pytest.mark.skipif(
+    sys.version_info < (3, 7),
+    reason="CliRunner is buggy on click8.0 and newer ones require python3.7 or higher",
+)
+
+
+@requires_37
 def test_binding_ids_with_url(oai_pmh_api_url, two_page_pmh_response, two_page_set_id):
     """
     Test that the CLI can fetch binding IDs from a specific URL
@@ -33,6 +45,7 @@ def test_binding_ids_with_url(oai_pmh_api_url, two_page_pmh_response, two_page_s
     assert two_page_pmh_response["first_id"] in result.output
 
 
+@requires_37
 def test_binding_ids_from_default_url(two_page_pmh_response, two_page_set_id):
     """
     Test that the CLI can fetch binding IDs from default API URL when not given
@@ -54,6 +67,7 @@ def test_binding_ids_from_default_url(two_page_pmh_response, two_page_set_id):
     assert two_page_pmh_response["first_id"] in result.output
 
 
+@requires_37
 def test_checksums(simple_mets_path):
     """
     Check that at least one correct checksum is printed
@@ -70,6 +84,7 @@ def test_checksums(simple_mets_path):
     assert "\n33cbc005ce7dac534bdcc424c8a082cd\n" in result.output
 
 
+@requires_37
 def test_download_urls(simple_mets_path):
     """
     Check that the CLI is able to call the `download_urls` function.
