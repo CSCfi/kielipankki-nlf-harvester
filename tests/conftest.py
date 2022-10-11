@@ -90,6 +90,14 @@ def mets_dc_identifier():
 
 
 @pytest.fixture
+def simple_mets_path():
+    """
+    Path to METS with one location for each file
+    """
+    return "tests/data/379973_METS.xml"
+
+
+@pytest.fixture
 def expected_mets_response(mets_dc_identifier):
     """
     Patch a GET request for fetching a METS file for a given binding id.

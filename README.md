@@ -1,6 +1,6 @@
-# NFL Data Harvester
+# NLF Data Harvester
 This tool allows fetching data from the National Library of Finland. This tool
-interacts with the OAI-PMH API of NFL, fetching information about the available
+interacts with the OAI-PMH API of NLF, fetching information about the available
 bindings, downloading them and checking their integrity.
 
 ## Getting Started

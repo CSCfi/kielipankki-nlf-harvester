@@ -5,16 +5,9 @@ Tests for the METSParser
 import pytest
 from lxml import etree
 
-from harvester.mets import METS, METSLocationParseError
-from harvester.file import ContentType
-
-
-@pytest.fixture
-def simple_mets():
-    """
-    METS with one location for each file
-    """
-    return "tests/data/379973_METS.xml"
+from harvester.file import METSLocationParseError
+from harvester.file import File
+from harvester.mets import METS
 
 
 # Pylint does not understand fixtures
@@ -22,7 +15,7 @@ def simple_mets():
 
 
 @pytest.fixture
-def mets_with_multiple_file_locations(simple_mets, tmp_path):
+def mets_with_multiple_file_locations(simple_mets_path, tmp_path):
     """
     Return a path to METS file that has a file with two locations
     """
@@ -30,7 +23,7 @@ def mets_with_multiple_file_locations(simple_mets, tmp_path):
     # an accurate view into the lxml library. This disables false alarms.
     # pylint: disable=c-extension-no-member
 
-    with open(simple_mets, "r", encoding="utf-8") as mets_file:
+    with open(simple_mets_path, "r", encoding="utf-8") as mets_file:
         mets_tree = etree.parse(mets_file)
     files = mets_tree.xpath(
         "mets:fileSec/mets:fileGrp/mets:file",
@@ -51,11 +44,11 @@ def mets_with_multiple_file_locations(simple_mets, tmp_path):
     return mets_output_path
 
 
-def test_file_checksum_parsing(simple_mets):
+def test_file_checksum_parsing(simple_mets_path):
     """
     Test checksum parsing when there's one location for each file.
     """
-    mets = METS(simple_mets)
+    mets = METS(simple_mets_path)
     files = list(mets.files())
 
     first_file = files[0]
@@ -67,11 +60,11 @@ def test_file_checksum_parsing(simple_mets):
     assert last_file.algorithm == "MD5"
 
 
-def test_file_location_parsing(simple_mets):
+def test_file_location_parsing(simple_mets_path):
     """
     Test file location parsing when there's one location for each file.
     """
-    mets = METS(simple_mets)
+    mets = METS(simple_mets_path)
     files = list(mets.files())
 
     first_file = files[0]
@@ -79,20 +72,6 @@ def test_file_location_parsing(simple_mets):
 
     last_file = files[-1]
     assert last_file.location_xlink == "file://./alto/00004.xml"
-
-
-def test_file_content_type_parsing(simple_mets):
-    """
-    Test content type parsing when there's one location for each file.
-    """
-    mets = METS(simple_mets)
-    files = list(mets.files())
-
-    first_file = files[0]
-    assert first_file.content_type == ContentType.ACCESS_IMAGE
-
-    last_file = files[-1]
-    assert last_file.content_type == ContentType.ALTO_XML
 
 
 def test_files_exception_on_two_locations_for_a_file(
@@ -111,11 +90,44 @@ def test_files_exception_on_two_locations_for_a_file(
             pass
 
 
-def test_alto_files(simple_mets):
+def test_file_content_type_parsing(simple_mets_path):
+    """
+    Test content type parsing when there's one location for each file.
+    """
+    mets = METS(simple_mets_path)
+    files = list(mets.files())
+
+    first_file = files[0]
+    assert first_file.file_type == "UnknownTypeFile"
+
+    last_file = files[-1]
+    assert last_file.file_type == "ALTOFile"
+
+
+def test_alto_files(simple_mets_path):
     """
     Ensure that an accurate list of alto files is returned.
     """
-    mets = METS(simple_mets)
+    mets = METS(simple_mets_path)
     alto_files = list(mets.alto_files())
     assert len(alto_files) == 4
-    assert all(file.content_type == ContentType.ALTO_XML for file in alto_files)
+    assert all(file.file_type == "ALTOFile" for file in alto_files)
+
+
+def test_download_alto_files(tmp_path, simple_mets_path, mocker):
+    """
+    Test downloading all ALTO files listed in a METS file.
+
+    This is done by checking that file.download is called the correct number of times
+    during a download_alto_files call.
+    """
+    mets = METS(simple_mets_path)
+    mocker.patch("harvester.file.File.download")
+    mocker.patch(
+        "harvester.mets.METS.alto_files", return_value=(File for f in range(4))
+    )
+    mets.download_alto_files(tmp_path, "mock_folder")
+
+    # pylint does not know about the extra functions from mocker
+    # pylint: disable=no-member
+    assert File.download.call_count == 4

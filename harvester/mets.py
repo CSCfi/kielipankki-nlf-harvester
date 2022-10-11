@@ -4,7 +4,7 @@ Tools for reading and interpreting METS files.
 
 from lxml import etree
 
-from harvester.file import File, ContentType
+from harvester.file import File
 
 
 # Due to security reasons related to executing C code, pylint does not have an
@@ -30,6 +30,12 @@ class METS:
         self.mets_path = mets_path
         self.encoding = encoding
         self._files = None
+        self.binding_id = (
+            str(mets_path).split("/")[-1].split("_")[0]
+        )  # Not necessarily reliable!
+        self.dc_identifier = (
+            f"https://digi.kansalliskirjasto.fi/sanomalehti/binding/{self.binding_id}"
+        )
 
     def _file_location(self, file_element):
         """
@@ -42,10 +48,6 @@ class METS:
         :raises METSLocationParseError: Raised if the location cannot be
                 determined, e.g. too many locations.
         """
-        children = file_element.getchildren()
-        if len(children) != 1:
-            raise METSLocationParseError("Expected 1 location, found {len(children)}")
-        return children[0].attrib["{http://www.w3.org/TR/xlink}href"]
 
     def _ensure_files(self):
         """
@@ -63,28 +65,7 @@ class METS:
 
         self._files = []
         for file_element in files:
-            parent = file_element.getparent()
-            self._files.append(
-                File(
-                    checksum=file_element.attrib["CHECKSUM"],
-                    algorithm=file_element.attrib["CHECKSUMTYPE"],
-                    location_xlink=self._file_location(file_element),
-                    content_type=self._get_content_type(parent.attrib["USE"]),
-                )
-            )
-
-    def _get_content_type(self, use):
-        """
-        Get ContentType for a file.
-
-        :param use: USE attribute of the file group
-        """
-        use_to_type = {
-            "alto": ContentType.ALTO_XML,
-            "Text": ContentType.ALTO_XML,
-            "Images": ContentType.ACCESS_IMAGE,
-        }
-        return use_to_type[use]
+            self._files.append(File.file_from_element(file_element))
 
     def files(self):
         """
@@ -102,17 +83,19 @@ class METS:
         Iterate over all alto files listed in METS.
 
         :return: All alto files listed in METS document
-        :rtype: :rtype: Iterator[:class:`~harvester.file.File`]
+        :rtype: :rtype: Iterator[:class:`~harvester.file.ALTOFile`]
         """
 
-        alto_files = [
-            file for file in self.files() if file.content_type == ContentType.ALTO_XML
-        ]
+        alto_files = [file for file in self.files() if file.file_type == "ALTOFile"]
         for file in alto_files:
             yield file
 
+    def download_alto_files(self, base_path=None, file_dir=None):
+        """
+        Download all alto files listed in METS.
+        """
 
-class METSLocationParseError(ValueError):
-    """
-    Exception raised when location of a file cannot be determined.
-    """
+        for i, file in enumerate(self.alto_files()):
+            file.download(
+                self.dc_identifier, base_path, file_dir, f"{self.binding_id}_alto_{i+1}"
+            )
