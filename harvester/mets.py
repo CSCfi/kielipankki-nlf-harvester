@@ -97,5 +97,8 @@ class METS:
 
         for i, file in enumerate(self.alto_files()):
             file.download(
-                self.dc_identifier, base_path, file_dir, f"{self.binding_id}_alto_{i+1}"
+                self.dc_identifier,
+                base_path,
+                file_dir,
+                f"{self.binding_id}_alto_{i+1}.xml",
             )
