@@ -45,6 +45,7 @@ class PMH_API:
 
         mets_url = f"{dc_identifier}/mets.xml?full=true"
         xml_response = requests.get(mets_url, timeout=5)
+        xml_response.raise_for_status()
 
         if not file_name:
             path = f"{folder_path}/{utils.binding_id_from_dc(dc_identifier)}_METS.xml"

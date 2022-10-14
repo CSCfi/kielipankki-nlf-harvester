@@ -164,6 +164,7 @@ class File:
         with requests.get(self.download_url, timeout=5) as source, open(
             output, "wb"
         ) as output_file:
+            source.raise_for_status()
             output_file.write(source.content)
 
 
