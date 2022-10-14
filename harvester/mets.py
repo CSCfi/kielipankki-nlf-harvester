@@ -20,7 +20,7 @@ class METS:
     # This is expected to change when the software develops
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, mets_path, encoding="utf-8"):
+    def __init__(self, mets_path, binding_dc_identifier, encoding="utf-8"):
         """
         Create a new METS file object.
 
@@ -29,6 +29,7 @@ class METS:
         """
         self.mets_path = mets_path
         self.encoding = encoding
+        self.binding_dc_identifier = binding_dc_identifier
         self._files = None
 
     def _file_location(self, file_element):
@@ -59,7 +60,12 @@ class METS:
 
         self._files = []
         for file_element in files:
-            self._files.append(File.file_from_element(file_element))
+            self._files.append(
+                File.file_from_element(
+                    file_element,
+                    self.binding_dc_identifier,
+                )
+            )
 
     def files(self):
         """

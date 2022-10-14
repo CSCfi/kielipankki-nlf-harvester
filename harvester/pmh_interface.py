@@ -5,6 +5,8 @@ Fetch data from an OAI-PMH API of the National Library of Finland
 from sickle import Sickle
 import requests
 
+from harvester import utils
+
 
 class PMH_API:
     """
@@ -31,14 +33,6 @@ class PMH_API:
         for record in records:
             yield record.metadata["identifier"][0]
 
-    def binding_id_from_dc(self, dc_identifier):
-        """
-        Parse binding ID from dc_identifier URL.
-
-        :param dc_identifier: DC identifier of a record
-        """
-        return dc_identifier.split("/")[-1]
-
     def fetch_mets(self, dc_identifier, folder_path, file_name=None):
         """
         Fetch METS as an XML document given a binding ID and save to disk.
@@ -53,7 +47,7 @@ class PMH_API:
         xml_response = requests.get(mets_url)
 
         if not file_name:
-            path = f"{folder_path}/{self.binding_id_from_dc(dc_identifier)}_METS.xml"
+            path = f"{folder_path}/{utils.binding_id_from_dc(dc_identifier)}_METS.xml"
         else:
             path = f"{folder_path}/{file_name}"
 
