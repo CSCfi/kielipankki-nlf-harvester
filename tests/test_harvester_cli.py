@@ -36,6 +36,7 @@ def test_binding_ids_with_url(oai_pmh_api_url, two_page_pmh_response, two_page_s
             "--url", oai_pmh_api_url,
             two_page_set_id,
         ],
+        catch_exceptions=False,
     )
     # fmt: on
 
@@ -59,6 +60,7 @@ def test_binding_ids_from_default_url(two_page_pmh_response, two_page_set_id):
             "binding-ids",
             two_page_set_id,
         ],
+        catch_exceptions=False,
     )
 
     # One extra line for line feed at the end
@@ -81,6 +83,7 @@ def test_checksums(simple_mets_path):
             "checksums",
             simple_mets_path,
         ],
+        catch_exceptions=False,
     )
     assert "\n33cbc005ce7dac534bdcc424c8a082cd\n" in result.output
 
@@ -99,6 +102,7 @@ def test_list_download_urls(simple_mets_path):
     result = runner.invoke(
         cli,
         ["list-download-urls", simple_mets_path, "https://example.com/1234"],
+        catch_exceptions=False,
     )
 
     # four pages, alto and access image for each, plus a trailing newline
