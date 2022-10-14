@@ -57,7 +57,7 @@ def checksums(mets_file_path, encoding):
     "collection_dc_identifier",
 )
 @click.option("--encoding", default="utf-8")
-def download_urls(mets_file_path, collection_dc_identifier, encoding):
+def list_download_urls(mets_file_path, collection_dc_identifier, encoding):
     """
     Print download URLs for all files in METS
 
@@ -75,6 +75,39 @@ def download_urls(mets_file_path, collection_dc_identifier, encoding):
     for file in mets.files():
         try:
             click.echo(file.download_url)
+        except NotImplementedError:
+            click.echo(f"No download URL available for file {file.location_xlink}")
+
+
+@cli.command
+@click.argument("mets_file_path")
+@click.argument(
+    "collection_dc_identifier",
+)
+@click.option("--encoding", default="utf-8")
+@click.option(
+    "--base-path",
+    default=None,
+    help="The location under which the structure of downloaded files is created",
+)
+def download_files_from(mets_file_path, collection_dc_identifier, encoding, base_path):
+    """
+    Print download URLs for all files in METS
+
+    \b
+    METS_FILE_PATH:
+        Path to the METS file to be read
+
+    \b
+    COLLECTION_DC_IDENTIFIER:
+        Dublin Core identifier for the collection to
+        which the binding described by this METS belongs. E.g.
+        https://digi.kansalliskirjasto.fi/sanomalehti/binding/380082.
+    """
+    mets = METS(mets_file_path, collection_dc_identifier, encoding)
+    for file in mets.files():
+        try:
+            file.download(base_path=base_path)
         except NotImplementedError:
             click.echo(f"No download URL available for file {file.location_xlink}")
 
