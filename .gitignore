@@ -1,6 +1,7 @@
 .venv
 *.sw?
 *~
+.env
 __pycache__
 *.pyc
 .coverage
@@ -9,3 +10,5 @@ __pycache__
 docs/_build
 docs/*.rst
 !docs/index.rst
+
+airflow/logs/*
