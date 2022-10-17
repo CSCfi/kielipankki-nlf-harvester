@@ -20,7 +20,7 @@ class METS:
     # This is expected to change when the software develops
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, mets_path, encoding="utf-8"):
+    def __init__(self, mets_path, binding_dc_identifier, encoding="utf-8"):
         """
         Create a new METS file object.
 
@@ -29,13 +29,8 @@ class METS:
         """
         self.mets_path = mets_path
         self.encoding = encoding
+        self.binding_dc_identifier = binding_dc_identifier
         self._files = None
-        self.binding_id = (
-            str(mets_path).split("/")[-1].split("_")[0]
-        )  # Not necessarily reliable!
-        self.dc_identifier = (
-            f"https://digi.kansalliskirjasto.fi/sanomalehti/binding/{self.binding_id}"
-        )
 
     def _file_location(self, file_element):
         """
@@ -65,7 +60,12 @@ class METS:
 
         self._files = []
         for file_element in files:
-            self._files.append(File.file_from_element(file_element))
+            self._files.append(
+                File.file_from_element(
+                    file_element,
+                    self.binding_dc_identifier,
+                )
+            )
 
     def files(self):
         """
@@ -78,27 +78,34 @@ class METS:
         for file in self._files:
             yield file
 
-    def alto_files(self):
+    def files_of_type(self, filetype):
         """
-        Iterate over all alto files listed in METS.
+        Iterate over all files of a given type listed in METS
 
-        :return: All alto files listed in METS document
-        :rtype: :rtype: Iterator[:class:`~harvester.file.ALTOFile`]
+        :param filetype: Desired filetype of the File objects
+        :type filetype: str
+        :return: All files of given type listed in METS
+        :rtype: Iterator[:class:`~harvester.file.File`]
         """
-
-        alto_files = [file for file in self.files() if file.file_type == "ALTOFile"]
-        for file in alto_files:
+        files = [file for file in self.files() if file.filetype == filetype]
+        for file in files:
             yield file
 
-    def download_alto_files(self, base_path=None, file_dir=None):
+    def download_files_of_type(
+        self, filetype, base_path=None, file_dir=None, file_name=None
+    ):
+        """
+        Download all files of given filetype listed in METS.
+        """
+
+        files = self.files_of_type(filetype)
+
+        for file in files:
+            file.download(base_path, file_dir, file_name)
+
+    def download_alto_files(self, base_path=None, file_dir=None, file_name=None):
         """
         Download all alto files listed in METS.
         """
 
-        for i, file in enumerate(self.alto_files()):
-            file.download(
-                self.dc_identifier,
-                base_path,
-                file_dir,
-                f"{self.binding_id}_alto_{i+1}.xml",
-            )
+        self.download_files_of_type("ALTOFile", base_path, file_dir, file_name)

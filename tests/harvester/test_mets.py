@@ -5,13 +5,20 @@ Tests for the METSParser
 import pytest
 from lxml import etree
 
-from harvester.file import METSLocationParseError
-from harvester.file import File
+from harvester.file import File, METSLocationParseError
 from harvester.mets import METS
 
 
 # Pylint does not understand fixtures
 # pylint: disable=redefined-outer-name
+
+
+@pytest.fixture
+def simple_mets_object(simple_mets_path):
+    """
+    Return a METS object representing a simple, well-formed METS file.
+    """
+    return METS(simple_mets_path, "https://example.com/dc_identifier/1234")
 
 
 @pytest.fixture
@@ -44,12 +51,11 @@ def mets_with_multiple_file_locations(simple_mets_path, tmp_path):
     return mets_output_path
 
 
-def test_file_checksum_parsing(simple_mets_path):
+def test_file_checksum_parsing(simple_mets_object):
     """
     Test checksum parsing when there's one location for each file.
     """
-    mets = METS(simple_mets_path)
-    files = list(mets.files())
+    files = list(simple_mets_object.files())
 
     first_file = files[0]
     assert first_file.checksum == "ab64aff5f8375ca213eeaee260edcefe"
@@ -60,12 +66,11 @@ def test_file_checksum_parsing(simple_mets_path):
     assert last_file.algorithm == "MD5"
 
 
-def test_file_location_parsing(simple_mets_path):
+def test_file_location_parsing(simple_mets_object):
     """
     Test file location parsing when there's one location for each file.
     """
-    mets = METS(simple_mets_path)
-    files = list(mets.files())
+    files = list(simple_mets_object.files())
 
     first_file = files[0]
     assert first_file.location_xlink == "file://./preservation_img/pr-00001.jp2"
@@ -84,47 +89,47 @@ def test_files_exception_on_two_locations_for_a_file(
     the pipeline (e.g. trying to use a URL to determine the location of a file
     in a zip package).
     """
-    mets = METS(mets_with_multiple_file_locations)
+    mets = METS(mets_with_multiple_file_locations, "dummy_dc_identifier")
     with pytest.raises(METSLocationParseError):
         for _ in mets.files():
             pass
 
 
-def test_file_content_type_parsing(simple_mets_path):
+def test_file_content_type_parsing(simple_mets_path, mets_dc_identifier):
     """
     Test content type parsing when there's one location for each file.
     """
-    mets = METS(simple_mets_path)
+    mets = METS(simple_mets_path, mets_dc_identifier)
     files = list(mets.files())
 
     first_file = files[0]
-    assert first_file.file_type == "UnknownTypeFile"
+    assert first_file.filetype == "UnknownTypeFile"
 
     last_file = files[-1]
-    assert last_file.file_type == "ALTOFile"
+    assert last_file.filetype == "ALTOFile"
 
 
-def test_alto_files(simple_mets_path):
+def test_alto_files(simple_mets_path, mets_dc_identifier):
     """
     Ensure that an accurate list of alto files is returned.
     """
-    mets = METS(simple_mets_path)
-    alto_files = list(mets.alto_files())
+    mets = METS(simple_mets_path, mets_dc_identifier)
+    alto_files = list(mets.files_of_type("ALTOFile"))
     assert len(alto_files) == 4
-    assert all(file.file_type == "ALTOFile" for file in alto_files)
+    assert all(file.filetype == "ALTOFile" for file in alto_files)
 
 
-def test_download_alto_files(tmp_path, simple_mets_path, mocker):
+def test_download_alto_files(tmp_path, simple_mets_path, mocker, mets_dc_identifier):
     """
     Test downloading all ALTO files listed in a METS file.
 
     This is done by checking that file.download is called the correct number of times
     during a download_alto_files call.
     """
-    mets = METS(simple_mets_path)
+    mets = METS(simple_mets_path, mets_dc_identifier)
     mocker.patch("harvester.file.File.download")
     mocker.patch(
-        "harvester.mets.METS.alto_files", return_value=(File for f in range(4))
+        "harvester.mets.METS.files_of_type", return_value=(File for f in range(4))
     )
     mets.download_alto_files(tmp_path, "mock_folder")
 

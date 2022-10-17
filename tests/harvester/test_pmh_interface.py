@@ -5,6 +5,7 @@ Tests for PMH_API
 import builtins
 
 from harvester.pmh_interface import PMH_API
+from harvester import utils
 
 
 def _check_result(ids, expected_info):
@@ -33,14 +34,6 @@ def test_binding_ids_from_two_page_response(oai_pmh_api_url, two_page_pmh_respon
     _check_result(ids, two_page_pmh_response)
 
 
-def test_binding_id_from_dc(oai_pmh_api_url, mets_dc_identifier):
-    """
-    Test that DC identifiers are parsed to binding IDs correctly.
-    """
-    api = PMH_API(oai_pmh_api_url)
-    assert api.binding_id_from_dc(mets_dc_identifier) == "379973"
-
-
 def test_fetch_mets_with_filename(
     oai_pmh_api_url, mets_dc_identifier, expected_mets_response, tmp_path, mocker
 ):
@@ -48,7 +41,7 @@ def test_fetch_mets_with_filename(
     Ensure that a valid METS file is fetched and written to disk with file_name.
     """
     api = PMH_API(oai_pmh_api_url)
-    binding_id = api.binding_id_from_dc(mets_dc_identifier)
+    binding_id = utils.binding_id_from_dc(mets_dc_identifier)
     mocker.patch("builtins.open")
     response = api.fetch_mets(mets_dc_identifier, tmp_path, f"{binding_id}_METS.xml")
     builtins.open.assert_called_once_with(str(tmp_path / f"{binding_id}_METS.xml"), "w")
@@ -62,7 +55,7 @@ def test_fetch_mets_without_filename(
     Ensure that a valid METS file is fetched and written to disk without file_name.
     """
     api = PMH_API(oai_pmh_api_url)
-    binding_id = api.binding_id_from_dc(mets_dc_identifier)
+    binding_id = utils.binding_id_from_dc(mets_dc_identifier)
     mocker.patch("builtins.open")
     response = api.fetch_mets(mets_dc_identifier, tmp_path)
     builtins.open.assert_called_once_with(str(tmp_path / f"{binding_id}_METS.xml"), "w")

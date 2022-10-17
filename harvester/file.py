@@ -5,7 +5,9 @@ page from a newspaper, or a jpeg showing the scanned page).
 
 import os
 from pathlib import Path
-import urllib.request
+import requests
+
+from harvester import utils
 
 
 class File:
@@ -13,7 +15,7 @@ class File:
     A shared base class for files originating from NLF.
     """
 
-    def __init__(self, checksum, algorithm, location_xlink):
+    def __init__(self, checksum, algorithm, location_xlink, binding_dc_identifier):
         """
         Create a new file
 
@@ -29,9 +31,21 @@ class File:
         self.checksum = checksum
         self.algorithm = algorithm
         self.location_xlink = location_xlink
+        self.binding_dc_identifier = binding_dc_identifier
+
+    @property
+    def filename(self):
+        """
+        Name of the file as reported in ``self.location_xlink``
+
+        :return: File name part of ``self.location_xlink``
+        :rtype: str
+        """
+        path_without_scheme = self.location_xlink.split("://")[-1]
+        return Path(path_without_scheme).name
 
     @classmethod
-    def file_from_element(cls, file_element):
+    def file_from_element(cls, file_element, binding_dc_identifier):
         """
         Return new subclass object representing the given file element.
 
@@ -59,9 +73,11 @@ class File:
             checksum=file_element.attrib["CHECKSUM"],
             algorithm=file_element.attrib["CHECKSUMTYPE"],
             location_xlink=location,
+            binding_dc_identifier=binding_dc_identifier,
         )
 
-    def download_url(self, dc_identifier):
+    @property
+    def download_url(self):
         """
         The URL from which this file can be downloaded from NLF.
 
@@ -77,56 +93,86 @@ class File:
 
     def _default_base_path(self):
         """
-        TODO
-        """
-        return Path(os.getcwd())
+        The default root directory for the file structure for downloaded bindings.
 
-    def _default_file_dir(self, dc_identifier):
+        :return: Path to the root of the file structure created for downloaded files.
+            Defaults to the current directory.
+        :rtype: :class:`pathlib.Path`
         """
-        TODO
-        """
-        raise NotImplementedError("todo")  # TODO better msg, implement in subclasses
+        return Path(os.getcwd()) / "downloads"
 
-    def _default_file_name(self):
+    def _default_file_dir(self):
         """
-        TODO
-        """
-        raise NotImplementedError("todo")  # TODO better msg, implement in subclasses
+        The default subdirectory (structure) for the downloaded files of this type.
 
-    def _construct_download_location(self, base_path, file_dir, file_name):
+        :return: The relative Path for the directory in which the downloaded files of
+            this type are placed under the base path.
+        :rtype: :class:`pathlib.Path`
+        """
+        raise NotImplementedError(
+            "Default file directory must be set on a per filetype basis"
+        )
+
+    def _default_filename(self):
+        """
+        The default file name for downloaded files.
+
+        :return: File name as a Path object
+        :rtype: :class:`pathlib.Path`
+        """
+        return self.filename
+
+    def _construct_download_location(self, base_path, file_dir, filename):
         """
         Return :class:`pathlib.Path`
         """
         if not base_path:
-            base_path = self._default_base_path
+            base_path = self._default_base_path()
         if not file_dir:
-            file_dir = self._default_file_dir
-        if not file_name:
-            file_name = self._default_file_name
+            file_dir = self._default_file_dir()
+        if not filename:
+            filename = self._default_filename()
 
-        return Path(base_path) / Path(file_dir) / Path(file_name)
+        return Path(base_path) / Path(file_dir) / Path(filename)
 
-    def download(self, dc_identifier, base_path=None, file_dir=None, file_name=None):
+    def _ensure_dir(self, dir_):
+        """
+        Make sure that the output directory exists
+        """
+
+    def download(self, base_path=None, file_dir=None, filename=None):
         """
         Download the file from NLF.
+
+        The output location can be specified with the components ``base_path``,
+        ``file_dir`` and ``filename``. If not given, the output location is as
+        follows::
+
+         ./downloads/[binding ID]/[type directory]/[filename from location_xlink]
+         ^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          base_path          file_dir                         filename
 
         :param dc_identifier: Dublin Core identifier for the binding to which this file
             belongs. These identifiers are of form
             https://digi.kansalliskirjasto.fi/sanomalehti/binding/[BINDING ID] and thus
             the base of the download URL.
-        :type dc_identifier: String
-        :param base_path:
-        :type base_path:
-        :param file_dir:
-        :type file_dir:
-        :param file_name:
-        :type file_name:
+        :type dc_identifier: str
+        :param base_path: The root directory for the file structure for
+            downloaded bindings.
+        :type base_path: str, optional
+        :param file_dir: Output directory for the files, relative to ``base_path``
+        :type file_dir: str, optional
+        :param filename: Output file name.
+        :type filename: str, optional
         """
-        output = self._construct_download_location(base_path, file_dir, file_name)
-        with urllib.request.urlopen(self.download_url(dc_identifier)) as source, open(
+        output = self._construct_download_location(base_path, file_dir, filename)
+        output.parent.mkdir(parents=True, exist_ok=True)
+
+        with requests.get(self.download_url, timeout=5) as source, open(
             output, "wb"
         ) as output_file:
-            output_file.write(source.read())
+            source.raise_for_status()
+            output_file.write(source.content)
 
 
 class UnknownTypeFile(File):
@@ -136,9 +182,9 @@ class UnknownTypeFile(File):
     To be deleted when we figure out the file type detection.
     """
 
-    def __init__(self, checksum, algorithm, location_xlink):
-        super().__init__(checksum, algorithm, location_xlink)
-        self.file_type = "UnknownTypeFile"
+    def __init__(self, checksum, algorithm, location_xlink, binding_dc_identifier):
+        super().__init__(checksum, algorithm, location_xlink, binding_dc_identifier)
+        self.filetype = "UnknownTypeFile"
 
 
 class ALTOFile(File):
@@ -146,11 +192,12 @@ class ALTOFile(File):
     An XML file with contents of a page described using the ALTO schema.
     """
 
-    def __init__(self, checksum, algorithm, location_xlink):
-        super().__init__(checksum, algorithm, location_xlink)
-        self.file_type = "ALTOFile"
+    def __init__(self, checksum, algorithm, location_xlink, binding_dc_identifier):
+        super().__init__(checksum, algorithm, location_xlink, binding_dc_identifier)
+        self.filetype = "ALTOFile"
 
-    def download_url(self, dc_identifier):
+    @property
+    def download_url(self):
         """
         The URL from which this file can be downloaded from NLF.
 
@@ -163,7 +210,17 @@ class ALTOFile(File):
         :type dc_identifier: String
         """
         href_filename = self.location_xlink.rsplit("/", maxsplit=1)[-1]
-        return f"{dc_identifier}/page-{href_filename}"
+        return f"{self.binding_dc_identifier}/page-{href_filename}"
+
+    def _default_file_dir(self):
+        """
+        The default subdirectory (structure) for the downloaded files of this type.
+
+        :return: The relative Path for the directory in which the downloaded files of
+            this type are placed under the base path.
+        :rtype: :class:`pathlib.Path`
+        """
+        return Path(utils.binding_id_from_dc(self.binding_dc_identifier)) / "alto"
 
 
 class METSLocationParseError(ValueError):
