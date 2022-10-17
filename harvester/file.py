@@ -59,7 +59,14 @@ class File:
             raise METSLocationParseError("Expected 1 location, found {len(children)}")
         location = children[0].attrib["{http://www.w3.org/TR/xlink}href"]
 
-        if True:
+        parent = file_element.getparent()
+
+        if (
+            parent.attrib["USE"] in ["alto", "Text"]
+            and parent.attrib["ID"] == "ALTOGRP"
+        ):
+            file_cls = ALTOFile
+        else:
             file_cls = UnknownTypeFile
 
         return file_cls(
@@ -175,20 +182,25 @@ class UnknownTypeFile(File):
     To be deleted when we figure out the file type detection.
     """
 
+    def __init__(self, checksum, algorithm, location_xlink, binding_dc_identifier):
+        super().__init__(checksum, algorithm, location_xlink, binding_dc_identifier)
+        self.filetype = "UnknownTypeFile"
+
 
 class ALTOFile(File):
     """
     An XML file with contents of a page described using the ALTO schema.
     """
 
+    def __init__(self, checksum, algorithm, location_xlink, binding_dc_identifier):
+        super().__init__(checksum, algorithm, location_xlink, binding_dc_identifier)
+        self.filetype = "ALTOFile"
+
     @property
     def download_url(self):
         """
         The URL from which this file can be downloaded from NLF.
 
-    def __init__(self, checksum, algorithm, location_xlink):
-        super().__init__(checksum, algorithm, location_xlink)
-        self.file_type = "ALTOFile"
         :param dc_identifier: Dublin Core identifier for the binding to which this file
             belongs. These identifiers are of form
             https://digi.kansalliskirjasto.fi/sanomalehti/binding/[BINDING ID] and thus

@@ -5,7 +5,7 @@ Tests for the METSParser
 import pytest
 from lxml import etree
 
-from harvester.file import METSLocationParseError
+from harvester.file import File, METSLocationParseError
 from harvester.mets import METS
 
 
@@ -95,41 +95,41 @@ def test_files_exception_on_two_locations_for_a_file(
             pass
 
 
-def test_file_content_type_parsing(simple_mets_path):
+def test_file_content_type_parsing(simple_mets_path, mets_dc_identifier):
     """
     Test content type parsing when there's one location for each file.
     """
-    mets = METS(simple_mets_path)
+    mets = METS(simple_mets_path, mets_dc_identifier)
     files = list(mets.files())
 
     first_file = files[0]
-    assert first_file.file_type == "UnknownTypeFile"
+    assert first_file.filetype == "UnknownTypeFile"
 
     last_file = files[-1]
-    assert last_file.file_type == "ALTOFile"
+    assert last_file.filetype == "ALTOFile"
 
 
-def test_alto_files(simple_mets_path):
+def test_alto_files(simple_mets_path, mets_dc_identifier):
     """
     Ensure that an accurate list of alto files is returned.
     """
-    mets = METS(simple_mets_path)
-    alto_files = list(mets.alto_files())
+    mets = METS(simple_mets_path, mets_dc_identifier)
+    alto_files = list(mets.files_of_type("ALTOFile"))
     assert len(alto_files) == 4
-    assert all(file.file_type == "ALTOFile" for file in alto_files)
+    assert all(file.filetype == "ALTOFile" for file in alto_files)
 
 
-def test_download_alto_files(tmp_path, simple_mets_path, mocker):
+def test_download_alto_files(tmp_path, simple_mets_path, mocker, mets_dc_identifier):
     """
     Test downloading all ALTO files listed in a METS file.
 
     This is done by checking that file.download is called the correct number of times
     during a download_alto_files call.
     """
-    mets = METS(simple_mets_path)
+    mets = METS(simple_mets_path, mets_dc_identifier)
     mocker.patch("harvester.file.File.download")
     mocker.patch(
-        "harvester.mets.METS.alto_files", return_value=(File for f in range(4))
+        "harvester.mets.METS.files_of_type", return_value=(File for f in range(4))
     )
     mets.download_alto_files(tmp_path, "mock_folder")
 
