@@ -3,7 +3,9 @@ Fetch data from an OAI-PMH API of the National Library of Finland
 """
 
 from sickle import Sickle
+from pathlib import Path
 import requests
+import os
 
 from harvester import utils
 
@@ -33,7 +35,7 @@ class PMH_API:
         for record in records:
             yield record.metadata["identifier"][0]
 
-    def fetch_mets(self, dc_identifier, folder_path, file_name=None):
+    def fetch_mets(self, dc_identifier, folder_path=None, file_name=None):
         """
         Fetch METS as an XML document given a binding ID and save to disk.
 
@@ -47,15 +49,25 @@ class PMH_API:
         xml_response = requests.get(mets_url, timeout=5)
         xml_response.raise_for_status()
 
+        if not folder_path:
+            folder_path = self._default_mets_path()
+
         if not file_name:
-            path = f"{folder_path}/{utils.binding_id_from_dc(dc_identifier)}_METS.xml"
-        else:
-            path = f"{folder_path}/{file_name}"
+            file_name = f"{utils.binding_id_from_dc(dc_identifier)}_METS.xml"
+
+        folder_path.mkdir(parents=True, exist_ok=True)
+        path = str(folder_path / file_name)
 
         with open(path, "w") as file:
             file.write(xml_response.text)
 
         return xml_response.text
+
+    def _default_mets_path(self):
+        """
+        Return folder path to store METS file in.
+        """
+        return Path(os.getcwd()) / "downloads/mets"
 
     def fetch_all_mets_for_set(self, set_id, folder_path):
         """
