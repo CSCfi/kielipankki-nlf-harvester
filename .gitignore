@@ -12,3 +12,5 @@ docs/*.rst
 !docs/index.rst
 
 airflow/logs/*
+airflow/plugins/*
+!.gitkeep
