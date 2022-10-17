@@ -2,6 +2,7 @@
 Test fixtures
 """
 
+import os
 import pytest
 import requests_mock
 
@@ -90,6 +91,14 @@ def mets_dc_identifier():
 
 
 @pytest.fixture
+def simple_mets_path():
+    """
+    Path to METS with one location for each file
+    """
+    return "tests/data/379973_METS.xml"
+
+
+@pytest.fixture
 def expected_mets_response(mets_dc_identifier):
     """
     Patch a GET request for fetching a METS file for a given binding id.
@@ -107,3 +116,14 @@ def expected_mets_response(mets_dc_identifier):
         )
         mocker.get(mets_url, text=mets_content)
         yield mets_content
+
+
+@pytest.fixture
+def cwd_in_tmp(tmp_path):
+    """
+    Change current working directory into a temporary directory.
+    """
+    original_cwd = os.getcwd()
+    os.chdir(tmp_path)
+    yield tmp_path
+    os.chdir(original_cwd)

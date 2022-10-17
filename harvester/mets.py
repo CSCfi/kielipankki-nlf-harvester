@@ -20,7 +20,7 @@ class METS:
     # This is expected to change when the software develops
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, mets_path, encoding="utf-8"):
+    def __init__(self, mets_path, binding_dc_identifier, encoding="utf-8"):
         """
         Create a new METS file object.
 
@@ -29,6 +29,7 @@ class METS:
         """
         self.mets_path = mets_path
         self.encoding = encoding
+        self.binding_dc_identifier = binding_dc_identifier
         self._files = None
 
     def _file_location(self, file_element):
@@ -42,10 +43,6 @@ class METS:
         :raises METSLocationParseError: Raised if the location cannot be
                 determined, e.g. too many locations.
         """
-        children = file_element.getchildren()
-        if len(children) != 1:
-            raise METSLocationParseError("Expected 1 location, found {len(children)}")
-        return children[0].attrib["{http://www.w3.org/TR/xlink}href"]
 
     def _ensure_files(self):
         """
@@ -64,11 +61,9 @@ class METS:
         self._files = []
         for file_element in files:
             self._files.append(
-                File(
-                    checksum=file_element.attrib["CHECKSUM"],
-                    algorithm=file_element.attrib["CHECKSUMTYPE"],
-                    location_xlink=self._file_location(file_element),
-                    content_type=None,
+                File.file_from_element(
+                    file_element,
+                    self.binding_dc_identifier,
                 )
             )
 
@@ -82,9 +77,3 @@ class METS:
         self._ensure_files()
         for file in self._files:
             yield file
-
-
-class METSLocationParseError(ValueError):
-    """
-    Exception raised when location of a file cannot be determined.
-    """
