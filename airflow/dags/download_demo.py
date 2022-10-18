@@ -14,17 +14,17 @@ from harvester.mets import METS
 from harvester.pmh_interface import PMH_API
 
 
-DC_IDENTIFIER="https://digi.kansalliskirjasto.fi/sanomalehti/binding/379973"
-API_URL="https://digi.kansalliskirjasto.fi/interfaces/OAI-PMH"
-COLLECTION_ID="col-681"
-METS_PATH="/opt/airflow/mets_folder"
+DC_IDENTIFIER = "https://digi.kansalliskirjasto.fi/sanomalehti/binding/379973"
+API_URL = "https://digi.kansalliskirjasto.fi/interfaces/OAI-PMH"
+COLLECTION_ID = "col-681"
+METS_PATH = "/opt/airflow/downloads/mets"
 
 
 default_args = {
-    'owner': 'Kielipankki',
-    'start_date': '2022-10-01',
-    'retries': 5,
-    'retry_delay': timedelta(seconds=30)
+    "owner": "Kielipankki",
+    "start_date": "2022-10-01",
+    "retries": 5,
+    "retry_delay": timedelta(seconds=30),
 }
 
 
@@ -36,35 +36,30 @@ def save_mets_for_id():
 def download_alto_files():
     for file in os.listdir(METS_PATH):
         path = os.path.join(METS_PATH, file)
-        mets = METS(path)
-        mets.download_alto_files("/opt", "airflow/alto_folder")
+        mets = METS(path, DC_IDENTIFIER)
+        mets.download_alto_files(base_path="/opt/airflow/downloads")
 
 
-with DAG(dag_id='download_altos_for_binding',
-         schedule_interval='@daily',
-         catchup=False,
-         default_args=default_args,
-         doc_md=__doc__) as dag:
+with DAG(
+    dag_id="download_altos_for_binding",
+    schedule_interval="@daily",
+    catchup=False,
+    default_args=default_args,
+    doc_md=__doc__,
+) as dag:
 
-    start = DummyOperator(
-        task_id='start'
-    )
+    start = DummyOperator(task_id="start")
 
     fetch_mets_for_binding = PythonOperator(
-        task_id="save_mets_for_binding",
-        python_callable=save_mets_for_id,
-        dag=dag
+        task_id="save_mets_for_binding", python_callable=save_mets_for_id, dag=dag
     )
 
     download_alto_files_for_mets = PythonOperator(
         task_id="download_alto_files_for_mets",
         python_callable=download_alto_files,
-        dag=dag
+        dag=dag,
     )
 
-    end = DummyOperator(
-        task_id='end'
-    )
-
+    end = DummyOperator(task_id="end")
 
     start >> fetch_mets_for_binding >> download_alto_files_for_mets >> end

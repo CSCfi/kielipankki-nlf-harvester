@@ -54,8 +54,7 @@ x-airflow-common:
     - ./dags:/opt/airflow/dags
     - ./logs:/opt/airflow/logs
     - ./plugins:/opt/airflow/plugins
-    - ./mets_folder:/opt/airflow/mets_folder
-    - ./alto_folder:/opt/airflow/alto_folder
+    - ./downloads:/opt/airflow/downloads
     - ../harvester:/opt/airflow/plugins/harvester
   user: "${AIRFLOW_UID}:0"
   depends_on:
@@ -219,9 +218,9 @@ services:
           echo "   https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html#before-you-begin"
           echo
         fi
-        mkdir -p /sources/logs /sources/dags /sources/plugins /sources/mets_folder /sources/alto_folder
+        mkdir -p /sources/logs /sources/dags /sources/plugins /sources/downloads
         chown -R "${AIRFLOW_UID}:0" /sources/{logs,dags,plugins}
-        chown -R "${AIRFLOW_UID}:0" /sources/{mets_folder,alto_folder}
+        chown -R "${AIRFLOW_UID}:0" /sources/downloads
         exec /entrypoint airflow version
     # yamllint enable rule:line-length
     environment:
