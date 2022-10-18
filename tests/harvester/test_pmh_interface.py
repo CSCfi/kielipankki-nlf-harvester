@@ -62,6 +62,22 @@ def test_fetch_mets_without_filename(
     assert response == expected_mets_response
 
 
+def test_fetch_mets_with_default_path(
+    oai_pmh_api_url, mets_dc_identifier, expected_mets_response, mocker, cwd_in_tmp
+):
+    """
+    Ensure that a valid METS file is fetched and written to disk with default path.
+    """
+    api = PMH_API(oai_pmh_api_url)
+    binding_id = utils.binding_id_from_dc(mets_dc_identifier)
+    mocker.patch("builtins.open")
+    response = api.fetch_mets(mets_dc_identifier)
+    builtins.open.assert_called_once_with(
+        str(cwd_in_tmp / "downloads/mets" / f"{binding_id}_METS.xml"), "w"
+    )
+    assert response == expected_mets_response
+
+
 def test_fetch_all_mets_for_set(oai_pmh_api_url, two_page_set_id, tmp_path, mocker):
     """
     Test fetching all METS files in a collection

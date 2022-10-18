@@ -55,6 +55,7 @@ class PMH_API:
         if not file_name:
             file_name = f"{utils.binding_id_from_dc(dc_identifier)}_METS.xml"
 
+        folder_path = Path(folder_path)
         folder_path.mkdir(parents=True, exist_ok=True)
         path = str(folder_path / file_name)
 
