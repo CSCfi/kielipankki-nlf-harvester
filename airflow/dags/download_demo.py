@@ -60,6 +60,6 @@ with DAG(
         dag=dag,
     )
 
-    end = DummyOperator(task_id="end")
+    success = DummyOperator(task_id="success")
 
-    start >> fetch_mets_for_binding >> download_alto_files_for_mets >> end
+    start >> fetch_mets_for_binding >> download_alto_files_for_mets >> success
