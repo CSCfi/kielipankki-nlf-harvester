@@ -59,7 +59,14 @@ class File:
             raise METSLocationParseError("Expected 1 location, found {len(children)}")
         location = children[0].attrib["{http://www.w3.org/TR/xlink}href"]
 
-        if True:
+        parent = file_element.getparent()
+
+        if (
+            parent.attrib["USE"] in ["alto", "Text"]
+            and parent.attrib["ID"] == "ALTOGRP"
+        ):
+            file_cls = ALTOFile
+        else:
             file_cls = UnknownTypeFile
 
         return file_cls(

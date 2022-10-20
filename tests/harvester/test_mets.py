@@ -5,7 +5,7 @@ Tests for the METSParser
 import pytest
 from lxml import etree
 
-from harvester.file import METSLocationParseError
+from harvester.file import File, METSLocationParseError, ALTOFile, UnknownTypeFile
 from harvester.mets import METS
 
 
@@ -93,3 +93,43 @@ def test_files_exception_on_two_locations_for_a_file(
     with pytest.raises(METSLocationParseError):
         for _ in mets.files():
             pass
+
+
+def test_file_content_type_parsing(simple_mets_path, mets_dc_identifier):
+    """
+    Test content type parsing when there's one location for each file.
+    """
+    mets = METS(simple_mets_path, mets_dc_identifier)
+    files = list(mets.files())
+
+    first_file = files[0]
+    assert isinstance(first_file, UnknownTypeFile)
+
+    last_file = files[-1]
+    assert isinstance(last_file, ALTOFile)
+
+
+def test_alto_files(simple_mets_path, mets_dc_identifier):
+    """
+    Ensure that an accurate list of alto files is returned.
+    """
+    mets = METS(simple_mets_path, mets_dc_identifier)
+    alto_files = list(mets.files_of_type(ALTOFile))
+    assert len(alto_files) == 4
+    assert all(isinstance(file, ALTOFile) for file in alto_files)
+
+
+def test_download_alto_files(tmp_path, simple_mets_path, mocker, mets_dc_identifier):
+    """
+    Test downloading all ALTO files listed in a METS file.
+
+    This is done by checking that file.download is called the correct number of times
+    during a download_alto_files call.
+    """
+    mets = METS(simple_mets_path, mets_dc_identifier)
+    mocker.patch("harvester.file.ALTOFile.download")
+    mets.download_alto_files(tmp_path, "mock_folder")
+
+    # pylint does not know about the extra functions from mocker
+    # pylint: disable=no-member
+    assert ALTOFile.download.call_count == 4

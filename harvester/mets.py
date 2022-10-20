@@ -4,7 +4,7 @@ Tools for reading and interpreting METS files.
 
 from lxml import etree
 
-from harvester.file import File
+from harvester.file import ALTOFile, File
 
 
 # Due to security reasons related to executing C code, pylint does not have an
@@ -77,3 +77,35 @@ class METS:
         self._ensure_files()
         for file in self._files:
             yield file
+
+    def files_of_type(self, filetype):
+        """
+        Iterate over all files of a given type listed in METS
+
+        :param filetype: Desired filetype of the File objects
+        :type filetype: str
+        :return: All files of given type listed in METS
+        :rtype: Iterator[:class:`~harvester.file.File`]
+        """
+        files = [file for file in self.files() if isinstance(file, filetype)]
+        for file in files:
+            yield file
+
+    def download_files_of_type(
+        self, filetype, base_path=None, file_dir=None, file_name=None
+    ):
+        """
+        Download all files of given filetype listed in METS.
+        """
+
+        files = self.files_of_type(filetype)
+
+        for file in files:
+            file.download(base_path, file_dir, file_name)
+
+    def download_alto_files(self, base_path=None, file_dir=None, file_name=None):
+        """
+        Download all alto files listed in METS.
+        """
+
+        self.download_files_of_type(ALTOFile, base_path, file_dir, file_name)
