@@ -182,19 +182,11 @@ class UnknownTypeFile(File):
     To be deleted when we figure out the file type detection.
     """
 
-    def __init__(self, checksum, algorithm, location_xlink, binding_dc_identifier):
-        super().__init__(checksum, algorithm, location_xlink, binding_dc_identifier)
-        self.filetype = "UnknownTypeFile"
-
 
 class ALTOFile(File):
     """
     An XML file with contents of a page described using the ALTO schema.
     """
-
-    def __init__(self, checksum, algorithm, location_xlink, binding_dc_identifier):
-        super().__init__(checksum, algorithm, location_xlink, binding_dc_identifier)
-        self.filetype = "ALTOFile"
 
     @property
     def download_url(self):
