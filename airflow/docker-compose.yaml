@@ -15,6 +15,15 @@
 # specific language governing permissions and limitations
 # under the License.
 #
+# Modifications copyright (c) 2022 CSC - IT Center for Science
+# 
+# Modifications:
+#
+# - Remove '#' from the beginning of row 49
+# - Set 'AIRFLOW__CORE__LOAD_EXAMPLES' to 'false'
+# - Remove row '_PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}'
+# - Add additional paths to volumes (rows 66-67)
+# - Modify mkdir and chown commands in 'airflow-init' command (rows 230 and 232)
 
 # Basic Airflow cluster configuration for CeleryExecutor with Redis and PostgreSQL.
 #
@@ -56,7 +65,7 @@ x-airflow-common:
     - ./plugins:/opt/airflow/plugins
     - ./downloads:/opt/airflow/downloads
     - ../harvester:/opt/airflow/plugins/harvester
-  user: "${AIRFLOW_UID}:0"
+  user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
     redis:
