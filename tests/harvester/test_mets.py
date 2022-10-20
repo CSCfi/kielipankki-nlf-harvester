@@ -5,7 +5,7 @@ Tests for the METSParser
 import pytest
 from lxml import etree
 
-from harvester.file import File, METSLocationParseError
+from harvester.file import File, METSLocationParseError, ALTOFile, UnknownTypeFile
 from harvester.mets import METS
 
 
@@ -103,10 +103,10 @@ def test_file_content_type_parsing(simple_mets_path, mets_dc_identifier):
     files = list(mets.files())
 
     first_file = files[0]
-    assert first_file.filetype == "UnknownTypeFile"
+    assert isinstance(first_file, UnknownTypeFile)
 
     last_file = files[-1]
-    assert last_file.filetype == "ALTOFile"
+    assert isinstance(last_file, ALTOFile)
 
 
 def test_alto_files(simple_mets_path, mets_dc_identifier):
@@ -114,9 +114,9 @@ def test_alto_files(simple_mets_path, mets_dc_identifier):
     Ensure that an accurate list of alto files is returned.
     """
     mets = METS(simple_mets_path, mets_dc_identifier)
-    alto_files = list(mets.files_of_type("ALTOFile"))
+    alto_files = list(mets.files_of_type(ALTOFile))
     assert len(alto_files) == 4
-    assert all(file.filetype == "ALTOFile" for file in alto_files)
+    assert all(isinstance(file, ALTOFile) for file in alto_files)
 
 
 def test_download_alto_files(tmp_path, simple_mets_path, mocker, mets_dc_identifier):
@@ -128,9 +128,6 @@ def test_download_alto_files(tmp_path, simple_mets_path, mocker, mets_dc_identif
     """
     mets = METS(simple_mets_path, mets_dc_identifier)
     mocker.patch("harvester.file.File.download")
-    mocker.patch(
-        "harvester.mets.METS.files_of_type", return_value=(File for f in range(4))
-    )
     mets.download_alto_files(tmp_path, "mock_folder")
 
     # pylint does not know about the extra functions from mocker

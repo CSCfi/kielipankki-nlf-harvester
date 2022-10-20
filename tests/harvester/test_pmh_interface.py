@@ -44,7 +44,7 @@ def test_fetch_mets_with_filename(
     binding_id = utils.binding_id_from_dc(mets_dc_identifier)
     mocker.patch("builtins.open")
     response = api.fetch_mets(mets_dc_identifier, tmp_path, f"{binding_id}_METS.xml")
-    builtins.open.assert_called_once_with(str(tmp_path / f"{binding_id}_METS.xml"), "w")
+    builtins.open.assert_called_once_with(tmp_path / f"{binding_id}_METS.xml", "w")
     assert response == expected_mets_response
 
 
@@ -58,7 +58,7 @@ def test_fetch_mets_without_filename(
     binding_id = utils.binding_id_from_dc(mets_dc_identifier)
     mocker.patch("builtins.open")
     response = api.fetch_mets(mets_dc_identifier, tmp_path)
-    builtins.open.assert_called_once_with(str(tmp_path / f"{binding_id}_METS.xml"), "w")
+    builtins.open.assert_called_once_with(tmp_path / f"{binding_id}_METS.xml", "w")
     assert response == expected_mets_response
 
 
@@ -73,7 +73,7 @@ def test_fetch_mets_with_default_path(
     mocker.patch("builtins.open")
     response = api.fetch_mets(mets_dc_identifier)
     builtins.open.assert_called_once_with(
-        str(cwd_in_tmp / "downloads/mets" / f"{binding_id}_METS.xml"), "w"
+        cwd_in_tmp / "downloads/mets" / f"{binding_id}_METS.xml", "w"
     )
     assert response == expected_mets_response
 

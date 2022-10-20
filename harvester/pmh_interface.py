@@ -57,9 +57,8 @@ class PMH_API:
 
         folder_path = Path(folder_path)
         folder_path.mkdir(parents=True, exist_ok=True)
-        path = str(folder_path / file_name)
 
-        with open(path, "w") as file:
+        with open(folder_path / file_name, "w") as file:
             file.write(xml_response.text)
 
         return xml_response.text

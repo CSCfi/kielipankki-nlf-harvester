@@ -4,7 +4,7 @@ Tools for reading and interpreting METS files.
 
 from lxml import etree
 
-from harvester.file import File
+from harvester.file import ALTOFile, File
 
 
 # Due to security reasons related to executing C code, pylint does not have an
@@ -87,7 +87,7 @@ class METS:
         :return: All files of given type listed in METS
         :rtype: Iterator[:class:`~harvester.file.File`]
         """
-        files = [file for file in self.files() if file.filetype == filetype]
+        files = [file for file in self.files() if isinstance(file, filetype)]
         for file in files:
             yield file
 
@@ -108,4 +108,4 @@ class METS:
         Download all alto files listed in METS.
         """
 
-        self.download_files_of_type("ALTOFile", base_path, file_dir, file_name)
+        self.download_files_of_type(ALTOFile, base_path, file_dir, file_name)
