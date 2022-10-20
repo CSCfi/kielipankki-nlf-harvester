@@ -127,9 +127,9 @@ def test_download_alto_files(tmp_path, simple_mets_path, mocker, mets_dc_identif
     during a download_alto_files call.
     """
     mets = METS(simple_mets_path, mets_dc_identifier)
-    mocker.patch("harvester.file.File.download")
+    mocker.patch("harvester.file.ALTOFile.download")
     mets.download_alto_files(tmp_path, "mock_folder")
 
     # pylint does not know about the extra functions from mocker
     # pylint: disable=no-member
-    assert File.download.call_count == 4
+    assert ALTOFile.download.call_count == 4
