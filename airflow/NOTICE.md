@@ -1,0 +1,1 @@
+File [docker-compose.yaml]('https://airflow.apache.org/docs/apache-airflow/2.4.1/docker-compose.yaml') by Apache Software Foundation (ASF) is licensed under [Apache license 2.0](https://www.apache.org/licenses/LICENSE-2.0) / Modified from original (modifications listed in the file)
