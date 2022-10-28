@@ -32,7 +32,7 @@ recommended:
 ```
 virtualenv .venv -p python3
 . .venv/bin/activate
-pip install -r requirements_dev.txt
+make requirements
 ```
 
 ### Running Unit Tests

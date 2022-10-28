@@ -6,6 +6,9 @@ __pycache__
 *.pyc
 .coverage
 
+# constraints are dynamically fetched for the correct python version
+constraints.txt
+
 # sphinx
 docs/_build
 docs/*.rst
