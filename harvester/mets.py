@@ -20,16 +20,19 @@ class METS:
     # This is expected to change when the software develops
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, mets_path, binding_dc_identifier, encoding="utf-8"):
+    def __init__(
+        self, binding_dc_identifier, mets_path=None, mets_content=None, encoding="utf-8"
+    ):
         """
         Create a new METS file object.
 
         :param mets_path: Path to the METS file.
         :param encoding: Text encoding of the METS file. Defaults to utf-8.
         """
-        self.mets_path = mets_path
-        self.encoding = encoding
         self.binding_dc_identifier = binding_dc_identifier
+        self.mets_path = mets_path
+        self.mets_content = mets_content
+        self.encoding = encoding
         self._files = None
 
     def _file_location(self, file_element):
@@ -51,8 +54,16 @@ class METS:
         if self._files:
             return
 
-        with open(self.mets_path, "r", encoding=self.encoding) as mets_file:
-            mets_tree = etree.parse(mets_file)
+        if self.mets_path:
+            with open(self.mets_path, "r", encoding=self.encoding) as mets_file:
+                mets_tree = etree.parse(mets_file)
+        elif self.mets_content:
+            mets_tree = etree.fromstring(self.mets_content)
+        else:
+            raise ValueError(
+                "Either mets_path or mets_content needs to be defined for METS."
+            )
+
         files = mets_tree.xpath(
             "mets:fileSec/mets:fileGrp/mets:file",
             namespaces={"mets": "http://www.loc.gov/METS/"},
@@ -88,8 +99,9 @@ class METS:
         :rtype: Iterator[:class:`~harvester.file.File`]
         """
         files = [file for file in self.files() if isinstance(file, filetype)]
-        for file in files:
-            yield file
+        # for file in files:
+        #    yield file
+        return files
 
     def download_files_of_type(
         self, filetype, base_path=None, file_dir=None, file_name=None

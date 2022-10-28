@@ -64,6 +64,7 @@ x-airflow-common:
     - ./logs:/opt/airflow/logs
     - ./plugins:/opt/airflow/plugins
     - ./downloads:/opt/airflow/downloads
+    - /home/helhotti/.ssh/:/home/helhotti/.ssh
     - ../harvester:/opt/airflow/plugins/harvester
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:

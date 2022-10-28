@@ -37,16 +37,25 @@ def binding_ids(set_id, url):
 
 @cli.command
 @click.argument("mets_file_path")
+@click.argument(
+    "collection_dc_identifier",
+)
 @click.option("--encoding", default="utf-8")
-def checksums(mets_file_path, encoding):
+def checksums(mets_file_path, collection_dc_identifier, encoding):
     """
     Output checksums for all files listed in the METS document.
 
     \b
     METS_FILE_PATH:
         Path to the METS file to be read
+
+    \b
+    COLLECTION_DC_IDENTIFIER:
+        Dublin Core identifier for the collection to
+        which the binding described by this METS belongs. E.g.
+        https://digi.kansalliskirjasto.fi/sanomalehti/binding/380082.
     """
-    mets = METS(mets_file_path, encoding)
+    mets = METS(collection_dc_identifier, mets_path=mets_file_path, encoding=encoding)
     for file in mets.files():
         click.echo(file.checksum)
 
@@ -71,7 +80,7 @@ def list_download_urls(mets_file_path, collection_dc_identifier, encoding):
         which the binding described by this METS belongs. E.g.
         https://digi.kansalliskirjasto.fi/sanomalehti/binding/380082.
     """
-    mets = METS(mets_file_path, collection_dc_identifier, encoding)
+    mets = METS(collection_dc_identifier, mets_path=mets_file_path, encoding=encoding)
     for file in mets.files():
         try:
             click.echo(file.download_url)
@@ -104,7 +113,7 @@ def download_files_from(mets_file_path, collection_dc_identifier, encoding, base
         which the binding described by this METS belongs. E.g.
         https://digi.kansalliskirjasto.fi/sanomalehti/binding/380082.
     """
-    mets = METS(mets_file_path, collection_dc_identifier, encoding)
+    mets = METS(collection_dc_identifier, mets_path=mets_file_path, encoding=encoding)
     for file in mets.files():
         try:
             file.download(base_path=base_path)
