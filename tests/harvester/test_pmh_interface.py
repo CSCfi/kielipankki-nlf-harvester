@@ -98,11 +98,16 @@ def test_fetch_all_mets_for_set(oai_pmh_api_url, two_page_set_id, tmp_path, mock
     assert api.download_mets.call_count == 106
 
 
-def test_download_mets_to_remote(
-    oai_pmh_api_url, mets_dc_identifier, expected_mets_response, mocker, tmp_path, sftp_client
+def test_download_mets_to_remote_with_filename(
+    oai_pmh_api_url,
+    mets_dc_identifier,
+    expected_mets_response,
+    mocker,
+    tmp_path,
+    sftp_client,
 ):
     """
-    
+    Test that METS files are saved on a remote host with filename parameter provided.
     """
     api = PMH_API(oai_pmh_api_url)
     binding_id = utils.binding_id_from_dc(mets_dc_identifier)
@@ -111,16 +116,25 @@ def test_download_mets_to_remote(
     mocker.patch("paramiko.sftp_client.SFTPClient.mkdir")
     sftp = sftp_client.open_sftp()
     tmp_path_string = str(tmp_path)
-    response = api.download_mets_to_remote(mets_dc_identifier, tmp_path_string, sftp, f"{binding_id}_METS.xml")
-    SFTPClient.file.assert_called_once_with(f"{tmp_path_string}/{binding_id}_METS.xml", "w")
+    response = api.download_mets_to_remote(
+        mets_dc_identifier, tmp_path_string, sftp, f"{binding_id}_METS.xml"
+    )
+    SFTPClient.file.assert_called_once_with(
+        f"{tmp_path_string}/{binding_id}_METS.xml", "w"
+    )
     assert response == expected_mets_response
 
 
-def test_download_mets_to_remote_without_filenam(
-    oai_pmh_api_url, mets_dc_identifier, expected_mets_response, mocker, tmp_path, sftp_client
+def test_download_mets_to_remote_without_filename(
+    oai_pmh_api_url,
+    mets_dc_identifier,
+    expected_mets_response,
+    mocker,
+    tmp_path,
+    sftp_client,
 ):
     """
-    
+    Test that METS files are saved on a remote host without providing filename parameter.
     """
     api = PMH_API(oai_pmh_api_url)
     binding_id = utils.binding_id_from_dc(mets_dc_identifier)
@@ -130,5 +144,7 @@ def test_download_mets_to_remote_without_filenam(
     sftp = sftp_client.open_sftp()
     tmp_path_string = str(tmp_path)
     response = api.download_mets_to_remote(mets_dc_identifier, tmp_path_string, sftp)
-    SFTPClient.file.assert_called_once_with(f"{tmp_path_string}/{binding_id}_METS.xml", "w")
+    SFTPClient.file.assert_called_once_with(
+        f"{tmp_path_string}/{binding_id}_METS.xml", "w"
+    )
     assert response == expected_mets_response

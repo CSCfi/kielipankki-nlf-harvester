@@ -2,7 +2,6 @@
 Tests for the METSParser
 """
 
-from multiprocessing.sharedctypes import Value
 import pytest
 from lxml import etree
 
@@ -147,7 +146,7 @@ def test_mets_without_path_or_content(mets_dc_identifier):
 
 def test_mets_from_content(mets_dc_identifier):
     """
-    
+    Test that creating a METS instance from the contents of a METS file works.
     """
     with open("tests/data/379973_METS.xml", "r") as file:
         mets_content = file.read()
@@ -157,5 +156,3 @@ def test_mets_from_content(mets_dc_identifier):
         mets._ensure_files()
     except ValueError as exc:
         assert "Either mets_path or mets_content needs to be defined for METS."
-
-    
