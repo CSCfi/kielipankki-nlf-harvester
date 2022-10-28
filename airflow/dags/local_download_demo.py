@@ -16,7 +16,6 @@ from harvester.pmh_interface import PMH_API
 
 DC_IDENTIFIER = "https://digi.kansalliskirjasto.fi/sanomalehti/binding/379973"
 API_URL = "https://digi.kansalliskirjasto.fi/interfaces/OAI-PMH"
-COLLECTION_ID = "col-681"
 METS_PATH = "/opt/airflow/downloads/mets"
 
 

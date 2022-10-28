@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 import requests_mock
+import mocksftp
 
 from harvester.file import File, ALTOFile
 
@@ -117,3 +118,11 @@ def test_download_to_custom_path(alto_file, mock_alto_download, tmpdir):
 
     with open(expected_output_path, "r", encoding="utf-8") as alto:
         assert alto.read() == mock_alto_download
+
+
+def test_download_to_remote_to_default_path(
+    alto_file, sftp_client, mock_alto_download, tmpdir, mocker
+):
+    """
+    TODO
+    """

@@ -174,6 +174,44 @@ class File:
             source.raise_for_status()
             output_file.write(source.content)
 
+    def download_to_remote(
+        self, sftp_client, base_path=None, file_dir=None, filename=None
+    ):
+        """
+        Download the file from NLF.
+
+        The output location can be specified with the components ``base_path``,
+        ``file_dir`` and ``filename``. If not given, the output location is as
+        follows::
+
+         ./downloads/[binding ID]/[type directory]/[filename from location_xlink]
+         ^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          base_path          file_dir                         filename
+
+        :param dc_identifier: Dublin Core identifier for the binding to which this file
+            belongs. These identifiers are of form
+            https://digi.kansalliskirjasto.fi/sanomalehti/binding/[BINDING ID] and thus
+            the base of the download URL.
+        :type dc_identifier: str
+        :param base_path: The root directory for the file structure for
+            downloaded bindings.
+        :type base_path: str, optional
+        :param file_dir: Output directory for the files, relative to ``base_path``
+        :type file_dir: str, optional
+        :param filename: Output file name.
+        :type filename: str, optional
+        """
+        output = str(self._construct_download_location(base_path, file_dir, filename))
+        utils.make_intermediate_dirs(
+            sftp_client=sftp_client, remote_directory=output.rsplit("/", maxsplit=1)[0]
+        )
+
+        response = requests.get(self.download_url, timeout=5)
+        response.raise_for_status()
+
+        with sftp_client.file(output, "wb") as remote_file:
+            remote_file.write(response.content)
+
 
 class UnknownTypeFile(File):
     """

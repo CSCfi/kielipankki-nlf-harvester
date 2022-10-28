@@ -35,7 +35,7 @@ class PMH_API:
         for record in records:
             yield record.metadata["identifier"][0]
 
-    def fetch_mets(self, dc_identifier, folder_path=None, file_name=None):
+    def fetch_mets(self, dc_identifier):
         """
         Fetch METS as an XML document given a binding ID and save to disk.
 
@@ -49,6 +49,14 @@ class PMH_API:
         xml_response = requests.get(mets_url, timeout=5)
         xml_response.raise_for_status()
 
+        return xml_response.text
+
+    def download_mets(self, dc_identifier, folder_path=None, file_name=None):
+        """
+        Save fetched METS file to disk.
+        """
+        mets_content = self.fetch_mets(dc_identifier)
+
         if not folder_path:
             folder_path = self._default_mets_path()
 
@@ -59,9 +67,28 @@ class PMH_API:
         folder_path.mkdir(parents=True, exist_ok=True)
 
         with open(folder_path / file_name, "w") as file:
-            file.write(xml_response.text)
+            file.write(mets_content)
 
-        return xml_response.text
+        return mets_content
+
+    def download_mets_to_remote(
+        self, dc_identifier, folder_path, sftp_client, file_name=None
+    ):
+        """
+        Save fetched METS file to remote disk via SFTP client.
+        """
+        mets_content = self.fetch_mets(dc_identifier)
+
+        if not file_name:
+            file_name = f"{utils.binding_id_from_dc(dc_identifier)}_METS.xml"
+
+        utils.make_intermediate_dirs(
+            sftp_client=sftp_client, remote_directory=folder_path
+        )
+        with sftp_client.file(f"{folder_path}/{file_name}", "w") as remote_file:
+            remote_file.write(mets_content)
+
+        return mets_content
 
     def _default_mets_path(self):
         """
@@ -69,7 +96,7 @@ class PMH_API:
         """
         return Path(os.getcwd()) / "downloads/mets"
 
-    def fetch_all_mets_for_set(self, set_id, folder_path):
+    def download_all_mets_for_set(self, set_id, folder_path):
         """
         Fetch and save all METS files for a given set.
 
@@ -78,4 +105,4 @@ class PMH_API:
         dc_iterator = self.dc_identifiers(set_id)
 
         for identifier in dc_iterator:
-            self.fetch_mets(identifier, folder_path)
+            self.download_mets(identifier, folder_path)

@@ -2,6 +2,7 @@
 Tests for the METSParser
 """
 
+from multiprocessing.sharedctypes import Value
 import pytest
 from lxml import etree
 
@@ -18,7 +19,7 @@ def simple_mets_object(simple_mets_path):
     """
     Return a METS object representing a simple, well-formed METS file.
     """
-    return METS(simple_mets_path, "https://example.com/dc_identifier/1234")
+    return METS("https://example.com/dc_identifier/1234", mets_path=simple_mets_path)
 
 
 @pytest.fixture
@@ -89,7 +90,7 @@ def test_files_exception_on_two_locations_for_a_file(
     the pipeline (e.g. trying to use a URL to determine the location of a file
     in a zip package).
     """
-    mets = METS(mets_with_multiple_file_locations, "dummy_dc_identifier")
+    mets = METS("dummy_dc_identifier", mets_path=mets_with_multiple_file_locations)
     with pytest.raises(METSLocationParseError):
         for _ in mets.files():
             pass
@@ -99,7 +100,7 @@ def test_file_content_type_parsing(simple_mets_path, mets_dc_identifier):
     """
     Test content type parsing when there's one location for each file.
     """
-    mets = METS(simple_mets_path, mets_dc_identifier)
+    mets = METS(mets_dc_identifier, mets_path=simple_mets_path)
     files = list(mets.files())
 
     first_file = files[0]
@@ -113,7 +114,7 @@ def test_alto_files(simple_mets_path, mets_dc_identifier):
     """
     Ensure that an accurate list of alto files is returned.
     """
-    mets = METS(simple_mets_path, mets_dc_identifier)
+    mets = METS(mets_dc_identifier, mets_path=simple_mets_path)
     alto_files = list(mets.files_of_type(ALTOFile))
     assert len(alto_files) == 4
     assert all(isinstance(file, ALTOFile) for file in alto_files)
@@ -126,10 +127,35 @@ def test_download_alto_files(tmp_path, simple_mets_path, mocker, mets_dc_identif
     This is done by checking that file.download is called the correct number of times
     during a download_alto_files call.
     """
-    mets = METS(simple_mets_path, mets_dc_identifier)
+    mets = METS(mets_dc_identifier, mets_path=simple_mets_path)
     mocker.patch("harvester.file.ALTOFile.download")
     mets.download_alto_files(tmp_path, "mock_folder")
 
     # pylint does not know about the extra functions from mocker
     # pylint: disable=no-member
     assert ALTOFile.download.call_count == 4
+
+
+def test_mets_without_path_or_content(mets_dc_identifier):
+    """
+    Test that error is raised if METS files are called without providing mets_path or mets_content.
+    """
+    mets = METS(mets_dc_identifier)
+    with pytest.raises(ValueError):
+        mets._ensure_files()
+
+
+def test_mets_from_content(mets_dc_identifier):
+    """
+    
+    """
+    with open("tests/data/379973_METS.xml", "r") as file:
+        mets_content = file.read()
+
+    try:
+        mets = METS(mets_dc_identifier, mets_content=mets_content)
+        mets._ensure_files()
+    except ValueError as exc:
+        assert "Either mets_path or mets_content needs to be defined for METS."
+
+    

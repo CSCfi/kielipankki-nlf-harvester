@@ -71,7 +71,7 @@ def test_binding_ids_from_default_url(two_page_pmh_response, two_page_set_id):
 
 
 @requires_37
-def test_checksums(simple_mets_path):
+def test_checksums(simple_mets_path, mets_dc_identifier):
     """
     Check that at least one correct checksum is printed
     """
@@ -82,6 +82,7 @@ def test_checksums(simple_mets_path):
         [
             "checksums",
             simple_mets_path,
+            mets_dc_identifier,
         ],
         catch_exceptions=False,
     )
