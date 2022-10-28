@@ -3,10 +3,9 @@ Tests for File and its subclasses.
 """
 
 from pathlib import Path
-
+from paramiko import SFTPClient
 import pytest
 import requests_mock
-import mocksftp
 
 from harvester.file import File, ALTOFile
 
@@ -121,8 +120,17 @@ def test_download_to_custom_path(alto_file, mock_alto_download, tmpdir):
 
 
 def test_download_to_remote_to_default_path(
-    alto_file, sftp_client, mock_alto_download, tmpdir, mocker
+    alto_file, sftp_client, mock_alto_download, mocker
 ):
     """
-    TODO
+    Ensure that a valid file is written on the remote host.
     """
+    mocker.patch("paramiko.sftp_client.SFTPClient.chdir")
+    mocker.patch("paramiko.sftp_client.SFTPClient.mkdir")
+    mocker.patch("paramiko.sftp_client.SFTPClient.file")
+
+    sftp = sftp_client.open_sftp()
+
+    alto_file.download_to_remote(sftp)
+
+    SFTPClient.file.write.called_once_with(mock_alto_download)

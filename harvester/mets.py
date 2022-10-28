@@ -26,6 +26,7 @@ class METS:
         """
         Create a new METS file object.
 
+        :param binding_dc_identifier: DC identifier of binding
         :param mets_path: Path to the METS file.
         :param encoding: Text encoding of the METS file. Defaults to utf-8.
         """
@@ -99,9 +100,8 @@ class METS:
         :rtype: Iterator[:class:`~harvester.file.File`]
         """
         files = [file for file in self.files() if isinstance(file, filetype)]
-        # for file in files:
-        #    yield file
-        return files
+        for file in files:
+            yield file
 
     def download_files_of_type(
         self, filetype, base_path=None, file_dir=None, file_name=None

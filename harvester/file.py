@@ -152,11 +152,6 @@ class File:
          ^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           base_path          file_dir                         filename
 
-        :param dc_identifier: Dublin Core identifier for the binding to which this file
-            belongs. These identifiers are of form
-            https://digi.kansalliskirjasto.fi/sanomalehti/binding/[BINDING ID] and thus
-            the base of the download URL.
-        :type dc_identifier: str
         :param base_path: The root directory for the file structure for
             downloaded bindings.
         :type base_path: str, optional
@@ -178,7 +173,7 @@ class File:
         self, sftp_client, base_path=None, file_dir=None, filename=None
     ):
         """
-        Download the file from NLF.
+        Download the file from NLF to a remote server.
 
         The output location can be specified with the components ``base_path``,
         ``file_dir`` and ``filename``. If not given, the output location is as
@@ -188,10 +183,8 @@ class File:
          ^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           base_path          file_dir                         filename
 
-        :param dc_identifier: Dublin Core identifier for the binding to which this file
-            belongs. These identifiers are of form
-            https://digi.kansalliskirjasto.fi/sanomalehti/binding/[BINDING ID] and thus
-            the base of the download URL.
+        :param sftp_client: SFTPClient to connect to the remote host
+        :type sftp_client: paramiko.SFTPClient
         :type dc_identifier: str
         :param base_path: The root directory for the file structure for
             downloaded bindings.
@@ -206,11 +199,17 @@ class File:
             sftp_client=sftp_client, remote_directory=output.rsplit("/", maxsplit=1)[0]
         )
 
-        response = requests.get(self.download_url, timeout=5)
-        response.raise_for_status()
+        with requests.get(self.download_url, timeout=5, stream=True) as source:
+            source.raise_for_status()
+            with sftp_client.file(output, "wb") as remote_file:
+                for chunk in source.iter_content(chunk_size=1024 * 1024):
+                    remote_file.write(chunk)
 
-        with sftp_client.file(output, "wb") as remote_file:
-            remote_file.write(response.content)
+        #with requests.get(self.download_url, timeout=5) as source, sftp_client.file(
+        #    output, "wb"
+        #) as remote_file:
+        #    source.raise_for_status()
+        #    remote_file.write(source.content)
 
 
 class UnknownTypeFile(File):

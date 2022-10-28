@@ -33,11 +33,9 @@ def save_mets_for_id(ssh_conn_id):
         sftp_client = ssh_client.open_sftp()
 
         mets_path = f"{BASE_PATH}/mets"
-        print(f"Downloading METS to {mets_path}")
         api.download_mets_to_remote(
             dc_identifier=DC_IDENTIFIER, folder_path=mets_path, sftp_client=sftp_client
         )
-        print("METS downloaded succesfully.")
 
 
 def save_alto_files(ssh_conn_id):
@@ -53,12 +51,10 @@ def save_alto_files(ssh_conn_id):
                 mets = METS(DC_IDENTIFIER, mets_content=mets_content)
                 alto_files = mets.files_of_type(ALTOFile)
 
-                print(f"Downloading {len(alto_files)} ALTO files to remote.")
                 for file in alto_files:
                     file.download_to_remote(
                         sftp_client=sftp_client, base_path=BASE_PATH
                     )
-                print("ALTO files downloaded successfully.")
 
 
 with DAG(
