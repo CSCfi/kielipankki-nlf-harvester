@@ -116,7 +116,7 @@ def download_files_from(mets_file_path, collection_dc_identifier, encoding, base
     mets = METS(collection_dc_identifier, mets_path=mets_file_path, encoding=encoding)
     for file in mets.files():
         try:
-            file.download(base_path=base_path)
+            file.download(download_function=file.download_to_local, base_path=base_path)
         except NotImplementedError:
             click.echo(f"No download URL available for file {file.location_xlink}")
 

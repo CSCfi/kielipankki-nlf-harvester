@@ -29,18 +29,18 @@ default_args = {
 
 def save_mets_for_id():
     api = PMH_API(url=API_URL)
-    api.fetch_mets(DC_IDENTIFIER, METS_PATH)
+    api.download_mets(api.download_mets_to_local, DC_IDENTIFIER, folder_path=METS_PATH)
 
 
 def download_alto_files():
     for file in os.listdir(METS_PATH):
         path = os.path.join(METS_PATH, file)
-        mets = METS(path, DC_IDENTIFIER)
+        mets = METS(DC_IDENTIFIER, mets_path=path)
         mets.download_alto_files(base_path="/opt/airflow/downloads")
 
 
 with DAG(
-    dag_id="download_altos_for_binding",
+    dag_id="download_altos_for_binding_to_local",
     schedule_interval="@daily",
     catchup=False,
     default_args=default_args,

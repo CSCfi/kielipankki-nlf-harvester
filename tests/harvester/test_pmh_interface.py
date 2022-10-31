@@ -44,7 +44,12 @@ def test_download_mets_with_filename(
     api = PMH_API(oai_pmh_api_url)
     binding_id = utils.binding_id_from_dc(mets_dc_identifier)
     mocker.patch("builtins.open")
-    response = api.download_mets(mets_dc_identifier, tmp_path, f"{binding_id}_METS.xml")
+    response = api.download_mets(
+        api.download_mets_to_local,
+        dc_identifier=mets_dc_identifier,
+        folder_path=tmp_path,
+        file_name=f"{binding_id}_METS.xml",
+    )
     builtins.open.assert_called_once_with(tmp_path / f"{binding_id}_METS.xml", "w")
     assert response == expected_mets_response
 
@@ -58,7 +63,11 @@ def test_download_mets_without_filename(
     api = PMH_API(oai_pmh_api_url)
     binding_id = utils.binding_id_from_dc(mets_dc_identifier)
     mocker.patch("builtins.open")
-    response = api.download_mets(mets_dc_identifier, tmp_path)
+    response = api.download_mets(
+        api.download_mets_to_local,
+        dc_identifier=mets_dc_identifier,
+        folder_path=tmp_path,
+    )
     builtins.open.assert_called_once_with(tmp_path / f"{binding_id}_METS.xml", "w")
     assert response == expected_mets_response
 
@@ -72,7 +81,9 @@ def test_download_mets_with_default_path(
     api = PMH_API(oai_pmh_api_url)
     binding_id = utils.binding_id_from_dc(mets_dc_identifier)
     mocker.patch("builtins.open")
-    response = api.download_mets(mets_dc_identifier)
+    response = api.download_mets(
+        api.download_mets_to_local, dc_identifier=mets_dc_identifier
+    )
     builtins.open.assert_called_once_with(
         cwd_in_tmp / "downloads/mets" / f"{binding_id}_METS.xml", "w"
     )
@@ -87,15 +98,17 @@ def test_fetch_all_mets_for_set(oai_pmh_api_url, two_page_set_id, tmp_path, mock
     during a fetch_all_mets_for_set call.
     """
     api = PMH_API(oai_pmh_api_url)
-    mocker.patch("harvester.pmh_interface.PMH_API.download_mets")
+    mocker.patch("harvester.pmh_interface.PMH_API.download_mets_to_local")
     mocker.patch(
         "harvester.pmh_interface.PMH_API.dc_identifiers", return_value=range(106)
     )
-    api.download_all_mets_for_set(two_page_set_id, tmp_path)
+    api.download_all_mets_for_set(
+        api.download_mets_to_local, set_id=two_page_set_id, folder_path=tmp_path
+    )
 
     # pylint does not know about the extra functions from mocker
     # pylint: disable=no-member
-    assert api.download_mets.call_count == 106
+    assert api.download_mets_to_local.call_count == 106
 
 
 def test_download_mets_to_remote_with_filename(
@@ -116,8 +129,12 @@ def test_download_mets_to_remote_with_filename(
     mocker.patch("paramiko.sftp_client.SFTPClient.mkdir")
     sftp = sftp_client.open_sftp()
     tmp_path_string = str(tmp_path)
-    response = api.download_mets_to_remote(
-        mets_dc_identifier, tmp_path_string, sftp, f"{binding_id}_METS.xml"
+    response = api.download_mets(
+        api.download_mets_to_remote,
+        dc_identifier=mets_dc_identifier,
+        folder_path=tmp_path_string,
+        sftp_client=sftp,
+        file_name=f"{binding_id}_METS.xml",
     )
     SFTPClient.file.assert_called_once_with(
         f"{tmp_path_string}/{binding_id}_METS.xml", "w"

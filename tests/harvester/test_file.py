@@ -93,7 +93,7 @@ def test_download_to_default_path(
     """
     Test downloading an ALTO file to the default location.
     """
-    alto_file.download()
+    alto_file.download(alto_file.download_to_local)
     expected_output_path = (
         Path(cwd_in_tmp) / "downloads" / "1234" / "alto" / alto_filename
     )
@@ -108,6 +108,7 @@ def test_download_to_custom_path(alto_file, mock_alto_download, tmpdir):
     Ensure that downloaded files are saved into the specified location.
     """
     alto_file.download(
+        download_function=alto_file.download_to_local,
         base_path=tmpdir,
         file_dir="some/sub/path",
         filename="test_alto.xml",
@@ -131,6 +132,6 @@ def test_download_to_remote_to_default_path(
 
     sftp = sftp_client.open_sftp()
 
-    alto_file.download_to_remote(sftp)
+    alto_file.download(alto_file.download_to_remote, sftp)
 
     SFTPClient.file.write.called_once_with(mock_alto_download)

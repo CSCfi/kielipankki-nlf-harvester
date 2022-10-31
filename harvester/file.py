@@ -140,9 +140,17 @@ class File:
         Make sure that the output directory exists
         """
 
-    def download(self, base_path=None, file_dir=None, filename=None):
+    def download(
+        self,
+        download_function,
+        sftp_client=None,
+        chunk_size=1024 * 1024,
+        base_path=None,
+        file_dir=None,
+        filename=None,
+    ):
         """
-        Download the file from NLF.
+        Download file from NLF to either remote or local directory.
 
         The output location can be specified with the components ``base_path``,
         ``file_dir`` and ``filename``. If not given, the output location is as
@@ -152,6 +160,10 @@ class File:
          ^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           base_path          file_dir                         filename
 
+        :param download_function: Download function to download the file with
+        :type download_function: function
+        :param sftp_client: SFTPClient to connect to the remote host (required for remote download)
+        :type sftp_client: paramiko.SFTPClient, optional
         :param base_path: The root directory for the file structure for
             downloaded bindings.
         :type base_path: str, optional
@@ -159,6 +171,19 @@ class File:
         :type file_dir: str, optional
         :param filename: Output file name.
         :type filename: str, optional
+
+        """
+        download_function(
+            sftp_client=sftp_client,
+            chunk_size=chunk_size,
+            base_path=base_path,
+            file_dir=file_dir,
+            filename=filename,
+        )
+
+    def download_to_local(self, base_path=None, file_dir=None, filename=None, **kwargs):
+        """
+        Download the file from NLF to a local directory.
         """
         output = self._construct_download_location(base_path, file_dir, filename)
         output.parent.mkdir(parents=True, exist_ok=True)
@@ -170,29 +195,15 @@ class File:
             output_file.write(source.content)
 
     def download_to_remote(
-        self, sftp_client, base_path=None, file_dir=None, filename=None
+        self,
+        sftp_client,
+        chunk_size=1024 * 1024,
+        base_path=None,
+        file_dir=None,
+        filename=None,
     ):
         """
         Download the file from NLF to a remote server.
-
-        The output location can be specified with the components ``base_path``,
-        ``file_dir`` and ``filename``. If not given, the output location is as
-        follows::
-
-         ./downloads/[binding ID]/[type directory]/[filename from location_xlink]
-         ^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-          base_path          file_dir                         filename
-
-        :param sftp_client: SFTPClient to connect to the remote host
-        :type sftp_client: paramiko.SFTPClient
-        :type dc_identifier: str
-        :param base_path: The root directory for the file structure for
-            downloaded bindings.
-        :type base_path: str, optional
-        :param file_dir: Output directory for the files, relative to ``base_path``
-        :type file_dir: str, optional
-        :param filename: Output file name.
-        :type filename: str, optional
         """
         output = str(self._construct_download_location(base_path, file_dir, filename))
         utils.make_intermediate_dirs(
@@ -202,14 +213,8 @@ class File:
         with requests.get(self.download_url, timeout=5, stream=True) as source:
             source.raise_for_status()
             with sftp_client.file(output, "wb") as remote_file:
-                for chunk in source.iter_content(chunk_size=1024 * 1024):
+                for chunk in source.iter_content(chunk_size=chunk_size):
                     remote_file.write(chunk)
-
-        #with requests.get(self.download_url, timeout=5) as source, sftp_client.file(
-        #    output, "wb"
-        #) as remote_file:
-        #    source.raise_for_status()
-        #    remote_file.write(source.content)
 
 
 class UnknownTypeFile(File):

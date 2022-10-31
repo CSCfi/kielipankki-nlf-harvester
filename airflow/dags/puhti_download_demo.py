@@ -33,8 +33,8 @@ def save_mets_for_id(ssh_conn_id):
         sftp_client = ssh_client.open_sftp()
 
         mets_path = f"{BASE_PATH}/mets"
-        api.download_mets_to_remote(
-            dc_identifier=DC_IDENTIFIER, folder_path=mets_path, sftp_client=sftp_client
+        api.download_mets(
+            api.download_mets_to_remote, DC_IDENTIFIER, sftp_client, mets_path
         )
 
 
@@ -52,13 +52,13 @@ def save_alto_files(ssh_conn_id):
                 alto_files = mets.files_of_type(ALTOFile)
 
                 for file in alto_files:
-                    file.download_to_remote(
-                        sftp_client=sftp_client, base_path=BASE_PATH
+                    file.download(
+                        file.download_to_remote, sftp_client=sftp_client, base_path=BASE_PATH
                     )
 
 
 with DAG(
-    dag_id="download_altos_for_binding_in_puhti",
+    dag_id="download_altos_for_binding_to_puhti",
     schedule_interval="@daily",
     catchup=False,
     default_args=default_args,
@@ -74,14 +74,14 @@ with DAG(
     save_mets_for_binding = PythonOperator(
         task_id="save_mets_for_binding",
         python_callable=save_mets_for_id,
-        op_kwargs={"ssh_conn_id": "helmiina_puhti_conn"},
+        op_kwargs={"ssh_conn_id": "puhti_conn"},
         dag=dag,
     )
 
     save_alto_files_for_mets = PythonOperator(
         task_id="save_alto_files_for_mets",
         python_callable=save_alto_files,
-        op_kwargs={"ssh_conn_id": "helmiina_puhti_conn"},
+        op_kwargs={"ssh_conn_id": "puhti_conn"},
         dag=dag,
     )
 

@@ -113,7 +113,7 @@ class METS:
         files = self.files_of_type(filetype)
 
         for file in files:
-            file.download(base_path, file_dir, file_name)
+            file.download(file.download_to_local, None, base_path, file_dir, file_name)
 
     def download_alto_files(self, base_path=None, file_dir=None, file_name=None):
         """
