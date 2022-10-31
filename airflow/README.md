@@ -15,11 +15,11 @@ Download METS file for binding 379973 and all ALTO files listed in the downloade
 
 2. Add user ID to `.env` with the following command:
 
-    ```echo -e "AIRFLOW_UID=$(id -u)" > .env```
+    ```echo "AIRFLOW_UID=$(id -u)" > .env```
 
-3. In order to run the Puhti dag, also add the absolute path to your `.ssh` folder to the `.env` file in the following manner:
+3. In order to run the Puhti dag, also add the absolute path to your `.ssh` folder to the `.env` with the following command:
 
-    ```SSH_PATH=/your/path/.ssh```
+    ```echo "SSH_PATH=/your/path/.ssh" >> .env```
 
 4. Initialize Airflow in docker:
 
@@ -42,6 +42,7 @@ Download METS file for binding 379973 and all ALTO files listed in the downloade
         - Set Connection Type to `SSH`
         - Set Host to `puhti.csc.fi`
         - Set your Puhti username as Username
+        - Set the password to your private SSH key as Password
         - In the Extra-field, add the absolute path to your private SSH key (of which pair is in Puhti) in the following manner:   
             ```{"key_file": "/your/path/.ssh/id_rsa"}```
 
