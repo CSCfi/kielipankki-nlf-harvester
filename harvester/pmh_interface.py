@@ -51,7 +51,39 @@ class PMH_API:
 
         return xml_response.text
 
-    def download_mets(self, dc_identifier, folder_path=None, file_name=None):
+    def download_mets(
+        self,
+        download_function,
+        dc_identifier,
+        sftp_client=None,
+        folder_path=None,
+        file_name=None,
+    ):
+        """
+        Save fetched METS file to either remote of local file system.
+
+        :param download_function: Function with which to download the METS
+        :type download_function: function
+        :param dc_identifier: DC identifier of the METS
+        :type dc_identifier: str
+        :param sftp_client: SFTPClient to connect to the remote host (required for remote download)
+        :type sftp_client: paramiko.SFTPClient, optional
+        :param folder_path: Path of the folder to which METS is downloaded
+        :type folder_path: str, optional
+        :param file_name: Name of the file
+        :type file_name: str, optional
+
+        """
+        return download_function(
+            dc_identifier=dc_identifier,
+            sftp_client=sftp_client,
+            folder_path=folder_path,
+            file_name=file_name,
+        )
+
+    def download_mets_to_local(
+        self, dc_identifier, folder_path=None, file_name=None, **kwargs
+    ):
         """
         Save fetched METS file to disk.
         """
@@ -96,7 +128,7 @@ class PMH_API:
         """
         return Path(os.getcwd()) / "downloads/mets"
 
-    def download_all_mets_for_set(self, set_id, folder_path):
+    def download_all_mets_for_set(self, download_function, set_id, folder_path):
         """
         Fetch and save all METS files for a given set.
 
@@ -105,4 +137,6 @@ class PMH_API:
         dc_iterator = self.dc_identifiers(set_id)
 
         for identifier in dc_iterator:
-            self.download_mets(identifier, folder_path)
+            self.download_mets(
+                download_function, dc_identifier=identifier, folder_path=folder_path
+            )

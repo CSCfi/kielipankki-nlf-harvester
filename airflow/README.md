@@ -1,12 +1,13 @@
 ## Run a simple download DAG in Airflow locally in Docker
 
-Download METS file for binding 379973 and all ALTO files listed in the downloaded METS.
+Download METS file for binding 379973 and all ALTO files listed in the downloaded METS, either to a remote or local file system.
 
 ---
 
 ### Requirements
 
 - Docker compose and Docker engine installed
+- Established SSH connection to Puhti
 
 ### Instructions
 
@@ -16,22 +17,46 @@ Download METS file for binding 379973 and all ALTO files listed in the downloade
 
     ```echo -e "AIRFLOW_UID=$(id -u)" > .env```
 
-3. Initialize Airflow in docker:
+3. In order to run the Puhti dag, also add the absolute path to your `.ssh` folder to the `.env` file in the following manner:
+
+    ```SSH_PATH=/your/path/.ssh```
+
+4. Initialize Airflow in docker:
 
     ```docker compose up airflow-init```
 
-4. Build image and run container:
+5. Build image and run container:
 
     ```docker compose up --build```
 
-5. Wait for the container to launch, and open Airflow in `http://0.0.0.0:8080/`
+6. Wait for the container to launch, and open Airflow in `http://0.0.0.0:8080/`
 
-6. Login with the created default username `airflow` and password `airflow`
+7. Login with the created default username `airflow` and password `airflow`
 
-7. Turn on the DAG `download_altos_for_binding` and watch the green dots appear
+8. In order for the `download_altos_for_binding_to_puhti` DAG to function, you need to configure two connections in Admin -> Connections:
 
-8. You can trigger the execution of the DAG again by pressing the "play" button on the right side of the DAG UI and selecting "Trigger DAG"
+    1. SSH Connection to Puhti:
+
+        - Select "Add a new record" from the **+** sign
+        - Set Connection Id to `puhti_conn`
+        - Set Connection Type to `SSH`
+        - Set Host to `puhti.csc.fi`
+        - Set your Puhti username as Username
+        - In the Extra-field, add the absolute path to your private SSH key (of which pair is in Puhti) in the following manner:   
+            ```{"key_file": "/your/path/.ssh/id_rsa"}```
+
+    2. HTTP Connection to NLF:
+        
+        - Select "Add a new record" from the **+** sign
+        - Set Connection Id to `nlf_http_conn`
+        - Set Connection Type to `HTTP`
+        - Set Host to `digi.kansalliskirjasto.fi/interfaces/OAI-PMH`
+        - Set Schema to `https`
+
+8. Turn on one or both of the DAGS `download_altos_for_binding` and `download_altos_for_binding_to_puhti` and watch the green dots appear
+
+9. You can trigger the execution of the DAG again by pressing the "play" button on the right side of the DAG UI and selecting "Trigger DAG"
 
 &nbsp;
 
-`./downloads/mets` should now have one METS file and `downloads/[BINDING_ID]/alto` four ALTO files identified from the downloaded METS.
+`./downloads/mets` should now have one METS file and `downloads/[BINDING_ID]/alto` four ALTO files identified from the downloaded METS either locally or in Puhti `/scratch/project_2006633/nlf-harvester/` depending on the DAG you ran.
