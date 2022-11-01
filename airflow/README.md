@@ -33,26 +33,17 @@ Download METS file for binding 379973 and all ALTO files listed in the downloade
 
 7. Login with the created default username `airflow` and password `airflow`
 
-8. In order for the `download_altos_for_binding_to_puhti` DAG to function, you need to configure two connections in Admin -> Connections:
+8. In order for the `download_altos_for_binding_to_puhti` DAG to function, you need to a SSH connection to Puhti in Admin -> Connections:
 
-    1. SSH Connection to Puhti:
+    - Select "Add a new record" from the **+** sign
+    - Set Connection Id to `puhti_conn`
+    - Set Connection Type to `SSH`
+    - Set Host to `puhti.csc.fi`
+    - Set your Puhti username as Username
+    - Set the password to your private SSH key as Password
+    - In the Extra-field, add the absolute path to your private SSH key (of which pair is in Puhti) in the following manner:   
+        ```{"key_file": "/your/path/.ssh/id_rsa"}```
 
-        - Select "Add a new record" from the **+** sign
-        - Set Connection Id to `puhti_conn`
-        - Set Connection Type to `SSH`
-        - Set Host to `puhti.csc.fi`
-        - Set your Puhti username as Username
-        - Set the password to your private SSH key as Password
-        - In the Extra-field, add the absolute path to your private SSH key (of which pair is in Puhti) in the following manner:   
-            ```{"key_file": "/your/path/.ssh/id_rsa"}```
-
-    2. HTTP Connection to NLF:
-        
-        - Select "Add a new record" from the **+** sign
-        - Set Connection Id to `nlf_http_conn`
-        - Set Connection Type to `HTTP`
-        - Set Host to `digi.kansalliskirjasto.fi/interfaces/OAI-PMH`
-        - Set Schema to `https`
 
 8. Turn on one or both of the DAGS `download_altos_for_binding` and `download_altos_for_binding_to_puhti` and watch the green dots appear
 
