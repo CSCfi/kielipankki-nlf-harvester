@@ -9,6 +9,9 @@ from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.python import PythonOperator
 from airflow.providers.http.sensors.http import HttpSensor
 from airflow.contrib.hooks.ssh_hook import SSHHook
+from airflow.hooks.base_hook import BaseHook
+from airflow.models import Connection
+from airflow import settings
 
 from harvester.file import ALTOFile
 from harvester.mets import METS
@@ -24,6 +27,20 @@ default_args = {
     "retries": 5,
     "retry_delay": timedelta(seconds=10),
 }
+
+
+def create_nlf_conn(conn_id):
+    session = settings.Session()
+    conn_ids = [conn.conn_id for conn in session.query(Connection).all()]
+    if not conn_id in conn_ids:
+        conn = Connection(
+            conn_id=conn_id,
+            conn_type="HTTP",
+            host="digi.kansalliskirjasto.fi/interfaces/OAI-PMH",
+            schema="HTTPS",
+        )
+        session.add(conn)
+        session.commit()
 
 
 def save_mets_for_id(ssh_conn_id):
@@ -53,7 +70,9 @@ def save_alto_files(ssh_conn_id):
 
                 for file in alto_files:
                     file.download(
-                        file.download_to_remote, sftp_client=sftp_client, base_path=BASE_PATH
+                        file.download_to_remote,
+                        sftp_client=sftp_client,
+                        base_path=BASE_PATH,
                     )
 
 
@@ -66,6 +85,12 @@ with DAG(
 ) as dag:
 
     start = DummyOperator(task_id="start")
+
+    create_nlf_connection = PythonOperator(
+        task_id="create_nlf_connection",
+        python_callable=create_nlf_conn,
+        op_kwargs={"conn_id": "nlf_http_conn"},
+    )
 
     check_api_availability = HttpSensor(
         task_id="check_api_availability", http_conn_id="nlf_http_conn", endpoint="/"
@@ -89,6 +114,7 @@ with DAG(
 
     (
         start
+        >> create_nlf_connection
         >> check_api_availability
         >> save_mets_for_binding
         >> save_alto_files_for_mets
