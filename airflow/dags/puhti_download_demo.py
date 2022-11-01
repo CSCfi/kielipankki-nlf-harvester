@@ -9,7 +9,6 @@ from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.python import PythonOperator
 from airflow.providers.http.sensors.http import HttpSensor
 from airflow.contrib.hooks.ssh_hook import SSHHook
-from airflow.hooks.base_hook import BaseHook
 from airflow.models import Connection
 from airflow import settings
 
