@@ -7,6 +7,7 @@ from pathlib import Path
 import os
 
 from airflow import DAG
+from airflow.models import BaseOperator
 from airflow.operators.dummy import DummyOperator
 from airflow.operators.python_operator import PythonOperator
 
@@ -30,16 +31,26 @@ default_args = {
 }
 
 
-def save_mets_for_id():
-    api = PMH_API(url=API_URL)
-    output_file = str(
-        utils.construct_mets_download_location(
-            dc_identifier=DC_IDENTIFIER, base_path=BASE_PATH, file_dir="mets"
+class SaveMetsOperator(BaseOperator):
+    def __init__(self, api_url, dc_identifier, base_path, **kwargs):
+        super().__init__(**kwargs)
+        self.api_url = api_url
+        self.dc_identifier = dc_identifier
+        self.base_path = base_path
+
+    def execute(self, context):
+        api = PMH_API(url=self.api_url)
+        output_file = utils.construct_mets_download_location(
+            dc_identifier=self.dc_identifier,
+            base_path=self.base_path,
+            file_dir="mets",
         )
-    )
-    METS_PATH.mkdir(parents=True, exist_ok=True)
-    with open(output_file, "wb") as file:
-        api.download_mets(dc_identifier=DC_IDENTIFIER, output_mets_file=file)
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(output_file, "wb") as file:
+            return api.download_mets(
+                dc_identifier=self.dc_identifier, output_mets_file=file
+            )
 
 
 def download_alto_files():
@@ -66,8 +77,12 @@ with DAG(
 
     start = DummyOperator(task_id="start")
 
-    fetch_mets_for_binding = PythonOperator(
-        task_id="save_mets_for_binding", python_callable=save_mets_for_id, dag=dag
+    fetch_mets_for_binding = SaveMetsOperator(
+        task_id="save_mets_for_binding",
+        dag=dag,
+        api_url=API_URL,
+        dc_identifier=DC_IDENTIFIER,
+        base_path=BASE_PATH,
     )
 
     download_alto_files_for_mets = PythonOperator(
