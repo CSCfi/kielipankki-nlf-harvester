@@ -22,5 +22,7 @@ jobs:
       run: make constraints.txt
     - name: Install required Python packages
       run: python3.8 -m pip install -r requirements_dev.txt --user -c constraints.txt
+    - name: Initialize airflow
+      run: airflow standalone
     - name: Test with pytest
       run: python3.8 -m pytest
