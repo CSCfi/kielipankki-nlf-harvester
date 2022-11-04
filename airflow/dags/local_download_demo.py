@@ -29,7 +29,7 @@ default_args = {
 
 def save_mets_for_id():
     api = PMH_API(url=API_URL)
-    api.download_mets(api.download_mets_to_local, DC_IDENTIFIER, folder_path=METS_PATH)
+    api.fetch_mets(DC_IDENTIFIER, folder_path=METS_PATH)
 
 
 def download_alto_files():
