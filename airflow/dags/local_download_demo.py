@@ -36,7 +36,9 @@ def download_alto_files():
     for file in os.listdir(METS_PATH):
         path = os.path.join(METS_PATH, file)
         mets = METS(DC_IDENTIFIER, mets_path=path)
-        mets.download_alto_files(base_path="/opt/airflow/downloads")
+        mets.download_alto_files(
+            write_operation=open, base_path="/opt/airflow/downloads"
+        )
 
 
 with DAG(

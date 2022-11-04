@@ -93,7 +93,7 @@ class METS:
             yield file
 
     def download_files_of_type(
-        self, filetype, base_path=None, file_dir=None, filename=None
+        self, filetype, write_operation, base_path=None, file_dir=None, filename=None
     ):
         """
         Download all files of given filetype listed in METS.
@@ -103,15 +103,23 @@ class METS:
 
         for file in files:
             file.download(
-                download_function=file.download_to_local,
+                write_operation=write_operation,
                 base_path=base_path,
                 file_dir=file_dir,
                 filename=filename,
             )
 
-    def download_alto_files(self, base_path=None, file_dir=None, filename=None):
+    def download_alto_files(
+        self, write_operation, base_path=None, file_dir=None, filename=None
+    ):
         """
         Download all alto files listed in METS.
         """
 
-        self.download_files_of_type(ALTOFile, base_path, file_dir, filename)
+        self.download_files_of_type(
+            filetype=ALTOFile,
+            write_operation=write_operation,
+            base_path=base_path,
+            file_dir=file_dir,
+            filename=filename,
+        )

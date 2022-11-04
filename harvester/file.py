@@ -142,7 +142,7 @@ class File:
 
     def download(
         self,
-        download_function,
+        write_operation,
         sftp_client=None,
         chunk_size=1024 * 1024,
         base_path=None,
@@ -160,8 +160,8 @@ class File:
          ^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           base_path          file_dir                         filename
 
-        :param download_function: Download function to download the file with
-        :type download_function: function
+        :param write_operation: Operation to write files with
+        :type write_operation: SFTPClient.file or open
         :param sftp_client: SFTPClient to connect to the remote host (required for remote download)
         :type sftp_client: paramiko.SFTPClient, optional
         :param base_path: The root directory for the file structure for
@@ -173,48 +173,22 @@ class File:
         :type filename: str, optional
 
         """
-        download_function(
-            sftp_client=sftp_client,
-            chunk_size=chunk_size,
-            base_path=base_path,
-            file_dir=file_dir,
-            filename=filename,
-        )
-
-    def download_to_local(self, base_path=None, file_dir=None, filename=None, **kwargs):
-        """
-        Download the file from NLF to a local directory.
-        """
         output = self._construct_download_location(base_path, file_dir, filename)
-        output.parent.mkdir(parents=True, exist_ok=True)
 
-        with requests.get(self.download_url, timeout=5) as source, open(
-            output, "wb"
-        ) as output_file:
+        if sftp_client:
+            output = str(output)
+            utils.make_intermediate_dirs(
+                sftp_client=sftp_client,
+                remote_directory=output.rsplit("/", maxsplit=1)[0],
+            )
+        else:
+            output.parent.mkdir(parents=True, exist_ok=True)
+
+        with requests.get(self.download_url, timeout=5) as source:
             source.raise_for_status()
-            output_file.write(source.content)
-
-    def download_to_remote(
-        self,
-        sftp_client,
-        chunk_size=1024 * 1024,
-        base_path=None,
-        file_dir=None,
-        filename=None,
-    ):
-        """
-        Download the file from NLF to a remote server.
-        """
-        output = str(self._construct_download_location(base_path, file_dir, filename))
-        utils.make_intermediate_dirs(
-            sftp_client=sftp_client, remote_directory=output.rsplit("/", maxsplit=1)[0]
-        )
-
-        with requests.get(self.download_url, timeout=5, stream=True) as source:
-            source.raise_for_status()
-            with sftp_client.file(output, "wb") as remote_file:
+            with write_operation(output, "wb") as file:
                 for chunk in source.iter_content(chunk_size=chunk_size):
-                    remote_file.write(chunk)
+                    file.write(chunk)
 
 
 class UnknownTypeFile(File):
