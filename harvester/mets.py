@@ -20,9 +20,7 @@ class METS:
     # This is expected to change when the software develops
     # pylint: disable=too-few-public-methods
 
-    def __init__(
-        self, binding_dc_identifier, mets_path=None, mets_content=None, encoding="utf-8"
-    ):
+    def __init__(self, binding_dc_identifier, mets_path=None, encoding="utf-8"):
         """
         Create a new METS file object.
 
@@ -32,7 +30,6 @@ class METS:
         """
         self.binding_dc_identifier = binding_dc_identifier
         self.mets_path = mets_path
-        self.mets_content = mets_content
         self.encoding = encoding
         self._files = None
 
@@ -55,16 +52,8 @@ class METS:
         if self._files:
             return
 
-        if self.mets_path:
-            with open(self.mets_path, "r", encoding=self.encoding) as mets_file:
-                mets_tree = etree.parse(mets_file)
-        elif self.mets_content:
-            mets_tree = etree.fromstring(self.mets_content)
-        else:
-            raise ValueError(
-                "Either mets_path or mets_content needs to be defined for METS."
-            )
-
+        with open(self.mets_path, "r", encoding=self.encoding) as mets_file:
+            mets_tree = etree.parse(mets_file)
         files = mets_tree.xpath(
             "mets:fileSec/mets:fileGrp/mets:file",
             namespaces={"mets": "http://www.loc.gov/METS/"},
@@ -104,7 +93,7 @@ class METS:
             yield file
 
     def download_files_of_type(
-        self, filetype, base_path=None, file_dir=None, file_name=None
+        self, filetype, base_path=None, file_dir=None, filename=None
     ):
         """
         Download all files of given filetype listed in METS.
@@ -113,11 +102,16 @@ class METS:
         files = self.files_of_type(filetype)
 
         for file in files:
-            file.download(file.download_to_local, None, base_path, file_dir, file_name)
+            file.download(
+                download_function=file.download_to_local,
+                base_path=base_path,
+                file_dir=file_dir,
+                filename=filename,
+            )
 
-    def download_alto_files(self, base_path=None, file_dir=None, file_name=None):
+    def download_alto_files(self, base_path=None, file_dir=None, filename=None):
         """
         Download all alto files listed in METS.
         """
 
-        self.download_files_of_type(ALTOFile, base_path, file_dir, file_name)
+        self.download_files_of_type(ALTOFile, base_path, file_dir, filename)

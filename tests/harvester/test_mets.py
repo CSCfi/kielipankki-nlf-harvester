@@ -133,26 +133,3 @@ def test_download_alto_files(tmp_path, simple_mets_path, mocker, mets_dc_identif
     # pylint does not know about the extra functions from mocker
     # pylint: disable=no-member
     assert ALTOFile.download_to_local.call_count == 4
-
-
-def test_mets_without_path_or_content(mets_dc_identifier):
-    """
-    Test that error is raised if METS files are called without providing mets_path or mets_content.
-    """
-    mets = METS(mets_dc_identifier)
-    with pytest.raises(ValueError):
-        mets._ensure_files()
-
-
-def test_mets_from_content(mets_dc_identifier):
-    """
-    Test that creating a METS instance from the contents of a METS file works.
-    """
-    with open("tests/data/379973_METS.xml", "r") as file:
-        mets_content = file.read()
-
-    try:
-        mets = METS(mets_dc_identifier, mets_content=mets_content)
-        mets._ensure_files()
-    except ValueError as exc:
-        assert "Either mets_path or mets_content needs to be defined for METS."
