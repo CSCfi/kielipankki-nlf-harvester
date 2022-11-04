@@ -55,7 +55,7 @@ def save_alto_files(ssh_conn_id):
     ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
     with ssh_hook.get_conn() as ssh_client:
         sftp_client = ssh_client.open_sftp()
-        
+
         for file in os.listdir(METS_PATH):
             path = os.path.join(METS_PATH, file)
             mets = METS(DC_IDENTIFIER, mets_path=path)
@@ -63,7 +63,7 @@ def save_alto_files(ssh_conn_id):
 
             for alto_file in alto_files:
                 alto_file.download(
-                    alto_file.download_to_remote,
+                    write_operation=sftp_client.file,
                     sftp_client=sftp_client,
                     base_path=BASE_PATH,
                 )
