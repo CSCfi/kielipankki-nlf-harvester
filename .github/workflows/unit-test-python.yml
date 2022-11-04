@@ -23,6 +23,8 @@ jobs:
     - name: Install required Python packages
       run: python3.8 -m pip install -r requirements_dev.txt --user -c constraints.txt
     - name: Initialize airflow
-      run: airflow standalone
+      run: |
+        echo "AIRFLOW_UID=$(id -u)" > .env
+        python3.8 -m airflow db init
     - name: Test with pytest
       run: python3.8 -m pytest
