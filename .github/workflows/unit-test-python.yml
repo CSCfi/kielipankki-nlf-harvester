@@ -21,6 +21,6 @@ jobs:
     - name: get constraints file for Airflow
       run: make constraints.txt
     - name: Install required Python packages
-      run: pip install -r requirements_dev.txt --user -c constraints.txt
+      run: python3.8 -m pip install -r requirements_dev.txt --user -c constraints.txt
     - name: Test with pytest
       run: python3.8 -m pytest
