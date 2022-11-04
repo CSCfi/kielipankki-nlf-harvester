@@ -6,8 +6,10 @@ bindings, downloading them and checking their integrity.
 ## Getting Started
 
 ### Requirements
-This package is guaranteed to work with Python 3.6, but newer versions are
-likely to work too. In addition, you need pip and virtualenv. The rest of the
+This package is guaranteed to work with Python 3.8. This is dictated by Airflow
+not supporting newer versions of Python at this time.
+
+You also need to have pip and virtualenv installed. The rest of the
 requirements can then be installed with `make requirements`.
 
 ### Quickstart
