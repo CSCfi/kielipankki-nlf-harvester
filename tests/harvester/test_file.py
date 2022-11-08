@@ -8,6 +8,7 @@ import pytest
 import requests_mock
 
 from harvester.file import File, ALTOFile
+from harvester import utils
 
 
 # Pylint does not understand fixture use
@@ -93,7 +94,12 @@ def test_download_to_default_path(
     """
     Test downloading an ALTO file to the default location.
     """
-    alto_file.download(write_operation=open)
+    output_path = utils.construct_file_download_location(file=alto_file)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(output_path, "wb") as output_file:
+        alto_file.download(output_file)
+
     expected_output_path = (
         Path(cwd_in_tmp) / "downloads" / "1234" / "alto" / alto_filename
     )
@@ -107,31 +113,38 @@ def test_download_to_custom_path(alto_file, mock_alto_download, tmpdir):
     """
     Ensure that downloaded files are saved into the specified location.
     """
-    alto_file.download(
-        write_operation=open,
-        base_path=tmpdir,
-        file_dir="some/sub/path",
-        filename="test_alto.xml",
-    )
-    expected_output_path = Path(tmpdir) / "some" / "sub" / "path" / "test_alto.xml"
-    assert expected_output_path.is_file()
+    output_path = Path(tmpdir) / "some" / "sub" / "path" / "test_alto.xml"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(expected_output_path, "r", encoding="utf-8") as alto:
+    with open(output_path, "wb") as output_file:
+        alto_file.download(output_file)
+
+    assert output_path.is_file()
+
+    with open(output_path, "r", encoding="utf-8") as alto:
         assert alto.read() == mock_alto_download
 
 
-def test_download_to_remote_to_default_path(
-    alto_file, sftp_client, mock_alto_download, mocker
-):
+def test_download_to_remote(alto_file, sftp_client, sftp_server, mock_alto_download):
     """
     Ensure that a valid file is written on the remote host.
     """
-    mocker.patch("paramiko.sftp_client.SFTPClient.chdir")
-    mocker.patch("paramiko.sftp_client.SFTPClient.mkdir")
-    mocker.patch("paramiko.sftp_client.SFTPClient.file")
 
     sftp = sftp_client.open_sftp()
+    output_path = str(
+        Path(sftp_server.root) / "some" / "sub" / "path" / "test_alto.xml"
+    )
 
-    alto_file.download(SFTPClient.file, sftp)
+    utils.make_intermediate_dirs(
+        sftp_client=sftp,
+        remote_directory=output_path.rsplit("/", maxsplit=1)[0],
+    )
 
-    SFTPClient.file.write.called_once_with(mock_alto_download)
+    with sftp.file(output_path, "wb") as file:
+        alto_file.download(
+            output_file=file,
+            chunk_size=1024 * 1024,
+        )
+
+    with sftp.file(output_path, "r") as file:
+        assert file.readline() == mock_alto_download
