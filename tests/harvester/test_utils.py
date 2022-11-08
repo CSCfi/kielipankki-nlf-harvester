@@ -2,7 +2,7 @@
 Tests for utility functions.
 """
 
-from paramiko.sftp_client import SFTPClient
+from pathlib import Path
 
 from harvester import utils
 
@@ -14,16 +14,12 @@ def test_binding_id_from_dc(mets_dc_identifier):
     assert utils.binding_id_from_dc(mets_dc_identifier) == "379973"
 
 
-def test_make_intermediate_dirs(sftp_client, mocker):
+def test_make_intermediate_dirs(sftp_server, sftp_client):
     """
     Test that intermediate directories on a remote host are created as expected.
-    TODO Testing that the function works as expected after OSError.
     """
-    mocker.patch("paramiko.sftp_client.SFTPClient.chdir")
-    mocker.patch("paramiko.sftp_client.SFTPClient.mkdir")
     sftp = sftp_client.open_sftp()
-
-    utils.make_intermediate_dirs(sftp, "/")
-    SFTPClient.chdir.assert_called_once()
-
+    root_path = Path(sftp_server.root)
     assert utils.make_intermediate_dirs(sftp, "") == None
+    utils.make_intermediate_dirs(sftp, f"{root_path}/does/not/exist")
+    assert sftp.listdir(f"{root_path}/does/not") == ["exist"]
