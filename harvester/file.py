@@ -122,19 +122,6 @@ class File:
         """
         return self.filename
 
-    def _construct_download_location(self, base_path, file_dir, filename):
-        """
-        Return :class:`pathlib.Path`
-        """
-        if not base_path:
-            base_path = self._default_base_path()
-        if not file_dir:
-            file_dir = self._default_file_dir()
-        if not filename:
-            filename = self._default_filename()
-
-        return Path(base_path) / Path(file_dir) / Path(filename)
-
     def _ensure_dir(self, dir_):
         """
         Make sure that the output directory exists
@@ -142,53 +129,22 @@ class File:
 
     def download(
         self,
-        write_operation,
-        sftp_client=None,
-        chunk_size=1024 * 1024,
-        base_path=None,
-        file_dir=None,
-        filename=None,
+        output_file,
+        chunk_size=None,
     ):
         """
         Download file from NLF to either remote or local directory.
 
-        The output location can be specified with the components ``base_path``,
-        ``file_dir`` and ``filename``. If not given, the output location is as
-        follows::
-
-         ./downloads/[binding ID]/[type directory]/[filename from location_xlink]
-         ^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-          base_path          file_dir                         filename
-
-        :param write_operation: Operation to write files with
-        :type write_operation: SFTPClient.file or open
-        :param sftp_client: SFTPClient to connect to the remote host (required for remote download)
-        :type sftp_client: paramiko.SFTPClient, optional
-        :param base_path: The root directory for the file structure for
-            downloaded bindings.
-        :type base_path: str, optional
-        :param file_dir: Output directory for the files, relative to ``base_path``
-        :type file_dir: str, optional
-        :param filename: Output file name.
-        :type filename: str, optional
+        :param output_file: Path where the file will be downloaded
+        :type output_file: str or `pathlib.Path`
+        :param chunk_size: Chunk size for streaming the request content
+        :type chunk_size: int
 
         """
-        output = self._construct_download_location(base_path, file_dir, filename)
-
-        if sftp_client:
-            output = str(output)
-            utils.make_intermediate_dirs(
-                sftp_client=sftp_client,
-                remote_directory=output.rsplit("/", maxsplit=1)[0],
-            )
-        else:
-            output.parent.mkdir(parents=True, exist_ok=True)
-
-        with requests.get(self.download_url, timeout=5) as source:
+        with requests.get(self.download_url, timeout=5, stream=True) as source:
             source.raise_for_status()
-            with write_operation(output, "wb") as file:
-                for chunk in source.iter_content(chunk_size=chunk_size):
-                    file.write(chunk)
+            for chunk in source.iter_content(chunk_size=chunk_size):
+                output_file.write(chunk)
 
 
 class UnknownTypeFile(File):

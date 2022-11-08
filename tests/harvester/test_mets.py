@@ -128,9 +128,7 @@ def test_download_alto_files(tmp_path, simple_mets_path, mocker, mets_dc_identif
     """
     mets = METS(mets_dc_identifier, mets_path=simple_mets_path)
     mocker.patch("harvester.file.ALTOFile.download")
-    mets.download_alto_files(
-        write_operation=open, base_path=tmp_path, file_dir="mock_folder"
-    )
+    mets.download_alto_files(base_path=tmp_path, file_dir="mock_folder")
 
     # pylint does not know about the extra functions from mocker
     # pylint: disable=no-member

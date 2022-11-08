@@ -3,6 +3,7 @@ General utility functions for working with the OAI-PMH API, metadata and files.
 """
 
 import os
+from pathlib import Path
 
 
 def binding_id_from_dc(dc_identifier):
@@ -37,3 +38,27 @@ def make_intermediate_dirs(sftp_client, remote_directory) -> None:
         sftp_client.mkdir(basename)
         sftp_client.chdir(basename)
         return
+
+
+def construct_file_download_location(
+    file, base_path=None, file_dir=None, filename=None
+):
+    """
+    The output location can be specified with the components ``base_path``,
+    ``file_dir`` and ``filename``. If not given, the output location is as
+    follows:
+
+     ./downloads/[binding ID]/[type directory]/[filename from location_xlink]
+     ^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      base_path          file_dir                         filename
+
+    Return :class:`pathlib.Path`
+    """
+    if not base_path:
+        base_path = file._default_base_path()
+    if not file_dir:
+        file_dir = file._default_file_dir()
+    if not filename:
+        filename = file._default_filename()
+
+    return Path(base_path) / Path(file_dir) / Path(filename)

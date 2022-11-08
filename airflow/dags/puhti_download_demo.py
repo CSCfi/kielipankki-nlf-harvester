@@ -17,6 +17,7 @@ from airflow import settings
 from harvester.file import ALTOFile
 from harvester.mets import METS
 from harvester.pmh_interface import PMH_API
+from harvester import utils
 
 DC_IDENTIFIER = "https://digi.kansalliskirjasto.fi/sanomalehti/binding/379973"
 BASE_PATH = "/scratch/project_2006633/nlf-harvester/downloads"
@@ -62,11 +63,20 @@ def save_alto_files(ssh_conn_id):
             alto_files = mets.files_of_type(ALTOFile)
 
             for alto_file in alto_files:
-                alto_file.download(
-                    write_operation=sftp_client.file,
-                    sftp_client=sftp_client,
-                    base_path=BASE_PATH,
+                output_file = str(
+                    utils.construct_file_download_location(
+                        file=alto_file, base_path=BASE_PATH
+                    )
                 )
+                utils.make_intermediate_dirs(
+                    sftp_client=sftp_client,
+                    remote_directory=output_file.rsplit("/", maxsplit=1)[0],
+                )
+                with sftp_client.file(output_file, "wb") as file:
+                    alto_file.download(
+                        output_file=file,
+                        chunk_size=1024 * 1024,
+                    )
 
 
 with DAG(

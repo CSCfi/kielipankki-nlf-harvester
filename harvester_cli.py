@@ -3,9 +3,11 @@ Command line interface for the harvester
 """
 
 import click
+from pathlib import Path
 
 from harvester.pmh_interface import PMH_API
 from harvester.mets import METS
+from harvester import utils
 
 
 @click.group()
@@ -116,7 +118,12 @@ def download_files_from(mets_file_path, collection_dc_identifier, encoding, base
     mets = METS(collection_dc_identifier, mets_path=mets_file_path, encoding=encoding)
     for file in mets.files():
         try:
-            file.download(write_operation=open, base_path=base_path)
+            output_file_path = utils.construct_file_download_location(
+                file=file, base_path=base_path
+            )
+            output_file_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(output_file_path, "wb") as output_file:
+                file.download(output_file=output_file)
         except NotImplementedError:
             click.echo(f"No download URL available for file {file.location_xlink}")
 
