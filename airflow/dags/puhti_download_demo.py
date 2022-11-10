@@ -3,6 +3,7 @@
 """
 
 from datetime import timedelta
+from more_itertools import peekable
 import os
 
 from airflow import DAG
@@ -74,17 +75,23 @@ def save_alto_files(ssh_conn_id):
         for file in sftp_client.listdir(METS_PATH):
             path = os.path.join(METS_PATH, file)
             mets = METS(DC_IDENTIFIER, sftp_client.file(path, "r"))
-            alto_files = mets.files_of_type(ALTOFile)
+            alto_files = peekable(mets.files_of_type(ALTOFile))
 
+            first_alto = alto_files.peek()
+            first_alto_path = str(
+                utils.construct_file_download_location(
+                    file=first_alto, base_path=BASE_PATH
+                )
+            )
+            utils.make_intermediate_dirs(
+                sftp_client=sftp_client,
+                remote_directory=first_alto_path.rsplit("/", maxsplit=1)[0],
+            )
             for alto_file in alto_files:
                 output_file = str(
                     utils.construct_file_download_location(
                         file=alto_file, base_path=BASE_PATH
                     )
-                )
-                utils.make_intermediate_dirs(
-                    sftp_client=sftp_client,
-                    remote_directory=output_file.rsplit("/", maxsplit=1)[0],
                 )
                 with sftp_client.file(output_file, "wb") as file:
                     alto_file.download(

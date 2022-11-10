@@ -16,28 +16,23 @@ def binding_id_from_dc(dc_identifier):
     return dc_identifier.split("/")[-1]
 
 
-def make_intermediate_dirs(sftp_client, remote_directory) -> None:
+def make_intermediate_dirs(sftp_client, remote_directory):
     """
     Create all the intermediate directories in a remote host and ensure that
     the download path is created correctly.
 
+    SFTPClient.mkdir raises an IOError if an already existing folder is attempted
+    to be created. The error is caught and does not require further action.
+
     :param sftp_client: A Paramiko SFTP client.
     :param remote_directory: Absolute Path of the directory containing the file
-    :return:
     """
-    if remote_directory == "/":
-        sftp_client.chdir("/")
-        return
-    if remote_directory == "":
-        return
-    try:
-        sftp_client.chdir(remote_directory)
-    except IOError:
-        dirname, basename = os.path.split(remote_directory.rstrip("/"))
-        make_intermediate_dirs(sftp_client, dirname)
-        sftp_client.mkdir(basename)
-        sftp_client.chdir(basename)
-        return
+    for i in range(1, len(remote_directory.split("/")) + 1):
+        remote_dir = "/".join(remote_directory.split("/")[:i])
+        try:
+            sftp_client.mkdir(remote_dir)
+        except IOError:
+            continue
 
 
 def construct_file_download_location(
