@@ -18,7 +18,7 @@ def simple_mets_object(simple_mets_path):
     """
     Return a METS object representing a simple, well-formed METS file.
     """
-    return METS("https://example.com/dc_identifier/1234", mets_path=simple_mets_path)
+    return METS("https://example.com/dc_identifier/1234", mets_file=open(simple_mets_path, "rb"))
 
 
 @pytest.fixture
@@ -89,7 +89,8 @@ def test_files_exception_on_two_locations_for_a_file(
     the pipeline (e.g. trying to use a URL to determine the location of a file
     in a zip package).
     """
-    mets = METS("dummy_dc_identifier", mets_path=mets_with_multiple_file_locations)
+
+    mets = METS("dummy_dc_identifier", mets_file=open(mets_with_multiple_file_locations, "rb"))
     with pytest.raises(METSLocationParseError):
         for _ in mets.files():
             pass
@@ -99,7 +100,7 @@ def test_file_content_type_parsing(simple_mets_path, mets_dc_identifier):
     """
     Test content type parsing when there's one location for each file.
     """
-    mets = METS(mets_dc_identifier, mets_path=simple_mets_path)
+    mets = METS(mets_dc_identifier, mets_file=open(simple_mets_path, "rb"))
     files = list(mets.files())
 
     first_file = files[0]
@@ -113,7 +114,7 @@ def test_alto_files(simple_mets_path, mets_dc_identifier):
     """
     Ensure that an accurate list of alto files is returned.
     """
-    mets = METS(mets_dc_identifier, mets_path=simple_mets_path)
+    mets = METS(mets_dc_identifier, mets_file=open(simple_mets_path, "rb"))
     alto_files = list(mets.files_of_type(ALTOFile))
     assert len(alto_files) == 4
     assert all(isinstance(file, ALTOFile) for file in alto_files)
@@ -126,7 +127,7 @@ def test_download_alto_files(tmp_path, simple_mets_path, mocker, mets_dc_identif
     This is done by checking that file.download is called the correct number of times
     during a download_alto_files call.
     """
-    mets = METS(mets_dc_identifier, mets_path=simple_mets_path)
+    mets = METS(mets_dc_identifier, mets_file=open(simple_mets_path, "rb"))
     mocker.patch("harvester.file.ALTOFile.download")
     mets.download_alto_files(base_path=tmp_path, file_dir="mock_folder")
 

@@ -3,11 +3,7 @@ Fetch data from an OAI-PMH API of the National Library of Finland
 """
 
 from sickle import Sickle
-from pathlib import Path
 import requests
-import os
-
-from harvester import utils
 
 
 class PMH_API:
@@ -35,45 +31,21 @@ class PMH_API:
         for record in records:
             yield record.metadata["identifier"][0]
 
-    def fetch_mets(self, dc_identifier, folder_path=None, file_name=None):
+    def download_mets(self, dc_identifier, output_mets_file):
         """
-        Fetch METS as an XML document given a binding ID and save to disk.
+        Download file from NLF to either remote or local directory.
+
         :param dc_identifier: DC identifier of a record
-        :param folder_path: Path to folder to which the METS file will be stored
-        :param file_name: Name of the file to which the METS will be stored (optional
-            parameter)
-        """
+        :type dc_identifier: str
+        :param output_file: Path where the file will be downloaded
+        :type output_file: str or `pathlib.Path`
 
+        """
         mets_url = f"{dc_identifier}/mets.xml?full=true"
-        xml_response = requests.get(mets_url, timeout=5)
-        xml_response.raise_for_status()
 
-        if not folder_path:
-            folder_path = self._default_mets_path()
+        with requests.get(mets_url, timeout=5) as source:
+            source.raise_for_status()
+            response = source.content
+            output_mets_file.write(response)
 
-        if not file_name:
-            file_name = f"{utils.binding_id_from_dc(dc_identifier)}_METS.xml"
-
-        folder_path = Path(folder_path)
-        folder_path.mkdir(parents=True, exist_ok=True)
-
-        with open(folder_path / file_name, "w") as file:
-            file.write(xml_response.text)
-
-        return xml_response.text
-
-    def _default_mets_path(self):
-        """
-        Return folder path to store METS file in.
-        """
-        return Path(os.getcwd()) / "downloads/mets"
-
-    def fetch_all_mets_for_set(self, set_id, folder_path):
-        """
-        Fetch and save all METS files for a given set.
-        :param set_id: Set (also known as collection) identifier
-        """
-        dc_iterator = self.dc_identifiers(set_id)
-
-        for identifier in dc_iterator:
-            self.fetch_mets(identifier, folder_path)
+        return response

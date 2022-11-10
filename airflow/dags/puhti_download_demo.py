@@ -21,7 +21,7 @@ from harvester import utils
 
 DC_IDENTIFIER = "https://digi.kansalliskirjasto.fi/sanomalehti/binding/379973"
 BASE_PATH = "/scratch/project_2006633/nlf-harvester/downloads"
-METS_PATH = "/opt/airflow/downloads/mets"
+METS_PATH = f"{BASE_PATH}/mets"
 
 
 default_args = {
@@ -46,10 +46,24 @@ def create_nlf_conn(conn_id):
         session.commit()
 
 
-def save_mets_for_id(http_conn_id):
+def save_mets_for_id(http_conn_id, ssh_conn_id):
     http_conn = BaseHook.get_connection(http_conn_id)
     api = PMH_API(url=http_conn.host)
-    api.fetch_mets(DC_IDENTIFIER, folder_path=METS_PATH)
+
+    ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
+    with ssh_hook.get_conn() as ssh_client:
+        sftp_client = ssh_client.open_sftp()
+        output_file = str(
+            utils.construct_mets_download_location(
+                dc_identifier=DC_IDENTIFIER, base_path=BASE_PATH, file_dir="mets"
+            )
+        )
+        utils.make_intermediate_dirs(
+            sftp_client=sftp_client,
+            remote_directory=output_file.rsplit("/", maxsplit=1)[0],
+        )
+        with sftp_client.file(output_file, "w") as file:
+            api.download_mets(dc_identifier=DC_IDENTIFIER, output_mets_file=file)
 
 
 def save_alto_files(ssh_conn_id):
@@ -57,9 +71,9 @@ def save_alto_files(ssh_conn_id):
     with ssh_hook.get_conn() as ssh_client:
         sftp_client = ssh_client.open_sftp()
 
-        for file in os.listdir(METS_PATH):
+        for file in sftp_client.listdir(METS_PATH):
             path = os.path.join(METS_PATH, file)
-            mets = METS(DC_IDENTIFIER, mets_path=path)
+            mets = METS(DC_IDENTIFIER, sftp_client.file(path, "r"))
             alto_files = mets.files_of_type(ALTOFile)
 
             for alto_file in alto_files:

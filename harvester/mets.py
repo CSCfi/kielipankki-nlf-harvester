@@ -21,7 +21,9 @@ class METS:
     # This is expected to change when the software develops
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, binding_dc_identifier, mets_path=None, encoding="utf-8"):
+    def __init__(
+        self, binding_dc_identifier, mets_file, encoding="utf-8"
+    ):
         """
         Create a new METS file object.
 
@@ -30,8 +32,9 @@ class METS:
         :param encoding: Text encoding of the METS file. Defaults to utf-8.
         """
         self.binding_dc_identifier = binding_dc_identifier
-        self.mets_path = mets_path
+        self.mets_file = mets_file
         self.encoding = encoding
+        self.parser = etree.XMLParser(encoding=self.encoding)
         self._files = None
 
     def _file_location(self, file_element):
@@ -53,8 +56,8 @@ class METS:
         if self._files:
             return
 
-        with open(self.mets_path, "r", encoding=self.encoding) as mets_file:
-            mets_tree = etree.parse(mets_file)
+        mets_tree = etree.fromstring(self.mets_file.read(), parser=self.parser)
+        self.mets_file.close()
         files = mets_tree.xpath(
             "mets:fileSec/mets:fileGrp/mets:file",
             namespaces={"mets": "http://www.loc.gov/METS/"},

@@ -62,3 +62,27 @@ def construct_file_download_location(
         filename = file._default_filename()
 
     return Path(base_path) / Path(file_dir) / Path(filename)
+
+
+def construct_mets_download_location(
+    dc_identifier, base_path=None, file_dir=None, filename=None
+):
+    """
+    The output location can be specified with the components ``base_path``,
+    ``file_dir`` and ``filename``. If not given, the output location is as
+    follows:
+
+     ./downloads/[binding ID]/[type directory]/[binding ID]_METS.xml
+     ^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      base_path          file_dir                         filename
+
+    Return :class:`pathlib.Path`
+    """
+    if not base_path:
+        base_path = Path(os.getcwd()) / "downloads"
+    if not file_dir:
+        file_dir = f"{binding_id_from_dc(dc_identifier)}/mets"
+    if not filename:
+        filename = f"{binding_id_from_dc(dc_identifier)}_METS.xml"
+
+    return Path(base_path) / Path(file_dir) / Path(filename)
