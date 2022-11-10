@@ -147,4 +147,4 @@ def test_download_to_remote(alto_file, sftp_client, sftp_server, mock_alto_downl
         )
 
     with sftp.file(output_path, "r") as file:
-        assert file.readline() == mock_alto_download
+        assert file.read().decode("utf-8") == mock_alto_download
