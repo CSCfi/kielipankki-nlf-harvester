@@ -20,6 +20,5 @@ def test_make_intermediate_dirs(sftp_server, sftp_client):
     """
     sftp = sftp_client.open_sftp()
     root_path = Path(sftp_server.root)
-    assert utils.make_intermediate_dirs(sftp, "") == None
     utils.make_intermediate_dirs(sftp, f"{root_path}/does/not/exist")
     assert sftp.listdir(f"{root_path}/does/not") == ["exist"]

@@ -4,8 +4,7 @@ Tools for reading and interpreting METS files.
 
 from lxml import etree
 
-from harvester.file import ALTOFile, File
-from harvester import utils
+from harvester.file import File
 
 
 # Due to security reasons related to executing C code, pylint does not have an
@@ -21,9 +20,7 @@ class METS:
     # This is expected to change when the software develops
     # pylint: disable=too-few-public-methods
 
-    def __init__(
-        self, binding_dc_identifier, mets_file, encoding="utf-8"
-    ):
+    def __init__(self, binding_dc_identifier, mets_file, encoding="utf-8"):
         """
         Create a new METS file object.
 
@@ -95,32 +92,3 @@ class METS:
         files = [file for file in self.files() if isinstance(file, filetype)]
         for file in files:
             yield file
-
-    def download_files_of_type(
-        self, filetype, base_path=None, file_dir=None, filename=None
-    ):
-        """
-        Download all files of given filetype listed in METS.
-        """
-
-        files = self.files_of_type(filetype)
-
-        for file in files:
-            output_file_path = utils.construct_file_download_location(
-                file, base_path, file_dir, filename
-            )
-            output_file_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(output_file_path, "wb") as output_file:
-                file.download(output_file=output_file)
-
-    def download_alto_files(self, base_path=None, file_dir=None, filename=None):
-        """
-        Download all alto files listed in METS.
-        """
-
-        self.download_files_of_type(
-            filetype=ALTOFile,
-            base_path=base_path,
-            file_dir=file_dir,
-            filename=filename,
-        )

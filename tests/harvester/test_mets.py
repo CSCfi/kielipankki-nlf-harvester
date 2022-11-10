@@ -18,7 +18,9 @@ def simple_mets_object(simple_mets_path):
     """
     Return a METS object representing a simple, well-formed METS file.
     """
-    return METS("https://example.com/dc_identifier/1234", mets_file=open(simple_mets_path, "rb"))
+    return METS(
+        "https://example.com/dc_identifier/1234", mets_file=open(simple_mets_path, "rb")
+    )
 
 
 @pytest.fixture
@@ -90,7 +92,9 @@ def test_files_exception_on_two_locations_for_a_file(
     in a zip package).
     """
 
-    mets = METS("dummy_dc_identifier", mets_file=open(mets_with_multiple_file_locations, "rb"))
+    mets = METS(
+        "dummy_dc_identifier", mets_file=open(mets_with_multiple_file_locations, "rb")
+    )
     with pytest.raises(METSLocationParseError):
         for _ in mets.files():
             pass
@@ -118,19 +122,3 @@ def test_alto_files(simple_mets_path, mets_dc_identifier):
     alto_files = list(mets.files_of_type(ALTOFile))
     assert len(alto_files) == 4
     assert all(isinstance(file, ALTOFile) for file in alto_files)
-
-
-def test_download_alto_files(tmp_path, simple_mets_path, mocker, mets_dc_identifier):
-    """
-    Test downloading all ALTO files listed in a METS file.
-
-    This is done by checking that file.download is called the correct number of times
-    during a download_alto_files call.
-    """
-    mets = METS(mets_dc_identifier, mets_file=open(simple_mets_path, "rb"))
-    mocker.patch("harvester.file.ALTOFile.download")
-    mets.download_alto_files(base_path=tmp_path, file_dir="mock_folder")
-
-    # pylint does not know about the extra functions from mocker
-    # pylint: disable=no-member
-    assert ALTOFile.download.call_count == 4

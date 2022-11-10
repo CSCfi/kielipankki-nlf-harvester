@@ -46,13 +46,13 @@ def test_fetch_mets_with_custom_path(
             dc_identifier=mets_dc_identifier,
             base_path=tmp_path,
             file_dir="mets",
-            filename="test.xml"
+            filename="test.xml",
         )
     )
     mocker.patch("builtins.open")
     with open(output_file, "wb") as mets_file:
         response = api.download_mets(mets_dc_identifier, mets_file)
-    
+
     builtins.open.assert_called_once_with(str(tmp_path / f"mets/test.xml"), "wb")
     assert response.decode("utf-8") == expected_mets_response
 
@@ -66,15 +66,14 @@ def test_fetch_mets_with_default_path(
     api = PMH_API(oai_pmh_api_url)
     binding_id = utils.binding_id_from_dc(mets_dc_identifier)
     output_file = str(
-        utils.construct_mets_download_location(
-            dc_identifier=mets_dc_identifier
-        )
+        utils.construct_mets_download_location(dc_identifier=mets_dc_identifier)
     )
     mocker.patch("builtins.open")
     with open(output_file, "wb") as mets_file:
         response = api.download_mets(mets_dc_identifier, mets_file)
-    
+
     builtins.open.assert_called_once_with(
-        str(cwd_in_tmp / f"downloads/{binding_id}/mets" / f"{binding_id}_METS.xml"), "wb"
+        str(cwd_in_tmp / f"downloads/{binding_id}/mets" / f"{binding_id}_METS.xml"),
+        "wb",
     )
     assert response.decode("utf-8") == expected_mets_response

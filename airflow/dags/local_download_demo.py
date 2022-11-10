@@ -11,6 +11,7 @@ from airflow.operators.dummy import DummyOperator
 from airflow.operators.python_operator import PythonOperator
 
 from harvester.mets import METS
+from harvester.file import ALTOFile
 from harvester.pmh_interface import PMH_API
 from harvester import utils
 
@@ -45,7 +46,14 @@ def download_alto_files():
     for file in os.listdir(METS_PATH):
         path = os.path.join(METS_PATH, file)
         mets = METS(DC_IDENTIFIER, open(path, "rb"))
-        mets.download_alto_files(base_path=BASE_PATH)
+        alto_files = mets.files_of_type(ALTOFile)
+        for alto_file in alto_files:
+            output_file = utils.construct_file_download_location(
+                file=alto_file, base_path=BASE_PATH
+            )
+            output_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(output_file, "wb") as file:
+                alto_file.download(output_file=file)
 
 
 with DAG(
