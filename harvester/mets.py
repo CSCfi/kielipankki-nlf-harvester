@@ -25,7 +25,7 @@ class METS:
         Create a new METS file object.
 
         :param binding_dc_identifier: DC identifier of binding
-        :param mets_path: Path to the METS file.
+        :param mets_file: Open file object of the METS file.
         :param encoding: Text encoding of the METS file. Defaults to utf-8.
         """
         self.binding_dc_identifier = binding_dc_identifier
