@@ -105,7 +105,7 @@ def save_alto_files(http_conn_id, ssh_conn_id):
                 with sftp_client.file(output_file, "wb") as file:
                     alto_file.download(
                         output_file=file,
-                        chunk_size=1024 * 1024,
+                        chunk_size=10 * 1024 * 1024,
                     )
 
 
