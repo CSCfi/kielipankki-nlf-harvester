@@ -3,26 +3,21 @@
 """
 
 from datetime import timedelta
-from more_itertools import peekable
-import os
 
 from airflow import DAG
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.python import PythonOperator
 from airflow.providers.http.sensors.http import HttpSensor
-from airflow.contrib.hooks.ssh_hook import SSHHook
-from airflow.hooks.base import BaseHook
 from airflow.models import Connection
 from airflow import settings
 
-from harvester.file import ALTOFile
-from harvester.mets import METS
-from harvester.pmh_interface import PMH_API
-from harvester import utils
+from operators.custom_operators import (
+    SaveMetsSFTPOperator,
+    SaveAltosForMetsSFTPOperator,
+)
 
 DC_IDENTIFIER = "https://digi.kansalliskirjasto.fi/sanomalehti/binding/379973"
 BASE_PATH = "/scratch/project_2006633/nlf-harvester/downloads"
-METS_PATH = f"{BASE_PATH}/mets"
 
 
 default_args = {
@@ -47,59 +42,6 @@ def create_nlf_conn(conn_id):
         session.commit()
 
 
-def save_mets_for_id(http_conn_id, ssh_conn_id):
-    http_conn = BaseHook.get_connection(http_conn_id)
-    api = PMH_API(url=http_conn.host)
-
-    ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
-    with ssh_hook.get_conn() as ssh_client:
-        sftp_client = ssh_client.open_sftp()
-        output_file = str(
-            utils.construct_mets_download_location(
-                dc_identifier=DC_IDENTIFIER, base_path=BASE_PATH, file_dir="mets"
-            )
-        )
-        utils.make_intermediate_dirs(
-            sftp_client=sftp_client,
-            remote_directory=output_file.rsplit("/", maxsplit=1)[0],
-        )
-        with sftp_client.file(output_file, "w") as file:
-            api.download_mets(dc_identifier=DC_IDENTIFIER, output_mets_file=file)
-
-
-def save_alto_files(ssh_conn_id):
-    ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
-    with ssh_hook.get_conn() as ssh_client:
-        sftp_client = ssh_client.open_sftp()
-
-        for file in sftp_client.listdir(METS_PATH):
-            path = os.path.join(METS_PATH, file)
-            mets = METS(DC_IDENTIFIER, sftp_client.file(path, "r"))
-            alto_files = peekable(mets.files_of_type(ALTOFile))
-
-            first_alto = alto_files.peek()
-            first_alto_path = str(
-                utils.construct_file_download_location(
-                    file=first_alto, base_path=BASE_PATH
-                )
-            )
-            utils.make_intermediate_dirs(
-                sftp_client=sftp_client,
-                remote_directory=first_alto_path.rsplit("/", maxsplit=1)[0],
-            )
-            for alto_file in alto_files:
-                output_file = str(
-                    utils.construct_file_download_location(
-                        file=alto_file, base_path=BASE_PATH
-                    )
-                )
-                with sftp_client.file(output_file, "wb") as file:
-                    alto_file.download(
-                        output_file=file,
-                        chunk_size=1024 * 1024,
-                    )
-
-
 with DAG(
     dag_id="download_altos_for_binding_to_puhti",
     schedule_interval="@daily",
@@ -120,18 +62,20 @@ with DAG(
         task_id="check_api_availability", http_conn_id="nlf_http_conn", endpoint="/"
     )
 
-    save_mets_for_binding = PythonOperator(
+    save_mets_for_binding = SaveMetsSFTPOperator(
         task_id="save_mets_for_binding",
-        python_callable=save_mets_for_id,
-        op_kwargs={"http_conn_id": "nlf_http_conn", "ssh_conn_id": "puhti_conn"},
-        dag=dag,
+        http_conn_id="nlf_http_conn",
+        ssh_conn_id="puhti_conn",
+        dc_identifier=DC_IDENTIFIER,
+        base_path=BASE_PATH,
     )
 
-    save_alto_files_for_mets = PythonOperator(
-        task_id="save_alto_files_for_mets",
-        python_callable=save_alto_files,
-        op_kwargs={"ssh_conn_id": "puhti_conn"},
-        dag=dag,
+    save_alto_files_for_mets = SaveAltosForMetsSFTPOperator(
+        task_id="save_altos_for_binding",
+        http_conn_id="nlf_http_conn",
+        ssh_conn_id="puhti_conn",
+        base_path=BASE_PATH,
+        dc_identifier=DC_IDENTIFIER,
     )
 
     success = DummyOperator(task_id="success")

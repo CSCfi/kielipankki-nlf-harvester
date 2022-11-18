@@ -17,5 +17,5 @@ docs/*.rst
 downloads/
 airflow/downloads/
 airflow/logs/*
-airflow/plugins/*
+airflow/plugins/harvester
 !.gitkeep
