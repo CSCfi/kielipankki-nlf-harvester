@@ -6,10 +6,7 @@ from datetime import timedelta
 
 from airflow import DAG
 from airflow.operators.dummy_operator import DummyOperator
-from airflow.operators.python import PythonOperator
 from airflow.providers.http.sensors.http import HttpSensor
-from airflow.models import Connection
-from airflow import settings
 
 from operators.custom_operators import (
     SaveMetsForSetSFTPOperator,
@@ -43,7 +40,7 @@ with DAG(
         task_id="create_nlf_connection",
         conn_id="nlf_http_conn",
         conn_type="HTTP",
-        host="digi.kansalliskirjasto.fi/interfaces/OAI-PMH",
+        host="https://digi.kansalliskirjasto.fi/interfaces/OAI-PMH",
         schema="HTTPS",
     )
 
