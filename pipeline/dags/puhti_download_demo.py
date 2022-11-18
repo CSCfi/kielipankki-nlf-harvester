@@ -6,14 +6,12 @@ from datetime import timedelta
 
 from airflow import DAG
 from airflow.operators.dummy_operator import DummyOperator
-from airflow.operators.python import PythonOperator
 from airflow.providers.http.sensors.http import HttpSensor
-from airflow.models import Connection
-from airflow import settings
 
 from operators.custom_operators import (
     SaveMetsSFTPOperator,
     SaveAltosForMetsSFTPOperator,
+    CreateConnectionOperator,
 )
 
 DC_IDENTIFIER = "https://digi.kansalliskirjasto.fi/sanomalehti/binding/379973"
@@ -28,23 +26,9 @@ default_args = {
 }
 
 
-def create_nlf_conn(conn_id):
-    session = settings.Session()
-    conn_ids = [conn.conn_id for conn in session.query(Connection).all()]
-    if conn_id not in conn_ids:
-        conn = Connection(
-            conn_id=conn_id,
-            conn_type="HTTP",
-            host="digi.kansalliskirjasto.fi/interfaces/OAI-PMH",
-            schema="HTTPS",
-        )
-        session.add(conn)
-        session.commit()
-
-
 with DAG(
     dag_id="download_altos_for_binding_to_puhti",
-    schedule_interval="@daily",
+    schedule_interval="@once",
     catchup=False,
     default_args=default_args,
     doc_md=__doc__,
@@ -52,10 +36,12 @@ with DAG(
 
     start = DummyOperator(task_id="start")
 
-    create_nlf_connection = PythonOperator(
+    create_nlf_connection = CreateConnectionOperator(
         task_id="create_nlf_connection",
-        python_callable=create_nlf_conn,
-        op_kwargs={"conn_id": "nlf_http_conn"},
+        conn_id="nlf_http_conn",
+        conn_type="HTTP",
+        host="digi.kansalliskirjasto.fi/interfaces/OAI-PMH",
+        schema="HTTPS",
     )
 
     check_api_availability = HttpSensor(

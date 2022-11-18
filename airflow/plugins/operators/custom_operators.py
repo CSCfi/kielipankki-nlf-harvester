@@ -4,11 +4,35 @@ from more_itertools import peekable
 from airflow.models import BaseOperator
 from airflow.hooks.base import BaseHook
 from airflow.contrib.hooks.ssh_hook import SSHHook
+from airflow.models import Connection
+from airflow import settings
 
 from harvester.mets import METS
 from harvester.file import ALTOFile
 from harvester.pmh_interface import PMH_API
 from harvester import utils
+
+
+class CreateConnectionOperator(BaseOperator):
+    def __init__(self, conn_id, conn_type, host, schema, **kwargs):
+        super().__init__(**kwargs)
+        self.conn_id = conn_id
+        self.conn_type = conn_type
+        self.host = host
+        self.schema = schema
+
+    def execute(self, context):
+        session = settings.Session()
+        conn_ids = [conn.conn_id for conn in session.query(Connection).all()]
+        if self.conn_id not in conn_ids:
+            conn = Connection(
+                conn_id=self.conn_id,
+                conn_type=self.conn_type,
+                host=self.host,
+                schema=self.schema,
+            )
+            session.add(conn)
+            session.commit()
 
 
 class SaveMetsSFTPOperator(BaseOperator):
