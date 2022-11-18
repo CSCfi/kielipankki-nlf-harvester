@@ -40,7 +40,7 @@ with DAG(
         task_id="create_nlf_connection",
         conn_id="nlf_http_conn",
         conn_type="HTTP",
-        host="digi.kansalliskirjasto.fi/interfaces/OAI-PMH",
+        host="https://digi.kansalliskirjasto.fi/interfaces/OAI-PMH",
         schema="HTTPS",
     )
 
