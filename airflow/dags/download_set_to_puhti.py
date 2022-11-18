@@ -14,6 +14,7 @@ from airflow import settings
 from operators.custom_operators import (
     SaveMetsForSetSFTPOperator,
     SaveAltosForSetSFTPOperator,
+    CreateConnectionOperator,
 )
 
 SET_ID = "col-681"
@@ -28,20 +29,6 @@ default_args = {
 }
 
 
-def create_nlf_conn(conn_id):
-    session = settings.Session()
-    conn_ids = [conn.conn_id for conn in session.query(Connection).all()]
-    if conn_id not in conn_ids:
-        conn = Connection(
-            conn_id=conn_id,
-            conn_type="HTTP",
-            host="https://digi.kansalliskirjasto.fi/interfaces/OAI-PMH",
-            schema="HTTPS",
-        )
-        session.add(conn)
-        session.commit()
-
-
 with DAG(
     dag_id="download_set_to_puhti",
     schedule_interval="@once",
@@ -52,10 +39,12 @@ with DAG(
 
     start = DummyOperator(task_id="start")
 
-    create_nlf_connection = PythonOperator(
+    create_nlf_connection = CreateConnectionOperator(
         task_id="create_nlf_connection",
-        python_callable=create_nlf_conn,
-        op_kwargs={"conn_id": "nlf_http_conn"},
+        conn_id="nlf_http_conn",
+        conn_type="HTTP",
+        host="digi.kansalliskirjasto.fi/interfaces/OAI-PMH",
+        schema="HTTPS",
     )
 
     check_api_availability = HttpSensor(
