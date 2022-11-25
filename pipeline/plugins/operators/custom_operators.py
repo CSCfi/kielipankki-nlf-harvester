@@ -14,6 +14,15 @@ from harvester import utils
 
 
 class CreateConnectionOperator(BaseOperator):
+    """
+    Create any type of Airflow connection.
+
+    :param conn_id: Connection ID
+    :param conn_type: Type of connection
+    :param host: Host URL
+    :param schema: Schema (e.g. HTTPS)
+    """
+
     def __init__(self, conn_id, conn_type, host, schema, **kwargs):
         super().__init__(**kwargs)
         self.conn_id = conn_id
@@ -36,6 +45,14 @@ class CreateConnectionOperator(BaseOperator):
 
 
 class SaveMetsOperator(BaseOperator):
+    """
+    Save METS file for one binding on local filesystem.
+
+    :param http_conn_id: Connection ID of API
+    :param dc_identifier: DC identifier of binding
+    :param base_path: Base path for download location
+    """
+
     def __init__(self, http_conn_id, dc_identifier, base_path, **kwargs):
         super().__init__(**kwargs)
         self.http_conn_id = http_conn_id
@@ -59,6 +76,13 @@ class SaveMetsOperator(BaseOperator):
 
 
 class SaveAltosOperator(BaseOperator):
+    """
+    Save ALTO files for one binding on local filesystem.
+
+    :param dc_identifier: DC identifier of binding
+    :param base_path: Base path for download location
+    """
+
     def __init__(self, dc_identifier, base_path, **kwargs):
         super().__init__(**kwargs)
         self.dc_identifier = dc_identifier
@@ -80,6 +104,15 @@ class SaveAltosOperator(BaseOperator):
 
 
 class SaveMetsSFTPOperator(BaseOperator):
+    """
+    Save METS file for one binding on remote filesystem using SSH connection.
+
+    :param http_conn_id: Connection ID of API
+    :param ssh_conn_id: SSH connection ID
+    :param dc_identifier: DC identifier of binding
+    :param base_path: Base path for download location
+    """
+
     def __init__(self, http_conn_id, ssh_conn_id, dc_identifier, base_path, **kwargs):
         super().__init__(**kwargs)
         self.http_conn_id = http_conn_id
@@ -112,6 +145,15 @@ class SaveMetsSFTPOperator(BaseOperator):
 
 
 class SaveMetsForSetSFTPOperator(BaseOperator):
+    """
+    Save all METS files for one set on remote filesystem using SSH connection.
+
+    :param http_conn_id: Connection ID of API
+    :param ssh_conn_id: SSH connection ID
+    :param base_path: Base path for download location
+    :param set_id: Set ID
+    """
+
     def __init__(self, http_conn_id, ssh_conn_id, base_path, set_id, **kwargs):
         super().__init__(**kwargs)
         self.http_conn_id = http_conn_id
@@ -145,6 +187,15 @@ class SaveMetsForSetSFTPOperator(BaseOperator):
 
 
 class SaveAltosForMetsSFTPOperator(BaseOperator):
+    """
+    Save ALTO files for one binding on remote filesystem using SSH connection.
+
+    :param http_conn_id: Connection ID of API
+    :param ssh_conn_id: SSH connection ID
+    :param base_path: Base path for download location
+    :param dc_identifier: DC identifier of binding
+    """
+
     def __init__(self, http_conn_id, ssh_conn_id, base_path, dc_identifier, **kwargs):
         super().__init__(**kwargs)
         self.http_conn_id = http_conn_id
@@ -186,6 +237,15 @@ class SaveAltosForMetsSFTPOperator(BaseOperator):
 
 
 class SaveAltosForSetSFTPOperator(BaseOperator):
+    """
+    Save all ALTO files for one set on remote filesystem using SSH connection.
+
+    :param http_conn_id: Connection ID of API
+    :param ssh_conn_id: SSH connection ID
+    :param base_path: Base path for download location
+    :param set_id: Set ID
+    """
+
     def __init__(self, http_conn_id, ssh_conn_id, base_path, set_id, **kwargs):
         super().__init__(**kwargs)
         self.http_conn_id = http_conn_id
