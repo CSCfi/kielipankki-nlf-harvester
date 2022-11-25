@@ -11,6 +11,7 @@ from airflow.operators.dummy import DummyOperator
 from operators.custom_operators import (
     SaveMetsOperator,
     SaveAltosOperator,
+    CreateConnectionOperator,
 )
 
 
@@ -33,6 +34,14 @@ with DAG(
 ) as dag:
 
     start = DummyOperator(task_id="start")
+
+    create_nlf_connection = CreateConnectionOperator(
+        task_id="create_nlf_connection",
+        conn_id="nlf_http_conn",
+        conn_type="HTTP",
+        host="https://digi.kansalliskirjasto.fi/interfaces/OAI-PMH",
+        schema="HTTPS",
+    )
 
     fetch_mets_for_binding = SaveMetsOperator(
         task_id="save_mets_for_binding",
