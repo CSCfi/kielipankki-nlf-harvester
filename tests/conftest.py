@@ -4,6 +4,7 @@ Test fixtures
 
 import os
 import pytest
+import requests
 import requests_mock
 
 
@@ -127,3 +128,17 @@ def cwd_in_tmp(tmp_path):
     os.chdir(tmp_path)
     yield tmp_path
     os.chdir(original_cwd)
+
+
+@pytest.fixture
+def expected_set_list():
+    """
+    Patch API call that gets list of all collections available from NLF.
+    """
+    with open("tests/data/set_list.xml", "rb") as file:
+        set_list_content = file.read()
+
+    with requests_mock.Mocker() as mocker:
+        url = "https://digi.kansalliskirjasto.fi/interfaces/OAI-PMH?verb=ListSets"
+        mocker.get(url, content=set_list_content)
+        yield set_list_content
