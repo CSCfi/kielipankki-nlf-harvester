@@ -21,6 +21,14 @@ class PMH_API:
         """
         self._sickle = Sickle(url)
 
+    def set_ids(self):
+        """
+        List IDs for all sets available from the API.
+        """
+        sets = [set_tree.setSpec for set_tree in self._sickle.ListSets()]
+        for set_id in sets:
+            yield set_id
+
     def dc_identifiers(self, set_id):
         """
         Iterate over all DC identifiers in the given set.

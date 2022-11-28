@@ -1,6 +1,4 @@
-## Run a simple download DAG in Airflow locally in Docker
-
-Download METS file for binding 379973 and all ALTO files listed in the downloaded METS, either to a remote or local file system.
+## Run download DAGs in Airflow locally in Docker
 
 ---
 
@@ -45,10 +43,6 @@ Download METS file for binding 379973 and all ALTO files listed in the downloade
         ```{"key_file": "/your/path/.ssh/id_rsa"}```
 
 
-8. Turn on one or both of the DAGS `download_altos_for_binding` and `download_altos_for_binding_to_puhti` and watch the green dots appear
+8. Turn on one of the DAGS and watch the green dots appear
 
 9. You can trigger the execution of the DAG again by pressing the "play" button on the right side of the DAG UI and selecting "Trigger DAG"
-
-&nbsp;
-
-`./downloads/mets` should now have one METS file and `downloads/[BINDING_ID]/alto` four ALTO files identified from the downloaded METS either locally or in Puhti `/scratch/project_2006633/nlf-harvester/` depending on the DAG you ran.
