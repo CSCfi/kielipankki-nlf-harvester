@@ -77,3 +77,14 @@ def test_fetch_mets_with_default_path(
         "wb",
     )
     assert response.decode("utf-8") == expected_mets_response
+
+
+def test_set_ids(oai_pmh_api_url, expected_set_list):
+    """
+    Ensure that all collection IDs are returned correctly.
+    """
+    api = PMH_API(oai_pmh_api_url)
+    set_ids = list(api.set_ids())
+    assert len(set_ids) == 83
+    assert set_ids[0] == "sanomalehti"
+    assert set_ids[-1] == "col-101:col-161"
