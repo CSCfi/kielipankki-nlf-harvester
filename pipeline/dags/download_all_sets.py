@@ -2,13 +2,17 @@
 Download all METS and ALTO files from NLF to Puhti.
 """
 
+import sys
 from datetime import timedelta
 
 from airflow import DAG
-from airflow.operators.dummy_operator import DummyOperator
+from airflow.operators.empty import EmptyOperator
 from airflow.providers.http.sensors.http import HttpSensor
 
-from operators.custom_operators import (
+sys.path.append("pipeline/plugins/operators")
+sys.path.append("plugins/operators")
+
+from custom_operators import (
     SaveMetsForAllSetsSFTPOperator,
     SaveAltosForAllSetsSFTPOperator,
     CreateConnectionOperator,
@@ -27,13 +31,13 @@ default_args = {
 
 with DAG(
     dag_id="download_all_sets_to_puhti",
-    schedule_interval="@once",
+    schedule="@once",
     catchup=False,
     default_args=default_args,
     doc_md=__doc__,
 ) as dag:
 
-    start = DummyOperator(task_id="start")
+    start = EmptyOperator(task_id="start")
 
     create_nlf_connection = CreateConnectionOperator(
         task_id="create_nlf_connection",
@@ -61,7 +65,7 @@ with DAG(
         base_path=BASE_PATH,
     )
 
-    success = DummyOperator(task_id="success")
+    success = EmptyOperator(task_id="success")
 
     (
         start
