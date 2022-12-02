@@ -1,5 +1,6 @@
 -r requirements.txt
 apache-airflow[celery]==2.4.0  # NB: if you upgrade the version, also change the constraints file URL in Makefile
+apache-airflow-providers-ssh
 black
 flake8
 pylint<2.15

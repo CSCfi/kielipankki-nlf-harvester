@@ -9,7 +9,10 @@ import pytest
 
 from harvester import utils
 import pipeline.dags.local_download_demo
-from pipeline.dags.local_download_demo import SaveMetsOperator
+from pipeline.plugins.operators.custom_operators import (
+    SaveMetsOperator,
+    CreateConnectionOperator,
+)
 
 
 @pytest.fixture()
@@ -32,15 +35,24 @@ def test_dag_loading(dagbag):
     assert dag is not None
 
 
-def test_save_mets_operator(
-    oai_pmh_api_url, mets_dc_identifier, expected_mets_response, tmp_path
-):
+def test_save_mets_operator(mets_dc_identifier, expected_mets_response, tmp_path):
     """
     Check that executing save_mets_operator does indeed fetch a METS file
     """
+
+    create_nlf_connection = CreateConnectionOperator(
+        task_id="create_nlf_connection",
+        conn_id="nlf_http_conn",
+        conn_type="HTTP",
+        host="https://digi.kansalliskirjasto.fi/interfaces/OAI-PMH",
+        schema="HTTPS",
+    )
+
+    create_nlf_connection.execute(context={})
+
     operator = SaveMetsOperator(
         task_id="test_save_mets_task",
-        api_url=oai_pmh_api_url,
+        http_conn_id="nlf_http_conn",
         dc_identifier=mets_dc_identifier,
         base_path=tmp_path,
     )

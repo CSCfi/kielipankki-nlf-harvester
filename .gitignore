@@ -15,7 +15,8 @@ docs/*.rst
 !docs/index.rst
 
 downloads/
-airflow/downloads/
-airflow/logs/*
-airflow/plugins/harvester
+pipeline/downloads/
+pipeline/logs/*
+pipeline/plugins/harvester
+airflow/
 !.gitkeep

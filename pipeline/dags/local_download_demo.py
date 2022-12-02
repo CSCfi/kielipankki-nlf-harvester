@@ -1,14 +1,17 @@
 """
 #### DAG for downloading METS and ALTO files for a single binding.
 """
+import sys
 
 from datetime import timedelta
 from pathlib import Path
 from airflow import DAG
-from airflow.models import BaseOperator
-from airflow.operators.dummy import DummyOperator
+from airflow.operators.empty import EmptyOperator
 
-from operators.custom_operators import (
+sys.path.append("pipeline/plugins/operators")
+sys.path.append("plugins/operators")
+
+from custom_operators import (
     SaveMetsOperator,
     SaveAltosOperator,
     CreateConnectionOperator,
@@ -27,13 +30,13 @@ default_args = {
 
 with DAG(
     dag_id="download_altos_for_binding_to_local",
-    schedule_interval="@once",
+    schedule="@once",
     catchup=False,
     default_args=default_args,
     doc_md=__doc__,
 ) as dag:
 
-    start = DummyOperator(task_id="start")
+    start = EmptyOperator(task_id="start")
 
     create_nlf_connection = CreateConnectionOperator(
         task_id="create_nlf_connection",
@@ -58,6 +61,6 @@ with DAG(
         dag=dag,
     )
 
-    success = DummyOperator(task_id="success")
+    success = EmptyOperator(task_id="success")
 
     start >> fetch_mets_for_binding >> download_alto_files_for_mets >> success
