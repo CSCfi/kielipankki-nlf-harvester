@@ -15,52 +15,6 @@ from harvester import utils
 # pylint: disable=redefined-outer-name
 
 
-@pytest.fixture
-def alto_url():
-    """
-    Return the DC identifier for an ALTO test file
-    """
-    return "https://example.com/1234"
-
-
-@pytest.fixture()
-def alto_filename():
-    """
-    Return the filename for an ALTO test file
-    """
-    return "00002.xml"
-
-
-@pytest.fixture
-def alto_file(alto_url, alto_filename):
-    """
-    Return an ALTOFile for testing.
-    """
-    return ALTOFile(
-        "test_checksum",
-        "test_algo",
-        f"file://./alto/{alto_filename}",
-        alto_url,
-    )
-
-
-@pytest.fixture
-def mock_alto_download(alto_url, alto_filename):
-    """
-    Fake a response for GETting an ALTO file from "NLF".
-
-    We don't really need the proper contents of an ALTO file, so the response contains
-    just dummy data.
-    """
-    alto_file_content = "<xml>test cöntent</xml>"
-    with requests_mock.Mocker() as mocker:
-        mocker.get(
-            f"{alto_url}/page-{alto_filename}",
-            content=alto_file_content.encode("utf-8"),
-        )
-        yield alto_file_content
-
-
 def test_file_initialized_values():
     """
     Check that the values given when initializing are utilized correctly

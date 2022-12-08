@@ -3,7 +3,7 @@ from more_itertools import peekable
 
 from airflow.models import BaseOperator
 from airflow.hooks.base import BaseHook
-from airflow.contrib.hooks.ssh_hook import SSHHook
+from airflow.providers.ssh.hooks.ssh import SSHHook
 from airflow.models import Connection
 from airflow import settings
 
@@ -311,7 +311,7 @@ class SaveAltosForSetSFTPOperator(BaseOperator):
                     sftp_client=sftp_client,
                     base_path=self.base_path,
                     file_dir=f"{self.set_id.replace(':', '_')}/{utils.binding_id_from_dc(dc_identifier)}/alto",
-                    mets_dir=f"{self.base_path}/{self.set_id.replace(':', '_')}/{utils.binding_id_from_dc(dc_identifier)}/mets",
+                    mets_path=f"{self.base_path}/{self.set_id.replace(':', '_')}/{utils.binding_id_from_dc(dc_identifier)}/mets",
                     dc_identifier=dc_identifier,
                 ).execute(context={})
 
