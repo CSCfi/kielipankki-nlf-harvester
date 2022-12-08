@@ -58,6 +58,7 @@ with DAG(
         task_id="download_alto_files_for_mets",
         dc_identifier=DC_IDENTIFIER,
         base_path=BASE_PATH,
+        mets_path=f"{BASE_PATH}/mets",
         dag=dag,
     )
 
