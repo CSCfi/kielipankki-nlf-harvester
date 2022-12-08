@@ -85,24 +85,25 @@ class SaveAltosOperator(BaseOperator):
     :param base_path: Base path for download location
     """
 
-    def __init__(self, dc_identifier, base_path, **kwargs):
+    def __init__(self, dc_identifier, base_path, mets_path, **kwargs):
         super().__init__(**kwargs)
         self.dc_identifier = dc_identifier
         self.base_path = base_path
+        self.mets_path = mets_path
 
     def execute(self, context):
-        mets_path = self.base_path / "mets"
-        for file in os.listdir(mets_path):
-            path = os.path.join(mets_path, file)
-            mets = METS(self.dc_identifier, open(path, "rb"))
-            alto_files = mets.files_of_type(ALTOFile)
-            for alto_file in alto_files:
-                output_file = utils.construct_file_download_location(
-                    file=alto_file, base_path=self.base_path
-                )
-                output_file.parent.mkdir(parents=True, exist_ok=True)
-                with open(output_file, "wb") as file:
-                    alto_file.download(output_file=file)
+        path = os.path.join(
+            self.mets_path, f"{utils.binding_id_from_dc(self.dc_identifier)}_METS.xml"
+        )
+        mets = METS(self.dc_identifier, open(path, "rb"))
+        alto_files = mets.files_of_type(ALTOFile)
+        for alto_file in alto_files:
+            output_file = utils.construct_file_download_location(
+                file=alto_file, base_path=self.base_path
+            )
+            output_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(output_file, "wb") as file:
+                alto_file.download(output_file=file)
 
 
 class SaveMetsSFTPOperator(BaseOperator):
@@ -110,39 +111,36 @@ class SaveMetsSFTPOperator(BaseOperator):
     Save METS file for one binding on remote filesystem using SSH connection.
 
     :param http_conn_id: Connection ID of API
-    :param ssh_conn_id: SSH connection ID
+    :param sftp_client: SFTPClient
     :param dc_identifier: DC identifier of binding
     :param base_path: Base path for download location
     """
 
-    def __init__(self, http_conn_id, ssh_conn_id, dc_identifier, base_path, **kwargs):
+    def __init__(self, api, sftp_client, dc_identifier, base_path, file_dir, **kwargs):
         super().__init__(**kwargs)
-        self.http_conn_id = http_conn_id
-        self.ssh_conn_id = ssh_conn_id
+        self.api = api
+        self.sftp_client = sftp_client
         self.dc_identifier = dc_identifier
         self.base_path = base_path
+        self.file_dir = file_dir
 
     def execute(self, context):
-        http_conn = BaseHook.get_connection(self.http_conn_id)
-        api = PMH_API(url=http_conn.host)
+        output_file = str(
+            utils.construct_mets_download_location(
+                dc_identifier=self.dc_identifier,
+                base_path=self.base_path,
+                file_dir=self.file_dir,
+            )
+        )
 
-        ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
-        with ssh_hook.get_conn() as ssh_client:
-            sftp_client = ssh_client.open_sftp()
-            output_file = str(
-                utils.construct_mets_download_location(
-                    dc_identifier=self.dc_identifier,
-                    base_path=self.base_path,
-                    file_dir="mets",
-                )
-            )
-            utils.make_intermediate_dirs(
-                sftp_client=sftp_client,
-                remote_directory=output_file.rsplit("/", maxsplit=1)[0],
-            )
-            with sftp_client.file(output_file, "w") as file:
-                api.download_mets(
+        with self.sftp_client.file(output_file, "w") as file:
+            try:
+                self.api.download_mets(
                     dc_identifier=self.dc_identifier, output_mets_file=file
+                )
+            except HTTPError as e:
+                print(
+                    f"Download of METS file {self.dc_identifier} failed with args {e.args}"
                 )
 
 
@@ -170,22 +168,20 @@ class SaveMetsForSetSFTPOperator(BaseOperator):
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
             sftp_client = ssh_client.open_sftp()
-            utils.make_intermediate_dirs(
-                sftp_client=sftp_client,
-                remote_directory=f"{self.base_path}/mets",
-            )
+
             for dc_identifier in api.dc_identifiers(set_id=self.set_id):
-                output_file = str(
-                    utils.construct_mets_download_location(
-                        dc_identifier=dc_identifier,
-                        base_path=self.base_path,
-                        file_dir="mets",
-                    )
+                utils.make_intermediate_dirs(
+                    sftp_client=sftp_client,
+                    remote_directory=f"{self.base_path}/{self.set_id.replace(':', '_')}/{utils.binding_id_from_dc(dc_identifier)}/mets",
                 )
-                with sftp_client.file(output_file, "w") as file:
-                    api.download_mets(
-                        dc_identifier=dc_identifier, output_mets_file=file
-                    )
+                SaveMetsSFTPOperator(
+                    task_id=f"save_mets_{utils.binding_id_from_dc(dc_identifier)}",
+                    api=api,
+                    sftp_client=sftp_client,
+                    dc_identifier=dc_identifier,
+                    base_path=f"{self.base_path}",
+                    file_dir=f"{self.set_id.replace(':', '_')}/{utils.binding_id_from_dc(dc_identifier)}/mets",
+                ).execute(context={})
 
 
 class SaveMetsForAllSetsSFTPOperator(BaseOperator):
@@ -215,22 +211,13 @@ class SaveMetsForAllSetsSFTPOperator(BaseOperator):
                 remote_directory=f"{self.base_path}/mets",
             )
             for set_id in api.set_ids():
-                try:
-                    for dc_identifier in api.dc_identifiers(set_id=set_id):
-                        output_file = str(
-                            utils.construct_mets_download_location(
-                                dc_identifier=dc_identifier,
-                                base_path=self.base_path,
-                                file_dir="mets",
-                            )
-                        )
-                        with sftp_client.file(output_file, "w") as file:
-                            api.download_mets(
-                                dc_identifier=dc_identifier, output_mets_file=file
-                            )
-                except HTTPError as e:
-                    print(f"Set {set_id} failed with args {e.args}")
-                    continue
+                SaveMetsForSetSFTPOperator(
+                    task_id=f"save_mets_for_{set_id.replace(':', '_')}",
+                    http_conn_id=self.http_conn_id,
+                    ssh_conn_id=self.ssh_conn_id,
+                    base_path=self.base_path,
+                    set_id=set_id,
+                ).execute(context={})
 
 
 class SaveAltosForMetsSFTPOperator(BaseOperator):
@@ -243,44 +230,54 @@ class SaveAltosForMetsSFTPOperator(BaseOperator):
     :param dc_identifier: DC identifier of binding
     """
 
-    def __init__(self, http_conn_id, ssh_conn_id, base_path, dc_identifier, **kwargs):
+    def __init__(
+        self,
+        sftp_client,
+        base_path,
+        file_dir,
+        mets_path,
+        dc_identifier,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
-        self.http_conn_id = http_conn_id
-        self.ssh_conn_id = ssh_conn_id
+        self.sftp_client = sftp_client
         self.base_path = base_path
+        self.file_dir = file_dir
+        self.mets_path = mets_path
         self.dc_identifier = dc_identifier
 
     def execute(self, context):
-        ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
-        with ssh_hook.get_conn() as ssh_client:
-            sftp_client = ssh_client.open_sftp()
+        path = os.path.join(
+            self.mets_path, f"{utils.binding_id_from_dc(self.dc_identifier)}_METS.xml"
+        )
+        mets = METS(self.dc_identifier, self.sftp_client.file(path, "r"))
+        alto_files = peekable(mets.files_of_type(ALTOFile))
 
-            for file in sftp_client.listdir(f"{self.base_path}/mets"):
-                path = os.path.join(f"{self.base_path}/mets", file)
-                mets = METS(self.dc_identifier, sftp_client.file(path, "r"))
-                alto_files = peekable(mets.files_of_type(ALTOFile))
-
-                first_alto = alto_files.peek()
-                first_alto_path = str(
-                    utils.construct_file_download_location(
-                        file=first_alto, base_path=self.base_path
-                    )
+        first_alto = alto_files.peek()
+        first_alto_path = str(
+            utils.construct_file_download_location(
+                file=first_alto, base_path=self.base_path, file_dir=self.file_dir
+            )
+        )
+        utils.make_intermediate_dirs(
+            sftp_client=self.sftp_client,
+            remote_directory=first_alto_path.rsplit("/", maxsplit=1)[0],
+        )
+        for alto_file in alto_files:
+            output_file = str(
+                utils.construct_file_download_location(
+                    file=alto_file, base_path=self.base_path, file_dir=self.file_dir
                 )
-                utils.make_intermediate_dirs(
-                    sftp_client=sftp_client,
-                    remote_directory=first_alto_path.rsplit("/", maxsplit=1)[0],
-                )
-                for alto_file in alto_files:
-                    output_file = str(
-                        utils.construct_file_download_location(
-                            file=alto_file, base_path=self.base_path
-                        )
+            )
+            with self.sftp_client.file(output_file, "wb") as file:
+                try:
+                    alto_file.download(
+                        output_file=file,
+                        chunk_size=10 * 1024 * 1024,
                     )
-                    with sftp_client.file(output_file, "wb") as file:
-                        alto_file.download(
-                            output_file=file,
-                            chunk_size=1024 * 1024,
-                        )
+                except HTTPError as e:
+                    print(f"File download failed with args {e.args}")
+                    continue
 
 
 class SaveAltosForSetSFTPOperator(BaseOperator):
@@ -309,37 +306,14 @@ class SaveAltosForSetSFTPOperator(BaseOperator):
             sftp_client = ssh_client.open_sftp()
 
             for dc_identifier in api.dc_identifiers(set_id=self.set_id):
-                # NOTE! This expects that all METS files follow the default naming
-                # set in utils.construct_mets_download_location. May not be the
-                # most optimal solution.
-                path = os.path.join(
-                    f"{self.base_path}/mets",
-                    f"{utils.binding_id_from_dc(dc_identifier)}_METS.xml",
-                )
-                mets = METS(dc_identifier, sftp_client.file(path, "r"))
-                alto_files = peekable(mets.files_of_type(ALTOFile))
-
-                first_alto = alto_files.peek()
-                first_alto_path = str(
-                    utils.construct_file_download_location(
-                        file=first_alto, base_path=self.base_path
-                    )
-                )
-                utils.make_intermediate_dirs(
+                SaveAltosForMetsSFTPOperator(
+                    task_id=f"save_altos_for_{utils.binding_id_from_dc(dc_identifier)}",
                     sftp_client=sftp_client,
-                    remote_directory=first_alto_path.rsplit("/", maxsplit=1)[0],
-                )
-                for alto_file in alto_files:
-                    output_file = str(
-                        utils.construct_file_download_location(
-                            file=alto_file, base_path=self.base_path
-                        )
-                    )
-                    with sftp_client.file(output_file, "wb") as file:
-                        alto_file.download(
-                            output_file=file,
-                            chunk_size=10 * 1024 * 1024,
-                        )
+                    base_path=self.base_path,
+                    file_dir=f"{self.set_id.replace(':', '_')}/{utils.binding_id_from_dc(dc_identifier)}/alto",
+                    mets_dir=f"{self.base_path}/{self.set_id.replace(':', '_')}/{utils.binding_id_from_dc(dc_identifier)}/mets",
+                    dc_identifier=dc_identifier,
+                ).execute(context={})
 
 
 class SaveAltosForAllSetsSFTPOperator(BaseOperator):
@@ -361,44 +335,12 @@ class SaveAltosForAllSetsSFTPOperator(BaseOperator):
         http_conn = BaseHook.get_connection(self.http_conn_id)
         api = PMH_API(url=http_conn.host)
 
-        ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
-        with ssh_hook.get_conn() as ssh_client:
-            sftp_client = ssh_client.open_sftp()
-
-            for set_id in api.set_ids():
-                try:
-                    for dc_identifier in api.dc_identifiers(set_id=set_id):
-                        # NOTE! This expects that all METS files follow the default naming
-                        # set in utils.construct_mets_download_location. May not be the
-                        # most optimal solution.
-                        path = os.path.join(
-                            f"{self.base_path}/mets",
-                            f"{utils.binding_id_from_dc(dc_identifier)}_METS.xml",
-                        )
-                        mets = METS(dc_identifier, sftp_client.file(path, "r"))
-                        alto_files = peekable(mets.files_of_type(ALTOFile))
-
-                        first_alto = alto_files.peek()
-                        first_alto_path = str(
-                            utils.construct_file_download_location(
-                                file=first_alto, base_path=self.base_path
-                            )
-                        )
-                        utils.make_intermediate_dirs(
-                            sftp_client=sftp_client,
-                            remote_directory=first_alto_path.rsplit("/", maxsplit=1)[0],
-                        )
-                        for alto_file in alto_files:
-                            output_file = str(
-                                utils.construct_file_download_location(
-                                    file=alto_file, base_path=self.base_path
-                                )
-                            )
-                            with sftp_client.file(output_file, "wb") as file:
-                                alto_file.download(
-                                    output_file=file,
-                                    chunk_size=10 * 1024 * 1024,
-                                )
-                except HTTPError as e:
-                    print(f"Set {set_id} failed with args {e.args}")
-                    continue
+        for set_id in api.set_ids():
+            print(f"Downloading ALTOs for set {set_id}")
+            SaveAltosForSetSFTPOperator(
+                task_id=f"save_altos_for_{set_id.replace(':', '_')}",
+                http_conn_id=self.http_conn_id,
+                ssh_conn_id=self.ssh_conn_id,
+                base_path=self.base_path,
+                set_id=set_id,
+            ).execute(context={})
