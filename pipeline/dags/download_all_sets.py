@@ -2,17 +2,13 @@
 Download all METS and ALTO files from NLF to Puhti.
 """
 
-import sys
 from datetime import timedelta
 
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
 from airflow.providers.http.sensors.http import HttpSensor
 
-sys.path.append("pipeline/plugins/operators")
-sys.path.append("plugins/operators")
-
-from custom_operators import (
+from operators.custom_operators import (
     SaveMetsForAllSetsSFTPOperator,
     SaveAltosForAllSetsSFTPOperator,
     CreateConnectionOperator,
