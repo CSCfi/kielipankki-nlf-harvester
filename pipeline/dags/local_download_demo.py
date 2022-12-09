@@ -1,17 +1,13 @@
 """
 #### DAG for downloading METS and ALTO files for a single binding.
 """
-import sys
 
 from datetime import timedelta
 from pathlib import Path
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
 
-sys.path.append("pipeline/plugins/operators")
-sys.path.append("plugins/operators")
-
-from custom_operators import (
+from operators.custom_operators import (
     SaveMetsOperator,
     SaveAltosOperator,
     CreateConnectionOperator,
