@@ -6,6 +6,7 @@ page from a newspaper, or a jpeg showing the scanned page).
 import os
 from pathlib import Path
 import requests
+import re
 
 from harvester import utils
 
@@ -57,8 +58,8 @@ class File:
         children = file_element.getchildren()
         if len(children) != 1:
             raise METSLocationParseError("Expected 1 location, found {len(children)}")
-        location = children[0].attrib["{http://www.w3.org/TR/xlink}href"]
-
+        location_key = [key for key in children[0].attrib if key.endswith("href")][0]
+        location = children[0].attrib[location_key]
         parent = file_element.getparent()
 
         if (
@@ -174,6 +175,8 @@ class ALTOFile(File):
         :type dc_identifier: String
         """
         href_filename = self.location_xlink.rsplit("/", maxsplit=1)[-1]
+        if not re.match(r"^0+([1-9]+0*)+.xml$", href_filename):
+            href_filename = f"{re.search(r'([1-9]+0*)+', href_filename).group(0)}.xml"
         return f"{self.binding_dc_identifier}/page-{href_filename}"
 
     def _default_file_dir(self):
