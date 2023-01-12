@@ -176,6 +176,19 @@ def alto_file(alto_url, alto_filename):
 
 
 @pytest.fixture
+def alto_file_with_erroneous_name(alto_url):
+    """
+    Return an ALTOFile with an erroneus filename for testing.
+    """
+    return ALTOFile(
+        "test_checksum",
+        "test_algo",
+        "file://./alto/alto.xml",
+        alto_url,
+    )
+
+
+@pytest.fixture
 def mock_alto_download(alto_url, alto_filename):
     """
     Fake a response for GETting an ALTO file from "NLF".
