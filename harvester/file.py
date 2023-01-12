@@ -176,7 +176,14 @@ class ALTOFile(File):
         """
         href_filename = self.location_xlink.rsplit("/", maxsplit=1)[-1]
         if not re.match(r"^0+([1-9]+0*)+.xml$", href_filename):
-            href_filename = f"{re.search(r'([1-9]+0*)+', href_filename).group(0)}.xml"
+            try:
+                href_filename = (
+                    f"{re.search(r'([1-9]+0*)+', href_filename).group(0)}.xml"
+                )
+            except AttributeError:
+                raise AttributeError(
+                    f"ALTO filename {href_filename} does not follow the accepted convention."
+                )
         return f"{self.binding_dc_identifier}/page-{href_filename}"
 
     def _default_file_dir(self):
