@@ -58,8 +58,7 @@ class File:
         children = file_element.getchildren()
         if len(children) != 1:
             raise METSLocationParseError("Expected 1 location, found {len(children)}")
-        location_key = [key for key in children[0].attrib if key.endswith("href")][0]
-        location = children[0].attrib[location_key]
+        location = file_element.xpath("./*/@*[local-name()='href']")[0]
         parent = file_element.getparent()
 
         if (

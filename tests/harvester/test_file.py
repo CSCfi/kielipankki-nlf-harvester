@@ -50,6 +50,16 @@ def test_erroneus_filename(alto_file_with_erroneous_name):
         alto_file_with_erroneous_name.download_url()
 
 
+def test_parsable_filename(alto_file_with_parsable_name):
+    """
+    Ensure that an ALTO file with a non-standard name gets parsed correctly.
+    """
+    assert (
+        alto_file_with_parsable_name.download_url.rsplit("/", maxsplit=1)[-1]
+        == "page-1.xml"
+    )
+
+
 def test_download_to_default_path(
     alto_file, cwd_in_tmp, mock_alto_download, alto_filename
 ):
