@@ -46,7 +46,7 @@ def test_erroneus_filename(alto_file_with_erroneous_name):
     """
     Ensure that an erroneous ALTO filename raises an error.
     """
-    with pytest.raises(AttributeError, match=r".* alto.xml .*") as e:
+    with pytest.raises(AttributeError, match=r".* alto.xml .*"):
         alto_file_with_erroneous_name.download_url()
 
 
