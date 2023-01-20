@@ -37,6 +37,12 @@ virtualenv .venv -p python3
 make requirements
 ```
 
+If you want to test the Airflow pipelines too, you need to install some
+additional packages:
+```
+pip install -r pipeline/requirements.txt
+```
+
 ### Running Unit Tests
 Without coverage information:
 ```
