@@ -15,13 +15,15 @@ from operators.custom_operators import (
 )
 
 
-BASE_PATH = "/scratch/project_2006633/nlf-harvester/downloads"
+BASE_PATH = "/scratch/project_2006633/nlf-harvester/nlf_collections"
 
 default_args = {
     "owner": "Kielipankki",
     "start_date": "2022-10-01",
-    "retries": 5,
-    "retry_delay": timedelta(seconds=10),
+    "retries": 4,
+    "retry_delay": timedelta(minutes=10),
+    "email": ["helmiina.hotti@csc.fi"],
+    "email_on_failure": True
 }
 
 
