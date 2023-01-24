@@ -14,10 +14,6 @@ from harvester import utils
 
 from requests.exceptions import HTTPError
 
-import logging
-
-LOGGER = logging.getLogger("airflow.task")
-
 
 class CreateConnectionOperator(BaseOperator):
     """
@@ -143,7 +139,7 @@ class SaveMetsSFTPOperator(BaseOperator):
                     dc_identifier=self.dc_identifier, output_mets_file=file
                 )
             except HTTPError as e:
-                LOGGER.warn(
+                print(
                     f"Download of METS file {self.dc_identifier} failed with code {e.response.status_code}"
                 )
                 self.sftp_client.remove(output_file)
@@ -215,8 +211,8 @@ class SaveMetsForAllSetsSFTPOperator(BaseOperator):
                 sftp_client=sftp_client,
                 remote_directory=f"{self.base_path}/mets",
             )
-            for set_id in [s for s in list(api.set_ids()) if not s.startswith(tuple("col-501", "col-82", "col-25", "col-101")) and not s.endswith("rajatut")]:
-                LOGGER.info(f"Downloading METS for set {set_id}")
+            for set_id in [s for s in list(api.set_ids()) if not s.startswith(("col-501", "col-82", "col-25", "col-101")) and not s.endswith("rajatut")]:
+                print(f"Downloading METS for set {set_id}")
                 SaveMetsForSetSFTPOperator(
                     task_id=f"save_mets_for_{set_id.replace(':', '_')}",
                     http_conn_id=self.http_conn_id,
@@ -282,7 +278,7 @@ class SaveAltosForMetsSFTPOperator(BaseOperator):
                         chunk_size=10 * 1024 * 1024,
                     )
                 except HTTPError as e:
-                    LOGGER.warn(f"File download failed with URL {alto_file.download_url} with code {e.response.status_code}")
+                    print(f"File download failed with URL {alto_file.download_url} with code {e.response.status_code}")
                     self.sftp_client.remove(output_file)
                     continue
 
@@ -342,8 +338,8 @@ class SaveAltosForAllSetsSFTPOperator(BaseOperator):
         http_conn = BaseHook.get_connection(self.http_conn_id)
         api = PMH_API(url=http_conn.host)
 
-        for set_id in [s for s in list(api.set_ids()) if not s.startswith(tuple("col-501", "col-82", "col-25", "col-101")) and not s.endswith("rajatut")]:
-            LOGGER.info(f"Downloading ALTOs for set {set_id}")
+        for set_id in [s for s in list(api.set_ids()) if not s.startswith(("col-501", "col-82", "col-25", "col-101")) and not s.endswith("rajatut")]:
+            print(f"Downloading ALTOs for set {set_id}")
             SaveAltosForSetSFTPOperator(
                 task_id=f"save_altos_for_{set_id.replace(':', '_')}",
                 http_conn_id=self.http_conn_id,
