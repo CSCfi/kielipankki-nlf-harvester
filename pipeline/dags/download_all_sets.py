@@ -23,7 +23,7 @@ default_args = {
     "retries": 4,
     "retry_delay": timedelta(minutes=10),
     "email": ["helmiina.hotti@csc.fi"],
-    "email_on_failure": True
+    "email_on_failure": True,
 }
 
 
