@@ -13,6 +13,7 @@ from harvester.pmh_interface import PMH_API
 from harvester import utils
 
 from requests.exceptions import HTTPError, ReadTimeout
+from urllib3.exceptions import ReadTimeoutError
 
 
 class CreateConnectionOperator(BaseOperator):
@@ -138,11 +139,14 @@ class SaveMetsSFTPOperator(BaseOperator):
                 self.api.download_mets(
                     dc_identifier=self.dc_identifier, output_mets_file=file
                 )
-            except (HTTPError, ReadTimeout) as e:
+            except (HTTPError, ReadTimeout, ReadTimeoutError, TimeoutError) as e:
                 print(
                     f"Download of METS file {self.dc_identifier} failed with code {e.response.status_code}"
                 )
+                # Delete empty file and binding folders if download fails
                 self.sftp_client.remove(output_file)
+                self.sftp_client.rmdir("/".join(output_file.split("/")[:-1]))
+                self.sftp_client.rmdir("/".join(output_file.split("/")[:-2]))
 
 
 class SaveMetsForSetSFTPOperator(BaseOperator):
@@ -282,7 +286,7 @@ class SaveAltosForMetsSFTPOperator(BaseOperator):
                         output_file=file,
                         chunk_size=10 * 1024 * 1024,
                     )
-                except (HTTPError, ReadTimeout) as e:
+                except (HTTPError, ReadTimeout, ReadTimeoutError, TimeoutError) as e:
                     print(
                         f"File download failed with URL {alto_file.download_url} with code {e.response.status_code}"
                     )
