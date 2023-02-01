@@ -1,5 +1,1 @@
-click
-lxml
-sickle
-more_itertools
 apache-airflow-providers-ssh
