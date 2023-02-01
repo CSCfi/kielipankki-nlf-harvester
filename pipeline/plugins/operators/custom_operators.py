@@ -12,8 +12,7 @@ from harvester.file import ALTOFile
 from harvester.pmh_interface import PMH_API
 from harvester import utils
 
-from requests.exceptions import HTTPError, ReadTimeout
-from urllib3.exceptions import ReadTimeoutError
+from requests.exceptions import RequestException
 
 
 class CreateConnectionOperator(BaseOperator):
@@ -139,7 +138,7 @@ class SaveMetsSFTPOperator(BaseOperator):
                 self.api.download_mets(
                     dc_identifier=self.dc_identifier, output_mets_file=file
                 )
-            except (HTTPError, ReadTimeout, ReadTimeoutError, TimeoutError) as e:
+            except RequestException as e:
                 print(
                     f"Download of METS file {self.dc_identifier} failed with code {e.response.status_code}"
                 )
@@ -286,7 +285,7 @@ class SaveAltosForMetsSFTPOperator(BaseOperator):
                         output_file=file,
                         chunk_size=10 * 1024 * 1024,
                     )
-                except (HTTPError, ReadTimeout, ReadTimeoutError, TimeoutError) as e:
+                except RequestException as e:
                     print(
                         f"File download failed with URL {alto_file.download_url} with code {e.response.status_code}"
                     )
