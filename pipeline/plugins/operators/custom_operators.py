@@ -36,6 +36,9 @@ class CreateConnectionOperator(BaseOperator):
         session = settings.Session()
         conn_ids = [conn.conn_id for conn in session.query(Connection).all()]
         if self.conn_id not in conn_ids:
+            self.log.info(
+                f"Creating a new {self.conn_type} connection with ID {self.conn_id}"
+            )
             conn = Connection(
                 conn_id=self.conn_id,
                 conn_type=self.conn_type,
@@ -139,7 +142,7 @@ class SaveMetsSFTPOperator(BaseOperator):
                     dc_identifier=self.dc_identifier, output_mets_file=file
                 )
             except RequestException as e:
-                print(
+                self.log.warn(
                     f"Download of METS file {self.dc_identifier} failed with code {e.response.status_code}"
                 )
                 # Delete empty file and binding folders if download fails
@@ -220,7 +223,7 @@ class SaveMetsForAllSetsSFTPOperator(BaseOperator):
                 if not s.startswith(("col-501", "col-82", "col-25", "col-101"))
                 and not s.endswith("rajatut")
             ]:
-                print(f"Downloading METS for set {set_id}")
+                self.log.info(f"Downloading METS files for set {set_id}")
                 SaveMetsForSetSFTPOperator(
                     task_id=f"save_mets_for_{set_id.replace(':', '_')}",
                     http_conn_id=self.http_conn_id,
@@ -286,7 +289,7 @@ class SaveAltosForMetsSFTPOperator(BaseOperator):
                         chunk_size=10 * 1024 * 1024,
                     )
                 except RequestException as e:
-                    print(
+                    self.log.warn(
                         f"File download failed with URL {alto_file.download_url} with code {e.response.status_code}"
                     )
                     self.sftp_client.remove(output_file)
@@ -354,7 +357,7 @@ class SaveAltosForAllSetsSFTPOperator(BaseOperator):
             if not s.startswith(("col-501", "col-82", "col-25", "col-101"))
             and not s.endswith("rajatut")
         ]:
-            print(f"Downloading ALTOs for set {set_id}")
+            self.log.info(f"Downloading ALTO files for set {set_id}")
             SaveAltosForSetSFTPOperator(
                 task_id=f"save_altos_for_{set_id.replace(':', '_')}",
                 http_conn_id=self.http_conn_id,
