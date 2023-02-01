@@ -142,7 +142,7 @@ class SaveMetsSFTPOperator(BaseOperator):
                     dc_identifier=self.dc_identifier, output_mets_file=file
                 )
             except RequestException as e:
-                self.log.warn(
+                self.log.error(
                     f"Download of METS file {self.dc_identifier} failed with code {e.response.status_code}"
                 )
                 # Delete empty file and binding folders if download fails
@@ -289,7 +289,7 @@ class SaveAltosForMetsSFTPOperator(BaseOperator):
                         chunk_size=10 * 1024 * 1024,
                     )
                 except RequestException as e:
-                    self.log.warn(
+                    self.log.error(
                         f"File download failed with URL {alto_file.download_url} with code {e.response.status_code}"
                     )
                     self.sftp_client.remove(output_file)
