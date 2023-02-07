@@ -174,19 +174,22 @@ class SaveMetsForSetSFTPOperator(BaseOperator):
         with ssh_hook.get_conn() as ssh_client:
             sftp_client = ssh_client.open_sftp()
 
-            for dc_identifier in api.dc_identifiers(set_id=self.set_id):
-                utils.make_intermediate_dirs(
-                    sftp_client=sftp_client,
-                    remote_directory=f"{self.base_path}/{self.set_id.replace(':', '_')}/{utils.binding_id_from_dc(dc_identifier)}/mets",
-                )
-                SaveMetsSFTPOperator(
-                    task_id=f"save_mets_{utils.binding_id_from_dc(dc_identifier)}",
-                    api=api,
-                    sftp_client=sftp_client,
-                    dc_identifier=dc_identifier,
-                    base_path=f"{self.base_path}",
-                    file_dir=f"{self.set_id.replace(':', '_')}/{utils.binding_id_from_dc(dc_identifier)}/mets",
-                ).execute(context={})
+            try:
+                for dc_identifier in api.dc_identifiers(set_id=self.set_id):
+                    utils.make_intermediate_dirs(
+                        sftp_client=sftp_client,
+                        remote_directory=f"{self.base_path}/{self.set_id.replace(':', '_')}/{utils.binding_id_from_dc(dc_identifier)}/mets",
+                    )
+                    SaveMetsSFTPOperator(
+                        task_id=f"save_mets_{utils.binding_id_from_dc(dc_identifier)}",
+                        api=api,
+                        sftp_client=sftp_client,
+                        dc_identifier=dc_identifier,
+                        base_path=f"{self.base_path}",
+                        file_dir=f"{self.set_id.replace(':', '_')}/{utils.binding_id_from_dc(dc_identifier)}/mets",
+                    ).execute(context={})
+            except RequestException:
+                self.log.error(f"Cannot list DC identifiers for set {self.set_id}")
 
 
 class SaveMetsForAllSetsSFTPOperator(BaseOperator):
@@ -218,7 +221,9 @@ class SaveMetsForAllSetsSFTPOperator(BaseOperator):
             for set_id in [
                 s
                 for s in list(api.set_ids())
-                if not s.startswith(("col-501", "col-82", "col-25", "col-101"))
+                if not s.startswith(
+                    ("col-501", "col-82", "col-25", "col-101", "sanomalehti")
+                )
                 and not s.endswith("rajatut")
             ]:
                 self.log.info(f"Downloading METS files for set {set_id}")
@@ -319,15 +324,18 @@ class SaveAltosForSetSFTPOperator(BaseOperator):
         with ssh_hook.get_conn() as ssh_client:
             sftp_client = ssh_client.open_sftp()
 
-            for dc_identifier in api.dc_identifiers(set_id=self.set_id):
-                SaveAltosForMetsSFTPOperator(
-                    task_id=f"save_altos_for_{utils.binding_id_from_dc(dc_identifier)}",
-                    sftp_client=sftp_client,
-                    base_path=self.base_path,
-                    file_dir=f"{self.set_id.replace(':', '_')}/{utils.binding_id_from_dc(dc_identifier)}/alto",
-                    mets_path=f"{self.base_path}/{self.set_id.replace(':', '_')}/{utils.binding_id_from_dc(dc_identifier)}/mets",
-                    dc_identifier=dc_identifier,
-                ).execute(context={})
+            try:
+                for dc_identifier in api.dc_identifiers(set_id=self.set_id):
+                    SaveAltosForMetsSFTPOperator(
+                        task_id=f"save_altos_for_{utils.binding_id_from_dc(dc_identifier)}",
+                        sftp_client=sftp_client,
+                        base_path=self.base_path,
+                        file_dir=f"{self.set_id.replace(':', '_')}/{utils.binding_id_from_dc(dc_identifier)}/alto",
+                        mets_path=f"{self.base_path}/{self.set_id.replace(':', '_')}/{utils.binding_id_from_dc(dc_identifier)}/mets",
+                        dc_identifier=dc_identifier,
+                    ).execute(context={})
+            except RequestException:
+                self.log.error(f"Cannot list DC identifiers for set {self.set_id}")
 
 
 class SaveAltosForAllSetsSFTPOperator(BaseOperator):
