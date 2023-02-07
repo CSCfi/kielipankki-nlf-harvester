@@ -221,7 +221,9 @@ class SaveMetsForAllSetsSFTPOperator(BaseOperator):
             for set_id in [
                 s
                 for s in list(api.set_ids())
-                if not s.startswith(("col-501", "col-82", "col-25", "col-101"))
+                if not s.startswith(
+                    ("col-501", "col-82", "col-25", "col-101", "sanomalehti")
+                )
                 and not s.endswith("rajatut")
             ]:
                 self.log.info(f"Downloading METS files for set {set_id}")
