@@ -1,5 +1,6 @@
 import os
 from more_itertools import peekable
+from lxml.etree import XMLSyntaxError
 
 from airflow.models import BaseOperator
 from airflow.hooks.base import BaseHook
@@ -274,7 +275,14 @@ class SaveAltosForMetsSFTPOperator(BaseOperator):
 
         alto_files = peekable(mets.files_of_type(ALTOFile))
 
-        first_alto = alto_files.peek()
+        try:
+            first_alto = alto_files.peek()
+        except XMLSyntaxError as e:
+            self.log.error(
+                f"Could not parse METS file {utils.binding_id_from_dc(self.dc_identifier)}: {e.args}"
+            )
+            return
+
         first_alto_path = str(
             utils.construct_file_download_location(
                 file=first_alto, base_path=self.base_path, file_dir=self.file_dir
