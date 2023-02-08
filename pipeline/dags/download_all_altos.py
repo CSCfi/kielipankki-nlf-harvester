@@ -27,7 +27,7 @@ default_args = {
 
 
 with DAG(
-    dag_id="download_all_sets_to_puhti",
+    dag_id="download_all_altos_to_puhti",
     schedule="@once",
     catchup=False,
     default_args=default_args,
