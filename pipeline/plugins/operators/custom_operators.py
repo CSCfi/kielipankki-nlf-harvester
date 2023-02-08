@@ -264,7 +264,14 @@ class SaveAltosForMetsSFTPOperator(BaseOperator):
         path = os.path.join(
             self.mets_path, f"{utils.binding_id_from_dc(self.dc_identifier)}_METS.xml"
         )
-        mets = METS(self.dc_identifier, self.sftp_client.file(path, "r"))
+        try:
+            mets = METS(self.dc_identifier, self.sftp_client.file(path, "r"))
+        except IOError:
+            self.log.error(
+                f"No METS found for binding {utils.binding_id_from_dc(self.dc_identifier)}"
+            )
+            return
+
         alto_files = peekable(mets.files_of_type(ALTOFile))
 
         first_alto = alto_files.peek()
