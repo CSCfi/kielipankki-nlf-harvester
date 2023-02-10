@@ -3,6 +3,7 @@ Depth-first download procedure
 """
 
 from datetime import timedelta
+import paramiko
 
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
@@ -23,7 +24,10 @@ from operators.custom_operators import (
     CreateConnectionOperator,
 )
 
+paramiko.util.log_to_file("/home/ubuntu/airflow/logs/paramiko_logs/logs.log")
+
 SET_ID = "col-681"
+DC_IDENTIFIER = "https://digi.kansalliskirjasto.fi/sanomalehti/binding/379973"
 BASE_PATH = "/scratch/project_2006633/nlf-harvester/downloads"
 SSH_CONN_ID = "puhti_conn"
 HTTP_CONN_ID = "nlf_http_conn"
@@ -31,11 +35,53 @@ HTTP_CONN_ID = "nlf_http_conn"
 default_args = {
     "owner": "Kielipankki",
     "start_date": "2022-10-01",
-    "retries": 4,
-    "retry_delay": timedelta(minutes=10),
-    "email": ["helmiina.hotti@csc.fi"],
-    "email_on_failure": True,
+    "retries": 1,
+    "retry_delay": timedelta(seconds=10),
 }
+
+
+def list_collections(http_conn_id):
+    http_conn = BaseHook.get_connection(http_conn_id)
+    api = PMH_API(url=http_conn.host)
+    return api.set_ids()
+
+
+def download_binding(dag: DAG, dc_identifier: str) -> TaskGroup:
+    binding_id = utils.binding_id_from_dc(dc_identifier)
+    with TaskGroup(group_id=f"download_{binding_id}") as download:
+
+        http_conn = BaseHook.get_connection(HTTP_CONN_ID)
+        api = PMH_API(url=http_conn.host)
+        ssh_hook = SSHHook(ssh_conn_id=SSH_CONN_ID)
+        with ssh_hook.get_conn() as ssh_client:
+            sftp_client = ssh_client.open_sftp()
+
+            utils.make_intermediate_dirs(
+                sftp_client=sftp_client,
+                remote_directory=f"{BASE_PATH}/{SET_ID.replace(':', '_')}/{binding_id}/mets",
+            )
+
+            save_mets = SaveMetsSFTPOperator(
+                task_id=f"save_mets_{binding_id}",
+                api=api,
+                sftp_client=sftp_client,
+                dc_identifier=dc_identifier,
+                base_path=BASE_PATH,
+                file_dir=f"{SET_ID.replace(':', '_')}/{binding_id}/mets",
+            )
+
+            save_altos = SaveAltosForMetsSFTPOperator(
+                task_id=f"save_altos_{binding_id}",
+                sftp_client=sftp_client,
+                base_path=BASE_PATH,
+                file_dir=f"{SET_ID.replace(':', '_')}/{binding_id}/alto",
+                mets_path=f"{BASE_PATH}/{SET_ID.replace(':', '_')}/{binding_id}/mets",
+                dc_identifier=dc_identifier,
+            )
+        
+            save_mets >> save_altos
+    
+    return download
 
 
 with DAG(
@@ -60,51 +106,6 @@ with DAG(
         task_id="check_api_availability", http_conn_id="nlf_http_conn", endpoint="/"
     )
 
-    @task(task_id="list_collections")
-    def list_collections(http_conn_id):
-        http_conn = BaseHook.get_connection(http_conn_id)
-        api = PMH_API(url=http_conn.host)
-        return api.set_ids()
+    download = download_binding(dag, DC_IDENTIFIER)
 
-    collection_tasks = []
-
-    http_conn = BaseHook.get_connection(HTTP_CONN_ID)
-    api = PMH_API(url=http_conn.host)
-
-    for set_id in api.set_ids():
-
-        @task_group(group_id="download_set")
-        def download_set(set_id):
-
-            ssh_hook = SSHHook(ssh_conn_id=SSH_CONN_ID)
-            with ssh_hook.get_conn() as ssh_client:
-                sftp_client = ssh_client.open_sftp()
-
-                @task_group(group_id="download_binding")
-                def download_binding(set_id, dc_identifier):
-
-                    save_mets = SaveMetsSFTPOperator(
-                        api=api,
-                        sftp_client=sftp_client,
-                        dc_identifier=dc_identifier,
-                        base_path=BASE_PATH,
-                        file_dir=f"{set_id.replace(':', '_')}/{utils.binding_id_from_dc(dc_identifier)}/mets",
-                        task_group=download_binding
-                    )
-
-                    save_altos = SaveAltosForMetsSFTPOperator(
-                        sftp_client=sftp_client,
-                        base_path=BASE_PATH,
-                        file_dir=f"{set_id.replace(':', '_')}/{utils.binding_id_from_dc(dc_identifier)}/alto",
-                        mets_path=f"{BASE_PATH}/{set_id.replace(':', '_')}/{utils.binding_id_from_dc(dc_identifier)}/mets",
-                        dc_identifier=dc_identifier,
-                        task_group=download_binding
-                    )
-
-                    save_mets >> save_altos
-
-                download_binding.partial(set_id=set_id).expand(dc_identifier=api.dc_identifiers(set_id))
-
-        collection_tasks.append(download_set(set_id=set_id))
-    
-    start >> create_nlf_connection >> check_api_availability >> collection_tasks
+    start >> create_nlf_connection >> check_api_availability >> download
