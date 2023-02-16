@@ -3,9 +3,9 @@ Depth-first download procedure
 """
 
 from datetime import timedelta
-from requests.exceptions import HTTPError
 import os
-import time
+import logging
+from http.client import HTTPConnection
 
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
@@ -23,6 +23,14 @@ from operators.custom_operators import (
     SaveAltosForMetsSFTPOperator,
     CreateConnectionOperator,
 )
+
+HTTPConnection.debuglevel = 1
+
+logging.basicConfig(filename="/home/ubuntu/airflow/logs/request_logs/request_logs.log")
+logging.getLogger().setLevel(logging.DEBUG)
+requests_log = logging.getLogger("requests.packages.urllib3")
+requests_log.setLevel(logging.DEBUG)
+requests_log.propagate = True
 
 BASE_PATH = "/scratch/project_2006633/nlf-harvester/downloads"
 SSH_CONN_ID = "puhti_conn"
@@ -70,6 +78,8 @@ def download_set(dag: DAG, set_id) -> TaskGroup:
             f"/home/ubuntu/airflow/plugins/bindings_{set_id.replace(':', '_')}"
         ) as file:
             dc_identifiers = file.read().splitlines()
+
+        # dc_identifiers = list(api.dc_identifiers(set_id))
 
         @task(task_id=f"download_binding", task_group=download)
         def download_binding(dc_identifier):
@@ -128,9 +138,18 @@ with DAG(
         task_id="check_api_availability", http_conn_id="nlf_http_conn", endpoint="/"
     )
 
+    start >> create_nlf_connection >> check_api_availability
+
     downloads = []
 
+    # Execute TaskGroup for each collection sequentially (to stick to a depth-first procedure).
+    # Otherwise Airflow may decide to run 4 tasks from one collection and 4 tasks from another
+    # at the same time.
     for set_id in SET_IDS:
-        downloads.append(download_set(dag, set_id))
-
-    start >> create_nlf_connection >> check_api_availability >> downloads
+        download_tg = download_set(dag, set_id)
+        if not downloads:
+            check_api_availability >> download_tg
+        else:
+            prev_tg = downloads[-1]
+            prev_tg >> download_tg
+        downloads.append(download_tg)
