@@ -159,7 +159,7 @@ def alto_filename():
     """
     Return the filename for an ALTO test file
     """
-    return "00002.xml"
+    return "2.xml"
 
 
 @pytest.fixture
@@ -221,10 +221,10 @@ def mock_alto_download(alto_url, alto_filename):
 def url_matcher(request):
     url = request.url
     mock_urls = [
-        "https://digi.kansalliskirjasto.fi/sanomalehti/binding/379973/page-00001.xml",
-        "https://digi.kansalliskirjasto.fi/sanomalehti/binding/379973/page-00002.xml",
-        "https://digi.kansalliskirjasto.fi/sanomalehti/binding/379973/page-00003.xml",
-        "https://digi.kansalliskirjasto.fi/sanomalehti/binding/379973/page-00004.xml",
+        "https://digi.kansalliskirjasto.fi/sanomalehti/binding/379973/page-1.xml",
+        "https://digi.kansalliskirjasto.fi/sanomalehti/binding/379973/page-2.xml",
+        "https://digi.kansalliskirjasto.fi/sanomalehti/binding/379973/page-3.xml",
+        "https://digi.kansalliskirjasto.fi/sanomalehti/binding/379973/page-4.xml",
     ]
     return url in mock_urls
 
