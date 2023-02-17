@@ -12,7 +12,7 @@ from airflow.operators.empty import EmptyOperator
 from airflow.providers.http.sensors.http import HttpSensor
 from airflow.providers.ssh.hooks.ssh import SSHHook
 from airflow.hooks.base import BaseHook
-from airflow.decorators import task, task_group
+from airflow.decorators import task
 from airflow.utils.task_group import TaskGroup
 
 from harvester.pmh_interface import PMH_API
@@ -80,6 +80,11 @@ def download_set(dag: DAG, set_id, api, ssh_conn_id, base_path) -> TaskGroup:
             dc_identifiers = file.read().splitlines()
 
         # This is how it would preferrably be done:
+        # expand() only accepts lists or dicts, so dc_identifiers need to be
+        # converted to a list. With the current implementation, this would
+        # be an issue for large sets, but we have an upcoming ticket to 
+        # download huge sets in batches anyway, which should hopefully fix
+        # this issue.
         # dc_identifiers = list(api.dc_identifiers(set_id))
 
         @task(task_id=f"download_binding", task_group=download)
@@ -162,6 +167,5 @@ with DAG(
         if not downloads:
             check_api_availability >> download_tg
         else:
-            prev_tg = downloads[-1]
-            prev_tg >> download_tg
+            downloads[-1] >> download_tg
         downloads.append(download_tg)
