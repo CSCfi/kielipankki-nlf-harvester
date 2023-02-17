@@ -67,7 +67,9 @@ for set_id in SET_IDS:
     list_dc_identifiers(HTTP_CONN_ID, set_id)
 
 
-def download_set(dag: DAG, set_id, api, ssh_conn_id, base_path) -> TaskGroup:
+def download_set(
+    dag: DAG, set_id, api, ssh_conn_id, base_path, trigger_rule
+) -> TaskGroup:
     """
     TaskGroupFactory for downloading METS and ALTOs for one binding.
     """
@@ -82,12 +84,14 @@ def download_set(dag: DAG, set_id, api, ssh_conn_id, base_path) -> TaskGroup:
         # This is how it would preferrably be done:
         # expand() only accepts lists or dicts, so dc_identifiers need to be
         # converted to a list. With the current implementation, this would
-        # be an issue for large sets, but we have an upcoming ticket to 
+        # be an issue for large sets, but we have an upcoming ticket to
         # download huge sets in batches anyway, which should hopefully fix
         # this issue.
         # dc_identifiers = list(api.dc_identifiers(set_id))
 
-        @task(task_id=f"download_binding", task_group=download)
+        @task(
+            task_id=f"download_binding", task_group=download, trigger_rule=trigger_rule
+        )
         def download_binding(dc_identifier):
             binding_id = utils.binding_id_from_dc(dc_identifier)
             ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
@@ -130,8 +134,6 @@ with DAG(
     doc_md=__doc__,
 ) as dag:
 
-    start = EmptyOperator(task_id="start")
-
     create_nlf_connection = CreateConnectionOperator(
         task_id="create_nlf_connection",
         conn_id="nlf_http_conn",
@@ -140,11 +142,27 @@ with DAG(
         schema="HTTPS",
     )
 
-    check_api_availability = HttpSensor(
-        task_id="check_api_availability", http_conn_id="nlf_http_conn", endpoint="/"
-    )
+    begin_download = EmptyOperator(task_id="begin_download")
 
-    start >> create_nlf_connection >> check_api_availability
+    cancel_pipeline = EmptyOperator(task_id="cancel_pipeline")
+
+    @task.branch(task_id="check_api_availability")
+    def check_api_availability():
+        """
+        Check if API is responding and download can begin. If not, cancel pipeline.
+        """
+        api_ok = HttpSensor(
+            task_id="http_sensor", http_conn_id="nlf_http_conn", endpoint="/"
+        ).poke(context={})
+
+        if api_ok == True:
+            return "begin_download"
+        elif api_ok == False:
+            return "cancel_pipeline"
+
+    check_api_availability = check_api_availability()
+
+    create_nlf_connection >> check_api_availability >> [begin_download, cancel_pipeline]
 
     http_conn = BaseHook.get_connection(HTTP_CONN_ID)
     api = PMH_API(url=http_conn.host)
@@ -157,15 +175,24 @@ with DAG(
 
     # for set_id in api.set_ids():
     for set_id in SET_IDS:
-        download_tg = download_set(
-            dag=dag,
-            set_id=set_id,
-            api=api,
-            ssh_conn_id=SSH_CONN_ID,
-            base_path=BASE_PATH,
-        )
         if not downloads:
-            check_api_availability >> download_tg
+            download_tg = download_set(
+                dag=dag,
+                set_id=set_id,
+                api=api,
+                ssh_conn_id=SSH_CONN_ID,
+                base_path=BASE_PATH,
+                trigger_rule="all_success",
+            )
+            begin_download >> download_tg
         else:
+            download_tg = download_set(
+                dag=dag,
+                set_id=set_id,
+                api=api,
+                ssh_conn_id=SSH_CONN_ID,
+                base_path=BASE_PATH,
+                trigger_rule="none_skipped",
+            )
             downloads[-1] >> download_tg
         downloads.append(download_tg)
