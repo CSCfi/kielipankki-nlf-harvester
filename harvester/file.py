@@ -174,7 +174,6 @@ class ALTOFile(File):
         :type dc_identifier: String
         """
         href_filename = self.location_xlink.rsplit("/", maxsplit=1)[-1]
-        # if not re.match(r"^0+([1-9]+0*)+.xml$", href_filename):
         try:
             href_filename = f"{re.search(r'([1-9]+0*)+', href_filename).group(0)}.xml"
         except AttributeError:
