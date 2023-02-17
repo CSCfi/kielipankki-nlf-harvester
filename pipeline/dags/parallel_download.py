@@ -44,13 +44,11 @@ default_args = {
 }
 
 
-def list_collections(http_conn_id):
-    http_conn = BaseHook.get_connection(http_conn_id)
-    api = PMH_API(url=http_conn.host)
-    return api.set_ids()
-
-
 def list_dc_identifiers(http_conn_id, set_id):
+    """
+    A hopefully temporary helper function to save DC identifiers to file for
+    later reading while rate limits are an issue.
+    """
     if not os.path.isfile(
         f"/home/ubuntu/airflow/plugins/bindings_{set_id.replace(':', '_')}"
     ):
@@ -64,33 +62,36 @@ def list_dc_identifiers(http_conn_id, set_id):
                 file.write(f"{dc}\n")
 
 
+# Again, temporary until rate limits are no longer an issue
 for set_id in SET_IDS:
     list_dc_identifiers(HTTP_CONN_ID, set_id)
 
 
-def download_set(dag: DAG, set_id) -> TaskGroup:
+def download_set(dag: DAG, set_id, api, ssh_conn_id, base_path) -> TaskGroup:
+    """
+    TaskGroupFactory for downloading METS and ALTOs for one binding.
+    """
     with TaskGroup(group_id=f"download_set_{set_id.replace(':', '_')}") as download:
 
-        http_conn = BaseHook.get_connection(HTTP_CONN_ID)
-        api = PMH_API(url=http_conn.host)
-
+        # Temporary solution while rate limits are an issue:
         with open(
             f"/home/ubuntu/airflow/plugins/bindings_{set_id.replace(':', '_')}"
         ) as file:
             dc_identifiers = file.read().splitlines()
 
+        # This is how it would preferrably be done:
         # dc_identifiers = list(api.dc_identifiers(set_id))
 
         @task(task_id=f"download_binding", task_group=download)
         def download_binding(dc_identifier):
             binding_id = utils.binding_id_from_dc(dc_identifier)
-            ssh_hook = SSHHook(ssh_conn_id=SSH_CONN_ID)
+            ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
             with ssh_hook.get_conn() as ssh_client:
                 sftp_client = ssh_client.open_sftp()
 
                 utils.make_intermediate_dirs(
                     sftp_client=sftp_client,
-                    remote_directory=f"{BASE_PATH}/{set_id.replace(':', '_')}/{binding_id}/mets",
+                    remote_directory=f"{base_path}/{set_id.replace(':', '_')}/{binding_id}/mets",
                 )
 
                 SaveMetsSFTPOperator(
@@ -98,16 +99,16 @@ def download_set(dag: DAG, set_id) -> TaskGroup:
                     api=api,
                     sftp_client=sftp_client,
                     dc_identifier=dc_identifier,
-                    base_path=BASE_PATH,
+                    base_path=base_path,
                     file_dir=f"{set_id.replace(':', '_')}/{binding_id}/mets",
                 ).execute(context={})
 
                 SaveAltosForMetsSFTPOperator(
                     task_id=f"save_altos_{binding_id}",
                     sftp_client=sftp_client,
-                    base_path=BASE_PATH,
+                    base_path=base_path,
                     file_dir=f"{set_id.replace(':', '_')}/{binding_id}/alto",
-                    mets_path=f"{BASE_PATH}/{set_id.replace(':', '_')}/{binding_id}/mets",
+                    mets_path=f"{base_path}/{set_id.replace(':', '_')}/{binding_id}/mets",
                     dc_identifier=dc_identifier,
                 ).execute(context={})
 
@@ -140,13 +141,24 @@ with DAG(
 
     start >> create_nlf_connection >> check_api_availability
 
+    http_conn = BaseHook.get_connection(HTTP_CONN_ID)
+    api = PMH_API(url=http_conn.host)
+
     downloads = []
 
     # Execute TaskGroup for each collection sequentially (to stick to a depth-first procedure).
     # Otherwise Airflow may decide to run 4 tasks from one collection and 4 tasks from another
     # at the same time.
+
+    # for set_id in api.set_ids():
     for set_id in SET_IDS:
-        download_tg = download_set(dag, set_id)
+        download_tg = download_set(
+            dag=dag,
+            set_id=set_id,
+            api=api,
+            ssh_conn_id=SSH_CONN_ID,
+            base_path=BASE_PATH,
+        )
         if not downloads:
             check_api_availability >> download_tg
         else:
