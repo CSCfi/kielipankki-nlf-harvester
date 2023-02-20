@@ -144,7 +144,7 @@ def test_save_altos_sftp_operator(
         with open(simple_mets_path, encoding="utf-8") as local_file:
             sftp_file.write(local_file.read())
 
-    operator = SaveAltosForMetsSFTPOperator(
+    operator = SaveAltosSFTPOperator(
         task_id="test_save_altos_remote",
         sftp_client=sftp,
         base_path=output_path,
