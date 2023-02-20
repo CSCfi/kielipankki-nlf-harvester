@@ -4,8 +4,6 @@ Depth-first download procedure
 
 from datetime import timedelta
 import os
-import logging
-from http.client import HTTPConnection
 
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
@@ -23,14 +21,6 @@ from operators.custom_operators import (
     SaveAltosForMetsSFTPOperator,
     CreateConnectionOperator,
 )
-
-HTTPConnection.debuglevel = 1
-
-logging.basicConfig(filename="/home/ubuntu/airflow/logs/request_logs/request_logs.log")
-logging.getLogger().setLevel(logging.DEBUG)
-requests_log = logging.getLogger("requests.packages.urllib3")
-requests_log.setLevel(logging.DEBUG)
-requests_log.propagate = True
 
 BASE_PATH = "/scratch/project_2006633/nlf-harvester/downloads"
 SSH_CONN_ID = "puhti_conn"
@@ -67,9 +57,7 @@ for set_id in SET_IDS:
     list_dc_identifiers(HTTP_CONN_ID, set_id)
 
 
-def download_set(
-    dag: DAG, set_id, api, ssh_conn_id, base_path, trigger_rule
-) -> TaskGroup:
+def download_set(dag: DAG, set_id, api, ssh_conn_id, base_path) -> TaskGroup:
     """
     TaskGroupFactory for downloading METS and ALTOs for one binding.
     """
@@ -90,7 +78,7 @@ def download_set(
         # dc_identifiers = list(api.dc_identifiers(set_id))
 
         @task(
-            task_id=f"download_binding", task_group=download, trigger_rule=trigger_rule
+            task_id="download_binding", task_group=download, trigger_rule="none_skipped"
         )
         def download_binding(dc_identifier):
             binding_id = utils.binding_id_from_dc(dc_identifier)
@@ -155,9 +143,9 @@ with DAG(
             task_id="http_sensor", http_conn_id="nlf_http_conn", endpoint="/"
         ).poke(context={})
 
-        if api_ok == True:
+        if api_ok:
             return "begin_download"
-        elif api_ok == False:
+        else:
             return "cancel_pipeline"
 
     check_api_availability = check_api_availability()
@@ -175,24 +163,15 @@ with DAG(
 
     # for set_id in api.set_ids():
     for set_id in SET_IDS:
+        download_tg = download_set(
+            dag=dag,
+            set_id=set_id,
+            api=api,
+            ssh_conn_id=SSH_CONN_ID,
+            base_path=BASE_PATH,
+        )
         if not downloads:
-            download_tg = download_set(
-                dag=dag,
-                set_id=set_id,
-                api=api,
-                ssh_conn_id=SSH_CONN_ID,
-                base_path=BASE_PATH,
-                trigger_rule="all_success",
-            )
             begin_download >> download_tg
         else:
-            download_tg = download_set(
-                dag=dag,
-                set_id=set_id,
-                api=api,
-                ssh_conn_id=SSH_CONN_ID,
-                base_path=BASE_PATH,
-                trigger_rule="none_skipped",
-            )
             downloads[-1] >> download_tg
         downloads.append(download_tg)
