@@ -18,7 +18,7 @@ from harvester import utils
 
 from operators.custom_operators import (
     SaveMetsSFTPOperator,
-    SaveAltosForMetsSFTPOperator,
+    SaveAltosSFTPOperator,
     CreateConnectionOperator,
 )
 
@@ -100,7 +100,7 @@ def download_set(dag: DAG, set_id, api, ssh_conn_id, base_path) -> TaskGroup:
                     file_dir=f"{set_id.replace(':', '_')}/{binding_id}/mets",
                 ).execute(context={})
 
-                SaveAltosForMetsSFTPOperator(
+                SaveAltosSFTPOperator(
                     task_id=f"save_altos_{binding_id}",
                     sftp_client=sftp_client,
                     base_path=base_path,
