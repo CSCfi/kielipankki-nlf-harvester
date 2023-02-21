@@ -74,7 +74,7 @@ def two_page_pmh_response(oai_pmh_api_url, two_page_set_id):
         mocker.get(first_page_url, text=first_page)
 
         last_page_url = (
-            f"{oai_pmh_api_url}" f"?verb=ListIdentifiers" f"&resumptionToken=59zS9njRIN"
+            f"{oai_pmh_api_url}" f"?verb=ListIdentifiers" f"&resumptionToken=FoJQR2GOwV"
         )
         mocker.get(last_page_url, text=last_page)
 
