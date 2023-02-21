@@ -69,12 +69,12 @@ def two_page_pmh_response(oai_pmh_api_url, two_page_set_id):
             f"{oai_pmh_api_url}"
             f"?metadataPrefix=oai_dc"
             f"&set={two_page_set_id}"
-            f"&verb=ListRecords"
+            f"&verb=ListIdentifiers"
         )
         mocker.get(first_page_url, text=first_page)
 
         last_page_url = (
-            f"{oai_pmh_api_url}" f"?verb=ListRecords" f"&resumptionToken=59zS9njRIN"
+            f"{oai_pmh_api_url}" f"?verb=ListIdentifiers" f"&resumptionToken=59zS9njRIN"
         )
         mocker.get(last_page_url, text=last_page)
 
