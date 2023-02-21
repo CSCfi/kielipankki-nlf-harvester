@@ -35,9 +35,9 @@ class PMH_API:
 
         :param set_id: Set (also known as collection) identifier
         """
-        records = self._sickle.ListRecords(metadataPrefix="oai_dc", set=set_id)
-        for record in records:
-            yield record.metadata["identifier"][0]
+        binding_ids = self._sickle.ListIdentifiers(metadataPrefix="oai_dc", set=set_id)
+        for binding_id in binding_ids:
+            yield f"https://digi.kansalliskirjasto.fi/sanomalehti/binding/{binding_id.identifier.rsplit(':')[-1]}"
 
     def download_mets(self, dc_identifier, output_mets_file):
         """
