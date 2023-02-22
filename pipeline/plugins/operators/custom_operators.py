@@ -120,13 +120,15 @@ class SaveMetsSFTPOperator(BaseOperator):
     :param base_path: Base path for download location
     """
 
-    def __init__(self, api, sftp_client, dc_identifier, base_path, file_dir, **kwargs):
+    def __init__(self, api, sftp_client, ssh_client, tmpdir, dc_identifier, base_path, file_dir, **kwargs):
         super().__init__(**kwargs)
         self.api = api
         self.sftp_client = sftp_client
+        self.ssh_client = ssh_client
         self.dc_identifier = dc_identifier
         self.base_path = base_path
         self.file_dir = file_dir
+        self.tmpdir = tmpdir
 
     def execute(self, context):
         output_file = str(
@@ -137,17 +139,25 @@ class SaveMetsSFTPOperator(BaseOperator):
             )
         )
 
-        with self.sftp_client.file(output_file, "w") as file:
+        temp_output_file = str(
+            utils.construct_mets_download_location(
+                dc_identifier=self.dc_identifier,
+                base_path=self.tmpdir,
+                file_dir=self.file_dir,
+                filename=f"{utils.binding_id_from_dc(self.dc_identifier)}_METS.xml.temp"
+            )
+        )
+
+        with self.sftp_client.file(temp_output_file, "w") as file:
             try:
                 self.api.download_mets(
                     dc_identifier=self.dc_identifier, output_mets_file=file
                 )
             except RequestException:
                 self.log.error(f"Download of METS file {self.dc_identifier} failed")
-                # Delete empty file and binding folders if download fails
-                self.sftp_client.remove(output_file)
-                self.sftp_client.rmdir("/".join(output_file.split("/")[:-1]))
-                self.sftp_client.rmdir("/".join(output_file.split("/")[:-2]))
+            else:
+                self.ssh_client.exec_command(f"mv {temp_output_file} {output_file}")
+                #self.sftp_client.rename(temp_output_file, output_file)
 
 
 class SaveAltosSFTPOperator(BaseOperator):
@@ -163,6 +173,7 @@ class SaveAltosSFTPOperator(BaseOperator):
     def __init__(
         self,
         sftp_client,
+        tmpdir,
         base_path,
         file_dir,
         mets_path,
@@ -171,6 +182,7 @@ class SaveAltosSFTPOperator(BaseOperator):
     ):
         super().__init__(**kwargs)
         self.sftp_client = sftp_client
+        self.tmpdir = tmpdir
         self.base_path = base_path
         self.file_dir = file_dir
         self.mets_path = mets_path
