@@ -96,7 +96,6 @@ def test_save_mets_sftp_operator(
     Check that executing SaveMetsSFTPOperator saves a METS file to the remote server
     """
 
-    # sftp = sftp_client.open_sftp()
     api = PMH_API(oai_pmh_api_url)
     output_path = str(Path(sftp_server.root) / "some" / "sub" / "path")
     temp_path = str(Path(sftp_server.root) / "tmp" / "sub" / "path")
