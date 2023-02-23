@@ -1,5 +1,5 @@
 """
-#### DAG for downloading METS and ALTO files for a single binding to a remote server (Puhti).
+#### Debugging/testing DAG for downloading METS and ALTO files for a single binding to a remote server (Puhti).
 """
 
 from datetime import timedelta

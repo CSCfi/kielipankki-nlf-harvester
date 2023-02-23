@@ -23,6 +23,7 @@ from operators.custom_operators import (
 )
 
 BASE_PATH = "/scratch/project_2006633/nlf-harvester/downloads"
+TMPDIR = "/local_scratch/robot_2006633_puhti"
 SSH_CONN_ID = "puhti_conn"
 HTTP_CONN_ID = "nlf_http_conn"
 SET_IDS = ["col-681", "col-361"]
@@ -86,15 +87,12 @@ def download_set(dag: DAG, set_id, api, ssh_conn_id, base_path) -> TaskGroup:
             with ssh_hook.get_conn() as ssh_client:
                 sftp_client = ssh_client.open_sftp()
 
-                utils.make_intermediate_dirs(
-                    sftp_client=sftp_client,
-                    remote_directory=f"{base_path}/{set_id.replace(':', '_')}/{binding_id}/mets",
-                )
-
                 SaveMetsSFTPOperator(
                     task_id=f"save_mets_{binding_id}",
                     api=api,
                     sftp_client=sftp_client,
+                    ssh_client=ssh_client,
+                    tmpdir=TMPDIR,
                     dc_identifier=dc_identifier,
                     base_path=base_path,
                     file_dir=f"{set_id.replace(':', '_')}/{binding_id}/mets",
@@ -103,6 +101,8 @@ def download_set(dag: DAG, set_id, api, ssh_conn_id, base_path) -> TaskGroup:
                 SaveAltosSFTPOperator(
                     task_id=f"save_altos_{binding_id}",
                     sftp_client=sftp_client,
+                    ssh_client=ssh_client,
+                    tmpdir=TMPDIR,
                     base_path=base_path,
                     file_dir=f"{set_id.replace(':', '_')}/{binding_id}/alto",
                     mets_path=f"{base_path}/{set_id.replace(':', '_')}/{binding_id}/mets",
