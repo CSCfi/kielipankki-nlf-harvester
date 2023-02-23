@@ -1,10 +1,7 @@
 import os
-from more_itertools import peekable
-from lxml.etree import XMLSyntaxError
 
 from airflow.models import BaseOperator
 from airflow.hooks.base import BaseHook
-from airflow.providers.ssh.hooks.ssh import SSHHook
 from airflow.models import Connection
 from airflow import settings
 
@@ -120,7 +117,17 @@ class SaveMetsSFTPOperator(BaseOperator):
     :param base_path: Base path for download location
     """
 
-    def __init__(self, api, sftp_client, ssh_client, tmpdir, dc_identifier, base_path, file_dir, **kwargs):
+    def __init__(
+        self,
+        api,
+        sftp_client,
+        ssh_client,
+        tmpdir,
+        dc_identifier,
+        base_path,
+        file_dir,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         self.api = api
         self.sftp_client = sftp_client
@@ -141,7 +148,7 @@ class SaveMetsSFTPOperator(BaseOperator):
                 dc_identifier=self.dc_identifier,
                 base_path=self.tmpdir,
                 file_dir=self.file_dir,
-                filename=f"{utils.binding_id_from_dc(self.dc_identifier)}_METS.xml.temp"
+                filename=f"{utils.binding_id_from_dc(self.dc_identifier)}_METS.xml.temp",
             )
         )
 
@@ -151,7 +158,9 @@ class SaveMetsSFTPOperator(BaseOperator):
                     dc_identifier=self.dc_identifier, output_mets_file=file
                 )
             except RequestException as e:
-                raise RequestException(f"METS download {self.dc_identifier} failed: {e.response}")
+                raise RequestException(
+                    f"METS download {self.dc_identifier} failed: {e.response}"
+                )
             else:
                 output_file = str(
                     utils.construct_mets_download_location(
@@ -164,6 +173,7 @@ class SaveMetsSFTPOperator(BaseOperator):
                     sftp_client=self.sftp_client,
                     remote_directory=f"{self.base_path}/{self.file_dir}",
                 )
+
                 self.ssh_client.exec_command(f"mv {temp_output_file} {output_file}")
 
 
@@ -201,16 +211,10 @@ class SaveAltosSFTPOperator(BaseOperator):
         path = os.path.join(
             self.mets_path, f"{utils.binding_id_from_dc(self.dc_identifier)}_METS.xml"
         )
-        
-        mets = METS(self.dc_identifier, self.sftp_client.file(path, "r"))
-        alto_files = peekable(mets.files_of_type(ALTOFile))
-        first_alto = alto_files.peek()
 
-        first_alto_path = str(
-            utils.construct_file_download_location(
-                file=first_alto, base_path=self.base_path, file_dir=self.file_dir
-            )
-        )
+        mets = METS(self.dc_identifier, self.sftp_client.file(path, "r"))
+        alto_files = mets.files_of_type(ALTOFile)
+
         utils.make_intermediate_dirs(
             sftp_client=self.sftp_client,
             remote_directory=f"{self.base_path}/{self.file_dir}",
@@ -220,14 +224,14 @@ class SaveAltosSFTPOperator(BaseOperator):
             sftp_client=self.sftp_client,
             remote_directory=f"{self.tmpdir}/{self.file_dir}",
         )
-        
+
         for alto_file in alto_files:
             temp_output_file = str(
                 utils.construct_file_download_location(
                     file=alto_file, base_path=self.tmpdir, file_dir=self.file_dir
                 )
             )
-            
+
             with self.sftp_client.file(temp_output_file, "wb") as file:
                 try:
                     alto_file.download(
@@ -235,11 +239,15 @@ class SaveAltosSFTPOperator(BaseOperator):
                         chunk_size=10 * 1024 * 1024,
                     )
                 except RequestException as e:
-                    raise RequestException(f"ALTO download with URL {alto_file.download_url} failed: {e.response}")
+                    raise RequestException(
+                        f"ALTO download with URL {alto_file.download_url} failed: {e.response}"
+                    )
                 else:
                     output_file = str(
                         utils.construct_file_download_location(
-                            file=alto_file, base_path=self.base_path, file_dir=self.file_dir
+                            file=alto_file,
+                            base_path=self.base_path,
+                            file_dir=self.file_dir,
                         )
                     )
                     self.ssh_client.exec_command(f"mv {temp_output_file} {output_file}")

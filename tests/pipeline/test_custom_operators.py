@@ -88,42 +88,53 @@ def test_save_altos_operator(
 def test_save_mets_sftp_operator(
     oai_pmh_api_url,
     mets_dc_identifier,
-    sftp_client,
     sftp_server,
+    ssh_server,
     expected_mets_response,
 ):
     """
     Check that executing SaveMetsSFTPOperator saves a METS file to the remote server
     """
 
-    sftp = sftp_client.open_sftp()
+    # sftp = sftp_client.open_sftp()
     api = PMH_API(oai_pmh_api_url)
     output_path = str(Path(sftp_server.root) / "some" / "sub" / "path")
+    temp_path = str(Path(sftp_server.root) / "tmp" / "sub" / "path")
 
-    utils.make_intermediate_dirs(
-        sftp_client=sftp,
-        remote_directory=f"{output_path}/file_dir",
-    )
+    with ssh_server.client("user") as ssh_client:
+        sftp = ssh_client.open_sftp()
 
-    sftp_mets_operator = SaveMetsSFTPOperator(
-        task_id="test_save_mets_remote",
-        api=api,
-        sftp_client=sftp,
-        dc_identifier=mets_dc_identifier,
-        base_path=output_path,
-        file_dir="file_dir",
-    )
+        utils.make_intermediate_dirs(
+            sftp_client=sftp,
+            remote_directory=f"{output_path}/file_dir",
+        )
 
-    sftp_mets_operator.execute(context={})
+        utils.make_intermediate_dirs(
+            sftp_client=sftp,
+            remote_directory=f"{temp_path}/file_dir",
+        )
 
-    with sftp.file(f"{output_path}/file_dir/379973_METS.xml", "r") as file:
-        assert file.read().decode("utf-8") == expected_mets_response
+        sftp_mets_operator = SaveMetsSFTPOperator(
+            task_id="test_save_mets_remote",
+            api=api,
+            sftp_client=sftp,
+            ssh_client=ssh_client,
+            tmpdir=temp_path,
+            dc_identifier=mets_dc_identifier,
+            base_path=output_path,
+            file_dir="file_dir",
+        )
+
+        sftp_mets_operator.execute(context={})
+
+        with sftp.file(f"{output_path}/file_dir/379973_METS.xml", "r") as file:
+            assert file.read().decode("utf-8") == expected_mets_response
 
 
 def test_save_altos_sftp_operator(
     mets_dc_identifier,
-    sftp_client,
     sftp_server,
+    ssh_server,
     mock_alto_download_for_test_mets,
     simple_mets_path,
 ):
@@ -132,33 +143,38 @@ def test_save_altos_sftp_operator(
     to a remote server.
     """
 
-    sftp = sftp_client.open_sftp()
     output_path = str(Path(sftp_server.root) / "dir")
+    temp_path = str(Path(sftp_server.root) / "tmp")
 
-    utils.make_intermediate_dirs(
-        sftp_client=sftp,
-        remote_directory=f"{output_path}/sub_dir/mets",
-    )
+    with ssh_server.client("user") as ssh_client:
+        sftp = ssh_client.open_sftp()
 
-    with sftp.file(f"{output_path}/sub_dir/mets/379973_METS.xml", "w") as sftp_file:
-        with open(simple_mets_path, encoding="utf-8") as local_file:
-            sftp_file.write(local_file.read())
+        utils.make_intermediate_dirs(
+            sftp_client=sftp,
+            remote_directory=f"{output_path}/sub_dir/mets",
+        )
 
-    operator = SaveAltosSFTPOperator(
-        task_id="test_save_altos_remote",
-        sftp_client=sftp,
-        base_path=output_path,
-        file_dir="sub_dir",
-        mets_path=f"{output_path}/sub_dir/mets",
-        dc_identifier=mets_dc_identifier,
-    )
+        with sftp.file(f"{output_path}/sub_dir/mets/379973_METS.xml", "w") as sftp_file:
+            with open(simple_mets_path, encoding="utf-8") as local_file:
+                sftp_file.write(local_file.read())
 
-    operator.execute(context={})
+        operator = SaveAltosSFTPOperator(
+            task_id="test_save_altos_remote",
+            sftp_client=sftp,
+            ssh_client=ssh_client,
+            base_path=output_path,
+            tmpdir=temp_path,
+            file_dir="sub_dir",
+            mets_path=f"{output_path}/sub_dir/mets",
+            dc_identifier=mets_dc_identifier,
+        )
 
-    alto_locations = [
-        f"{output_path}/sub_dir/{file}"
-        for file in ["00001.xml", "00002.xml", "00003.xml", "00004.xml"]
-    ]
-    for alto_location in alto_locations:
-        with sftp.file(alto_location, "r") as alto:
-            assert alto.read().decode("utf-8") == mock_alto_download_for_test_mets
+        operator.execute(context={})
+
+        alto_locations = [
+            f"{output_path}/sub_dir/{file}"
+            for file in ["00001.xml", "00002.xml", "00003.xml", "00004.xml"]
+        ]
+        for alto_location in alto_locations:
+            with sftp.file(alto_location, "r") as alto:
+                assert alto.read().decode("utf-8") == mock_alto_download_for_test_mets
