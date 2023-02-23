@@ -5,7 +5,7 @@
 from datetime import timedelta
 
 from airflow import DAG
-from airflow.operators.dummy_operator import DummyOperator
+from airflow.operators.empty import EmptyOperator
 from airflow.providers.http.sensors.http import HttpSensor
 from airflow.providers.ssh.hooks.ssh import SSHHook
 from airflow.hooks.base import BaseHook
@@ -20,10 +20,12 @@ from operators.custom_operators import (
     CreateConnectionOperator,
 )
 
-DC_IDENTIFIER = "https://digi.kansalliskirjasto.fi/sanomalehti/binding/379973"
+#DC_IDENTIFIER = "https://digi.kansalliskirjasto.fi/sanomalehti/binding/4699" # this fails
+DC_IDENTIFIER = "https://digi.kansalliskirjasto.fi/sanomalehti/binding/379973" # this doesn't fail
 BASE_PATH = "/scratch/project_2006633/nlf-harvester/downloads/temp_test/"
 TMPDIR = "/local_scratch/robot_2006633_puhti"
 SET_ID = "col-681"
+#SET_ID = "sanomalehti"
 SSH_CONN_ID = "puhti_conn"
 HTTP_CONN_ID = "nlf_http_conn"
 
@@ -44,7 +46,7 @@ with DAG(
     doc_md=__doc__,
 ) as dag:
 
-    start = DummyOperator(task_id="start")
+    start = EmptyOperator(task_id="start")
 
     create_nlf_connection = CreateConnectionOperator(
         task_id="create_nlf_connection",
@@ -68,16 +70,6 @@ with DAG(
         with ssh_hook.get_conn() as ssh_client:
             sftp_client = ssh_client.open_sftp()
 
-            utils.make_intermediate_dirs(
-                sftp_client=sftp_client,
-                remote_directory=f"{BASE_PATH}/{SET_ID.replace(':', '_')}/{binding_id}/mets",
-            )
-
-            utils.make_intermediate_dirs(
-            sftp_client=sftp_client,
-            remote_directory=f"{TMPDIR}/{SET_ID.replace(':', '_')}/{binding_id}/mets",
-        )
-
             SaveMetsSFTPOperator(
                 task_id=f"save_mets_{binding_id}",
                 api=api,
@@ -92,6 +84,7 @@ with DAG(
             SaveAltosSFTPOperator(
                 task_id=f"save_altos_{binding_id}",
                 sftp_client=sftp_client,
+                ssh_client=ssh_client,
                 tmpdir=TMPDIR,
                 base_path=BASE_PATH,
                 file_dir=f"{SET_ID.replace(':', '_')}/{binding_id}/alto",
@@ -99,6 +92,6 @@ with DAG(
                 dc_identifier=dc_identifier,
             ).execute(context={})
 
-    success = DummyOperator(task_id="success")    
+    success = EmptyOperator(task_id="success")    
 
     start >> create_nlf_connection >> check_api_availability >> download_binding(DC_IDENTIFIER) >> success

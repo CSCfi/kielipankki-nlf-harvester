@@ -131,12 +131,9 @@ class SaveMetsSFTPOperator(BaseOperator):
         self.tmpdir = tmpdir
 
     def execute(self, context):
-        output_file = str(
-            utils.construct_mets_download_location(
-                dc_identifier=self.dc_identifier,
-                base_path=self.base_path,
-                file_dir=self.file_dir,
-            )
+        utils.make_intermediate_dirs(
+            sftp_client=self.sftp_client,
+            remote_directory=f"{self.tmpdir}/{self.file_dir}",
         )
 
         temp_output_file = str(
@@ -153,11 +150,21 @@ class SaveMetsSFTPOperator(BaseOperator):
                 self.api.download_mets(
                     dc_identifier=self.dc_identifier, output_mets_file=file
                 )
-            except RequestException:
-                self.log.error(f"Download of METS file {self.dc_identifier} failed")
+            except RequestException as e:
+                raise RequestException(f"METS download {self.dc_identifier} failed: {e.response}")
             else:
+                output_file = str(
+                    utils.construct_mets_download_location(
+                        dc_identifier=self.dc_identifier,
+                        base_path=self.base_path,
+                        file_dir=self.file_dir,
+                    )
+                )
+                utils.make_intermediate_dirs(
+                    sftp_client=self.sftp_client,
+                    remote_directory=f"{self.base_path}/{self.file_dir}",
+                )
                 self.ssh_client.exec_command(f"mv {temp_output_file} {output_file}")
-                #self.sftp_client.rename(temp_output_file, output_file)
 
 
 class SaveAltosSFTPOperator(BaseOperator):
@@ -173,6 +180,7 @@ class SaveAltosSFTPOperator(BaseOperator):
     def __init__(
         self,
         sftp_client,
+        ssh_client,
         tmpdir,
         base_path,
         file_dir,
@@ -182,6 +190,7 @@ class SaveAltosSFTPOperator(BaseOperator):
     ):
         super().__init__(**kwargs)
         self.sftp_client = sftp_client
+        self.ssh_client = ssh_client
         self.tmpdir = tmpdir
         self.base_path = base_path
         self.file_dir = file_dir
@@ -192,23 +201,10 @@ class SaveAltosSFTPOperator(BaseOperator):
         path = os.path.join(
             self.mets_path, f"{utils.binding_id_from_dc(self.dc_identifier)}_METS.xml"
         )
-        try:
-            mets = METS(self.dc_identifier, self.sftp_client.file(path, "r"))
-        except IOError:
-            self.log.error(
-                f"No METS found for binding {utils.binding_id_from_dc(self.dc_identifier)}"
-            )
-            return
-
+        
+        mets = METS(self.dc_identifier, self.sftp_client.file(path, "r"))
         alto_files = peekable(mets.files_of_type(ALTOFile))
-
-        try:
-            first_alto = alto_files.peek()
-        except XMLSyntaxError as e:
-            self.log.error(
-                f"Could not parse METS file {utils.binding_id_from_dc(self.dc_identifier)}: {e.args}"
-            )
-            return
+        first_alto = alto_files.peek()
 
         first_alto_path = str(
             utils.construct_file_download_location(
@@ -217,23 +213,33 @@ class SaveAltosSFTPOperator(BaseOperator):
         )
         utils.make_intermediate_dirs(
             sftp_client=self.sftp_client,
-            remote_directory=first_alto_path.rsplit("/", maxsplit=1)[0],
+            remote_directory=f"{self.base_path}/{self.file_dir}",
         )
+
+        utils.make_intermediate_dirs(
+            sftp_client=self.sftp_client,
+            remote_directory=f"{self.tmpdir}/{self.file_dir}",
+        )
+        
         for alto_file in alto_files:
-            output_file = str(
+            temp_output_file = str(
                 utils.construct_file_download_location(
-                    file=alto_file, base_path=self.base_path, file_dir=self.file_dir
+                    file=alto_file, base_path=self.tmpdir, file_dir=self.file_dir
                 )
             )
-            with self.sftp_client.file(output_file, "wb") as file:
+            
+            with self.sftp_client.file(temp_output_file, "wb") as file:
                 try:
                     alto_file.download(
                         output_file=file,
                         chunk_size=10 * 1024 * 1024,
                     )
-                except RequestException:
-                    self.log.error(
-                        f"File download failed with URL {alto_file.download_url}"
+                except RequestException as e:
+                    raise RequestException(f"ALTO download with URL {alto_file.download_url} failed: {e.response}")
+                else:
+                    output_file = str(
+                        utils.construct_file_download_location(
+                            file=alto_file, base_path=self.base_path, file_dir=self.file_dir
+                        )
                     )
-                    self.sftp_client.remove(output_file)
-                    continue
+                    self.ssh_client.exec_command(f"mv {temp_output_file} {output_file}")
