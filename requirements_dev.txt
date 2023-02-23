@@ -10,4 +10,5 @@ requests_mock
 sphinx
 pytest-mock
 mocksftp
+mock-ssh-server
 paramiko
