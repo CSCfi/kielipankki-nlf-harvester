@@ -162,32 +162,30 @@ class SaveMetsSFTPOperator(BaseOperator):
                 raise RequestException(
                     f"METS download {self.dc_identifier} failed: {e.response}"
                 )
-            else:
-                output_file = str(
-                    utils.construct_mets_download_location(
-                        dc_identifier=self.dc_identifier,
-                        base_path=self.base_path,
-                        file_dir=self.file_dir,
-                    )
-                )
-                utils.make_intermediate_dirs(
-                    sftp_client=self.sftp_client,
-                    remote_directory=f"{self.base_path}/{self.file_dir}",
-                )
 
-                if file.stat().st_size == 0:
-                    raise METSFileEmptyError(
-                        f"METS file {self.dc_identifier} is empty."
-                    )
+        output_file = str(
+            utils.construct_mets_download_location(
+                dc_identifier=self.dc_identifier,
+                base_path=self.base_path,
+                file_dir=self.file_dir,
+            )
+        )
+        utils.make_intermediate_dirs(
+            sftp_client=self.sftp_client,
+            remote_directory=f"{self.base_path}/{self.file_dir}",
+        )
 
-                _, stdout, _ = self.ssh_client.exec_command(
-                    f"mv {temp_output_file} {output_file}"
-                )
+        if self.sftp_client.stat(temp_output_file).st_size == 0:
+            raise METSFileEmptyError(f"METS file {self.dc_identifier} is empty.")
 
-                if stdout.channel.recv_exit_status() != 0:
-                    raise IOError(
-                        f"Moving METS file {self.dc_identifier} from temp to destination failed"
-                    )
+        _, stdout, _ = self.ssh_client.exec_command(
+            f"mv {temp_output_file} {output_file}"
+        )
+
+        if stdout.channel.recv_exit_status() != 0:
+            raise IOError(
+                f"Moving METS file {self.dc_identifier} from temp to destination failed"
+            )
 
 
 class SaveAltosSFTPOperator(BaseOperator):
@@ -256,12 +254,20 @@ class SaveAltosSFTPOperator(BaseOperator):
                         f"ALTO download with URL {alto_file.download_url} failed: {e.response}"
                     )
                     continue
-                else:
-                    output_file = str(
-                        utils.construct_file_download_location(
-                            file=alto_file,
-                            base_path=self.base_path,
-                            file_dir=self.file_dir,
-                        )
-                    )
-                    self.ssh_client.exec_command(f"mv {temp_output_file} {output_file}")
+
+            output_file = str(
+                utils.construct_file_download_location(
+                    file=alto_file,
+                    base_path=self.base_path,
+                    file_dir=self.file_dir,
+                )
+            )
+            _, stdout, _ = self.ssh_client.exec_command(
+                f"mv {temp_output_file} {output_file}"
+            )
+
+            if stdout.channel.recv_exit_status() != 0:
+                self.log.error(
+                    f"Moving ALTO file {alto_file.download_url} from temp to destination failed"
+                )
+                continue
