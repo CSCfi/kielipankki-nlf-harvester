@@ -1,11 +1,12 @@
 import os
+import time
 
 from airflow.models import BaseOperator
 from airflow.hooks.base import BaseHook
 from airflow.models import Connection
 from airflow import settings
 
-from harvester.mets import METS
+from harvester.mets import METS, METSFileEmptyError
 from harvester.file import ALTOFile
 from harvester.pmh_interface import PMH_API
 from harvester import utils
@@ -174,7 +175,19 @@ class SaveMetsSFTPOperator(BaseOperator):
                     remote_directory=f"{self.base_path}/{self.file_dir}",
                 )
 
-                self.ssh_client.exec_command(f"mv {temp_output_file} {output_file}")
+                if file.stat().st_size == 0:
+                    raise METSFileEmptyError(
+                        f"METS file {self.dc_identifier} is empty."
+                    )
+
+                _, stdout, _ = self.ssh_client.exec_command(
+                    f"mv {temp_output_file} {output_file}"
+                )
+
+                if stdout.channel.recv_exit_status() != 0:
+                    raise IOError(
+                        f"Moving METS file {self.dc_identifier} from temp to destination failed"
+                    )
 
 
 class SaveAltosSFTPOperator(BaseOperator):
@@ -239,9 +252,10 @@ class SaveAltosSFTPOperator(BaseOperator):
                         chunk_size=10 * 1024 * 1024,
                     )
                 except RequestException as e:
-                    raise RequestException(
+                    self.log.error(
                         f"ALTO download with URL {alto_file.download_url} failed: {e.response}"
                     )
+                    continue
                 else:
                     output_file = str(
                         utils.construct_file_download_location(
