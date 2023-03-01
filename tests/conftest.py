@@ -122,6 +122,30 @@ def expected_mets_response(mets_dc_identifier):
 
 
 @pytest.fixture
+def empty_mets_dc_identifier():
+    """
+    Return a fake DC identifier for testing empty METS files.
+    """
+    return "https://digi.kansalliskirjasto.fi/sanomalehti/binding/00000"
+
+
+@pytest.fixture
+def empty_mets_response(empty_mets_dc_identifier):
+    """
+    Patch a GET request for fetching a fake empty METS file.
+    """
+    binding_id = empty_mets_dc_identifier.split("/")[-1]
+
+    with requests_mock.Mocker() as mocker:
+        mets_url = (
+            f"https://digi.kansalliskirjasto.fi/sanomalehti/"
+            f"binding/{binding_id}/mets.xml?full=true"
+        )
+        mocker.get(mets_url, text="")
+        yield ""
+
+
+@pytest.fixture
 def cwd_in_tmp(tmp_path):
     """
     Change current working directory into a temporary directory.

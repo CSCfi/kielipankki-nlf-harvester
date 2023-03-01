@@ -92,3 +92,9 @@ class METS:
         files = [file for file in self.files() if isinstance(file, filetype)]
         for file in files:
             yield file
+
+
+class METSFileEmptyError(Exception):
+    """
+    Exception raised when an empty METS file is downloaded.
+    """
