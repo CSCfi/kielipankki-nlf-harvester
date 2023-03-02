@@ -175,6 +175,50 @@ def test_empty_mets(
             sftp_mets_operator.execute(context={})
 
 
+def test_failed_mets_request(
+    oai_pmh_api_url,
+    failed_mets_dc_identifier,
+    failed_mets_response,
+    sftp_server,
+    ssh_server,
+):
+    """
+    Ensure that an empty METS file raises an exception.
+    """
+
+    api = PMH_API(oai_pmh_api_url)
+    output_path = str(Path(sftp_server.root) / "some" / "sub" / "path")
+    temp_path = str(Path(sftp_server.root) / "tmp" / "sub" / "path")
+
+    with ssh_server.client("user") as ssh_client:
+        sftp = ssh_client.open_sftp()
+
+        utils.make_intermediate_dirs(
+            sftp_client=sftp,
+            remote_directory=f"{output_path}/file_dir",
+        )
+
+        utils.make_intermediate_dirs(
+            sftp_client=sftp,
+            remote_directory=f"{temp_path}/file_dir",
+        )
+
+        sftp_mets_operator = SaveMetsSFTPOperator(
+            task_id="test_save_mets_remote",
+            api=api,
+            sftp_client=sftp,
+            ssh_client=ssh_client,
+            tmpdir=temp_path,
+            dc_identifier=failed_mets_dc_identifier,
+            base_path=output_path,
+            file_dir="file_dir",
+        )
+
+        mets_response = failed_mets_response
+        with pytest.raises(RequestException):
+            sftp_mets_operator.execute(context={})
+
+
 def test_save_altos_sftp_operator(
     mets_dc_identifier,
     sftp_server,
