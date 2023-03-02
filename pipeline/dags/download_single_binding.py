@@ -25,7 +25,7 @@ DC_IDENTIFIER = (
     "https://digi.kansalliskirjasto.fi/sanomalehti/binding/379973"  # this doesn't fail
 )
 BASE_PATH = "/scratch/project_2006633/nlf-harvester/downloads/temp_test/"
-TMPDIR = "/local_scratch/robot_2006633_puhti"
+TMPDIR = "/local_scratch/robot_2006633_puhti/harvester-temp"
 SET_ID = "col-681"
 # SET_ID = "sanomalehti"
 SSH_CONN_ID = "puhti_conn"
@@ -93,6 +93,8 @@ with DAG(
                 mets_path=f"{BASE_PATH}/{SET_ID.replace(':', '_')}/{binding_id}/mets",
                 dc_identifier=dc_identifier,
             ).execute(context={})
+
+            ssh_client.exec_command(f"rm -r {TMPDIR}/{binding_id}")
 
     success = EmptyOperator(task_id="success")
 

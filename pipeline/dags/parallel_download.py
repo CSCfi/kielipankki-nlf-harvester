@@ -23,7 +23,7 @@ from operators.custom_operators import (
 )
 
 BASE_PATH = "/scratch/project_2006633/nlf-harvester/downloads"
-TMPDIR = "/local_scratch/robot_2006633_puhti"
+TMPDIR = "/local_scratch/robot_2006633_puhti/harvester-temp"
 SSH_CONN_ID = "puhti_conn"
 HTTP_CONN_ID = "nlf_http_conn"
 SET_IDS = ["col-681", "col-361"]
@@ -108,6 +108,8 @@ def download_set(dag: DAG, set_id, api, ssh_conn_id, base_path) -> TaskGroup:
                     mets_path=f"{base_path}/{set_id.replace(':', '_')}/{binding_id}/mets",
                     dc_identifier=dc_identifier,
                 ).execute(context={})
+
+                ssh_client.exec_command(f"rm -r {TMPDIR}/{binding_id}")
 
         download_binding.expand(dc_identifier=dc_identifiers)
 
