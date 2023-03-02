@@ -177,3 +177,12 @@ with DAG(
         else:
             downloads[-1] >> download_tg
         downloads.append(download_tg)
+
+    @task(task_id="clear_temp_directory")
+    def clear_temp_dir():
+        ssh_hook = SSHHook(ssh_conn_id=SSH_CONN_ID)
+        with ssh_hook.get_conn() as ssh_client:
+            ssh_client.exec_command(f"rm -r {TMPDIR}/*")
+
+    clear_temp_dir_task = clear_temp_dir()
+    downloads[-1] >> clear_temp_dir_task
