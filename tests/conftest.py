@@ -130,6 +130,14 @@ def empty_mets_dc_identifier():
 
 
 @pytest.fixture
+def failed_mets_dc_identifier():
+    """
+    Return a fake DC identifier for testing failed METS downloads.
+    """
+    return "https://digi.kansalliskirjasto.fi/sanomalehti/binding/404"
+
+
+@pytest.fixture
 def empty_mets_response(empty_mets_dc_identifier):
     """
     Patch a GET request for fetching a fake empty METS file.
@@ -143,6 +151,22 @@ def empty_mets_response(empty_mets_dc_identifier):
         )
         mocker.get(mets_url, text="")
         yield ""
+
+
+@pytest.fixture
+def failed_mets_response(failed_mets_dc_identifier):
+    """
+    Patch a GET request that returns 404 for fetching a fake METS file.
+    """
+    binding_id = failed_mets_dc_identifier.split("/")[-1]
+
+    with requests_mock.Mocker() as mocker:
+        mets_url = (
+            f"https://digi.kansalliskirjasto.fi/sanomalehti/"
+            f"binding/{binding_id}/mets.xml?full=true"
+        )
+        mocker.get(mets_url, text="fail", status_code=404)
+        yield "fail"
 
 
 @pytest.fixture

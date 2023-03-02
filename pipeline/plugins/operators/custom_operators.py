@@ -1,5 +1,4 @@
 import os
-import time
 
 from airflow.models import BaseOperator
 from airflow.hooks.base import BaseHook
@@ -162,6 +161,10 @@ class SaveMetsSFTPOperator(BaseOperator):
                 raise RequestException(
                     f"METS download {self.dc_identifier} failed: {e.response}"
                 )
+            except OSError as e:
+                raise OSError(
+                    f"Writing METS {self.dc_identifier} to file failed with error number {e.errno}"
+                )
 
         output_file = str(
             utils.construct_mets_download_location(
@@ -183,7 +186,7 @@ class SaveMetsSFTPOperator(BaseOperator):
         )
 
         if stdout.channel.recv_exit_status() != 0:
-            raise IOError(
+            raise OSError(
                 f"Moving METS file {self.dc_identifier} from temp to destination failed"
             )
 
@@ -262,6 +265,7 @@ class SaveAltosSFTPOperator(BaseOperator):
                     file_dir=self.file_dir,
                 )
             )
+
             _, stdout, _ = self.ssh_client.exec_command(
                 f"mv {temp_output_file} {output_file}"
             )
@@ -270,4 +274,3 @@ class SaveAltosSFTPOperator(BaseOperator):
                 self.log.error(
                     f"Moving ALTO file {alto_file.download_url} from temp to destination failed"
                 )
-                continue
