@@ -100,13 +100,13 @@ def download_set(dag: DAG, set_id, api, ssh_conn_id, base_path) -> TaskGroup:
 
                 SaveAltosSFTPOperator(
                     task_id=f"save_altos_{binding_id}",
+                    mets_path=f"{base_path}/{set_id.replace(':', '_')}/{binding_id}/mets",
                     sftp_client=sftp_client,
                     ssh_client=ssh_client,
                     tmpdir=TMPDIR,
+                    dc_identifier=dc_identifier,
                     base_path=base_path,
                     file_dir=f"{set_id.replace(':', '_')}/{binding_id}/alto",
-                    mets_path=f"{base_path}/{set_id.replace(':', '_')}/{binding_id}/mets",
-                    dc_identifier=dc_identifier,
                 ).execute(context={})
 
                 ssh_client.exec_command(f"rm -r {TMPDIR}/{binding_id}")
