@@ -107,19 +107,20 @@ class SaveAltosOperator(BaseOperator):
                 alto_file.download(output_file=file)
 
 
-class SaveMetsSFTPOperator(BaseOperator):
+class SaveFilesSFTPOperator(BaseOperator):
     """
-    Save METS file for one binding on remote filesystem using SSH connection.
+    Save file to a remote filesystem using SSH connection.
 
-    :param http_conn_id: Connection ID of API
     :param sftp_client: SFTPClient
+    :param ssh_client: SSHClient
+    :param tmpdir: Absolute path for a temporary directory on the remote server
     :param dc_identifier: DC identifier of binding
     :param base_path: Base path for download location
+    :param file_dir: Directory where file will be saved
     """
 
     def __init__(
         self,
-        api,
         sftp_client,
         ssh_client,
         tmpdir,
@@ -129,7 +130,6 @@ class SaveMetsSFTPOperator(BaseOperator):
         **kwargs,
     ):
         super().__init__(**kwargs)
-        self.api = api
         self.sftp_client = sftp_client
         self.ssh_client = ssh_client
         self.dc_identifier = dc_identifier
@@ -137,11 +137,55 @@ class SaveMetsSFTPOperator(BaseOperator):
         self.file_dir = file_dir
         self.tmpdir = tmpdir
 
-    def execute(self, context):
+    def ensure_tmp_output_location(self):
+        """
+        Make sure that all intermediate directories exist for temporary storage
+        """
         utils.make_intermediate_dirs(
             sftp_client=self.sftp_client,
             remote_directory=f"{self.tmpdir}/{self.file_dir}",
         )
+
+    def ensure_final_output_location(self):
+        """
+        Make sure that all intermediate directories exist for final storage
+        """
+        utils.make_intermediate_dirs(
+            sftp_client=self.sftp_client,
+            remote_directory=f"{self.base_path}/{self.file_dir}",
+        )
+
+    def move_file_to_final_location(self, temp_output_file, output_file):
+        """
+        Move file from temporary to final location.
+
+        :return: Exit status from bash command
+        """
+        _, stdout, _ = self.ssh_client.exec_command(
+            f"mv {temp_output_file} {output_file}"
+        )
+
+        return stdout.channel.recv_exit_status()
+
+    def execute(self, context):
+        raise NotImplementedError(
+            "execute() must be defined separately for each file type."
+        )
+
+
+class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
+    """
+    Save a METS file remote a filesystem using SSH connection.
+
+    :param api: API from which to download the file
+    """
+
+    def __init__(self, api, **kwargs):
+        super().__init__(**kwargs)
+        self.api = api
+
+    def execute(self, context):
+        self.ensure_tmp_output_location()
 
         temp_output_file = str(
             utils.construct_mets_download_location(
@@ -173,53 +217,29 @@ class SaveMetsSFTPOperator(BaseOperator):
                 file_dir=self.file_dir,
             )
         )
-        utils.make_intermediate_dirs(
-            sftp_client=self.sftp_client,
-            remote_directory=f"{self.base_path}/{self.file_dir}",
-        )
+        self.ensure_final_output_location()
 
         if self.sftp_client.stat(temp_output_file).st_size == 0:
             raise METSFileEmptyError(f"METS file {self.dc_identifier} is empty.")
 
-        _, stdout, _ = self.ssh_client.exec_command(
-            f"mv {temp_output_file} {output_file}"
-        )
+        exit_status = self.move_file_to_final_location(temp_output_file, output_file)
 
-        if stdout.channel.recv_exit_status() != 0:
+        if exit_status != 0:
             raise OSError(
                 f"Moving METS file {self.dc_identifier} from temp to destination failed"
             )
 
 
-class SaveAltosSFTPOperator(BaseOperator):
+class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
     """
     Save ALTO files for one binding on remote filesystem using SSH connection.
 
-    :param http_conn_id: Connection ID of API
-    :param ssh_conn_id: SSH connection ID
-    :param base_path: Base path for download location
-    :param dc_identifier: DC identifier of binding
+    :param mets_path: Path to where the METS file of the binding is stored
     """
 
-    def __init__(
-        self,
-        sftp_client,
-        ssh_client,
-        tmpdir,
-        base_path,
-        file_dir,
-        mets_path,
-        dc_identifier,
-        **kwargs,
-    ):
+    def __init__(self, mets_path, **kwargs):
         super().__init__(**kwargs)
-        self.sftp_client = sftp_client
-        self.ssh_client = ssh_client
-        self.tmpdir = tmpdir
-        self.base_path = base_path
-        self.file_dir = file_dir
         self.mets_path = mets_path
-        self.dc_identifier = dc_identifier
 
     def execute(self, context):
         path = os.path.join(
@@ -229,15 +249,8 @@ class SaveAltosSFTPOperator(BaseOperator):
         mets = METS(self.dc_identifier, self.sftp_client.file(path, "r"))
         alto_files = mets.files_of_type(ALTOFile)
 
-        utils.make_intermediate_dirs(
-            sftp_client=self.sftp_client,
-            remote_directory=f"{self.base_path}/{self.file_dir}",
-        )
-
-        utils.make_intermediate_dirs(
-            sftp_client=self.sftp_client,
-            remote_directory=f"{self.tmpdir}/{self.file_dir}",
-        )
+        self.ensure_final_output_location()
+        self.ensure_tmp_output_location()
 
         for alto_file in alto_files:
             temp_output_file = str(
@@ -266,11 +279,11 @@ class SaveAltosSFTPOperator(BaseOperator):
                 )
             )
 
-            _, stdout, _ = self.ssh_client.exec_command(
-                f"mv {temp_output_file} {output_file}"
+            exit_status = self.move_file_to_final_location(
+                temp_output_file, output_file
             )
 
-            if stdout.channel.recv_exit_status() != 0:
+            if exit_status != 0:
                 self.log.error(
                     f"Moving ALTO file {alto_file.download_url} from temp to destination failed"
                 )
