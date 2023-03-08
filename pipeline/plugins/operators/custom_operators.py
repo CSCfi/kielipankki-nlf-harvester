@@ -172,7 +172,7 @@ class SaveFilesSFTPOperator(BaseOperator):
             "execute() must be defined separately for each file type."
         )
 
-    def check_if_file_exists(self, path):
+    def file_exists(self, path):
         """
         Check if a non-empty file already exists in the given path.
 
@@ -208,7 +208,7 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
             )
         )
 
-        if self.check_if_file_exists(output_file):
+        if self.file_exists(output_file):
             return
 
         self.ensure_tmp_output_location()
@@ -280,7 +280,7 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
                 )
             )
 
-            if self.check_if_file_exists(output_file):
+            if self.file_exists(output_file):
                 continue
 
             temp_output_file = str(
