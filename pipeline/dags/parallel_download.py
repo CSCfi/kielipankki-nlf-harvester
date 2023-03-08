@@ -54,8 +54,8 @@ def list_dc_identifiers(http_conn_id, set_id):
 
 
 # Again, temporary until rate limits are no longer an issue
-for set_id in SET_IDS:
-    list_dc_identifiers(HTTP_CONN_ID, set_id)
+# for set_id in SET_IDS:
+#    list_dc_identifiers(HTTP_CONN_ID, set_id)
 
 
 def download_set(dag: DAG, set_id, api, ssh_conn_id, base_path) -> TaskGroup:
@@ -65,10 +65,10 @@ def download_set(dag: DAG, set_id, api, ssh_conn_id, base_path) -> TaskGroup:
     with TaskGroup(group_id=f"download_set_{set_id.replace(':', '_')}") as download:
 
         # Temporary solution while rate limits are an issue:
-        with open(
-            f"/home/ubuntu/airflow/plugins/bindings_{set_id.replace(':', '_')}"
-        ) as file:
-            dc_identifiers = file.read().splitlines()
+        # with open(
+        #    f"/home/ubuntu/airflow/plugins/bindings_{set_id.replace(':', '_')}"
+        # ) as file:
+        #    dc_identifiers = file.read().splitlines()
 
         # This is how it would preferrably be done:
         # expand() only accepts lists or dicts, so dc_identifiers need to be
@@ -76,7 +76,7 @@ def download_set(dag: DAG, set_id, api, ssh_conn_id, base_path) -> TaskGroup:
         # be an issue for large sets, but we have an upcoming ticket to
         # download huge sets in batches anyway, which should hopefully fix
         # this issue.
-        # dc_identifiers = list(api.dc_identifiers(set_id))
+        dc_identifiers = list(api.dc_identifiers(set_id))
 
         @task(
             task_id="download_binding", task_group=download, trigger_rule="none_skipped"
@@ -126,7 +126,7 @@ with DAG(
 
     create_nlf_connection = CreateConnectionOperator(
         task_id="create_nlf_connection",
-        conn_id="nlf_http_conn",
+        conn_id=HTTP_CONN_ID,
         conn_type="HTTP",
         host="https://digi.kansalliskirjasto.fi/interfaces/OAI-PMH",
         schema="HTTPS",
@@ -142,7 +142,7 @@ with DAG(
         Check if API is responding and download can begin. If not, cancel pipeline.
         """
         api_ok = HttpSensor(
-            task_id="http_sensor", http_conn_id="nlf_http_conn", endpoint="/"
+            task_id="http_sensor", http_conn_id=HTTP_CONN_ID, endpoint="/"
         ).poke(context={})
 
         if api_ok:
