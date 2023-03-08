@@ -172,6 +172,21 @@ class SaveFilesSFTPOperator(BaseOperator):
             "execute() must be defined separately for each file type."
         )
 
+    def check_if_file_exists(self, path):
+        """
+        Check if a non-empty file already exists in the given path.
+
+        :return: True if a non-empty file exists, otherwise False
+        """
+        try:
+            file_size = self.sftp_client.stat(path).st_size
+        except OSError:
+            return False
+        else:
+            if file_size > 0:
+                return True
+        return False
+
 
 class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
     """
@@ -185,6 +200,17 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
         self.api = api
 
     def execute(self, context):
+        output_file = str(
+            utils.construct_mets_download_location(
+                dc_identifier=self.dc_identifier,
+                base_path=self.base_path,
+                file_dir=self.file_dir,
+            )
+        )
+
+        if self.check_if_file_exists(output_file):
+            return
+
         self.ensure_tmp_output_location()
 
         temp_output_file = str(
@@ -210,13 +236,6 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
                     f"Writing METS {self.dc_identifier} to file failed with error number {e.errno}"
                 )
 
-        output_file = str(
-            utils.construct_mets_download_location(
-                dc_identifier=self.dc_identifier,
-                base_path=self.base_path,
-                file_dir=self.file_dir,
-            )
-        )
         self.ensure_final_output_location()
 
         if self.sftp_client.stat(temp_output_file).st_size == 0:
@@ -253,6 +272,17 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
         self.ensure_tmp_output_location()
 
         for alto_file in alto_files:
+            output_file = str(
+                utils.construct_file_download_location(
+                    file=alto_file,
+                    base_path=self.base_path,
+                    file_dir=self.file_dir,
+                )
+            )
+
+            if self.check_if_file_exists(output_file):
+                continue
+
             temp_output_file = str(
                 utils.construct_file_download_location(
                     file=alto_file, base_path=self.tmpdir, file_dir=self.file_dir
@@ -270,14 +300,6 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
                         f"ALTO download with URL {alto_file.download_url} failed: {e.response}"
                     )
                     continue
-
-            output_file = str(
-                utils.construct_file_download_location(
-                    file=alto_file,
-                    base_path=self.base_path,
-                    file_dir=self.file_dir,
-                )
-            )
 
             exit_status = self.move_file_to_final_location(
                 temp_output_file, output_file
