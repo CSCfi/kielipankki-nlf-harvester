@@ -81,3 +81,18 @@ def construct_mets_download_location(
         filename = f"{binding_id_from_dc(dc_identifier)}_METS.xml"
 
     return Path(base_path) / Path(file_dir) / Path(filename)
+
+
+def split_into_chunks(generator, chunk_size):
+    """Yield successive chunks from a generator"""
+    chunk = []
+
+    for item in generator:
+        if len(chunk) >= chunk_size:
+            yield chunk
+            chunk = [item]
+        else:
+            chunk.append(item)
+
+    if chunk:
+        yield chunk
