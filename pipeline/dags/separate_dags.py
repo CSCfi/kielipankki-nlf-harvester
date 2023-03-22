@@ -3,8 +3,6 @@ DEV Create a separate DAG for each collection in NLF
 """
 
 from datetime import timedelta
-import itertools
-import os
 
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
@@ -37,13 +35,9 @@ default_args = {
 }
 
 
-def calculate_batch_size(set_size):
-    pass
-
-
 def download_set(dag: DAG, set_id, api, ssh_conn_id, base_path, batch_size) -> TaskGroup:
     """
-    TaskGroupFactory for downloading METS and ALTOs for one binding.
+    TaskGroupFactory for downloading METS and ALTOs for one collection.
     """
     with TaskGroup(group_id=f"download_set_{set_id.replace(':', '_')}") as download:
 
@@ -91,12 +85,8 @@ def download_set(dag: DAG, set_id, api, ssh_conn_id, base_path, batch_size) -> T
 http_conn = BaseHook.get_connection(HTTP_CONN_ID)
 api = PMH_API(url=http_conn.host)
 
-current_dag_id = get_parsing_context().dag_id
-
 for set_id in SET_IDS:
-    dag_id = f"dev_parallel_download_{set_id.replace(':', '_')}"
-    if current_dag_id is not None and current_dag_id != dag_id:
-        continue  # skip generation of non-selected DAG
+    dag_id = f"dev_parallel_batch_download_{set_id.replace(':', '_')}"
 
     with DAG(
         dag_id=dag_id,

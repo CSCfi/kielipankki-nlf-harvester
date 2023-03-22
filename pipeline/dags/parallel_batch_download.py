@@ -3,8 +3,6 @@ DEV Depth-first download procedure
 """
 
 from datetime import timedelta
-import itertools
-import os
 
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
@@ -27,7 +25,7 @@ BASE_PATH = "/scratch/project_2006633/nlf-harvester/downloads"
 TMPDIR = "/local_scratch/robot_2006633_puhti/harvester-temp"
 SSH_CONN_ID = "puhti_conn"
 HTTP_CONN_ID = "nlf_http_conn"
-SET_IDS = ["col-681", "col-361", "sanomalehti"]
+SET_IDS = ["col-681", "col-361"]
 
 default_args = {
     "owner": "Kielipankki",
@@ -35,27 +33,15 @@ default_args = {
     "retry_delay": timedelta(seconds=10),
 }
 
+
 def download_set(dag: DAG, set_id, api, ssh_conn_id, base_path, batch_size) -> TaskGroup:
     """
     TaskGroupFactory for downloading METS and ALTOs for one binding.
     """
     with TaskGroup(group_id=f"download_set_{set_id.replace(':', '_')}") as download:
 
-        # Temporary solution while rate limits are an issue:
-        # with open(
-        #    f"/home/ubuntu/airflow/plugins/bindings_{set_id.replace(':', '_')}"
-        # ) as file:
-        #    dc_identifiers = file.read().splitlines()
-
-        # This is how it would preferrably be done:
-        # expand() only accepts lists or dicts, so dc_identifiers need to be
-        # converted to a list. With the current implementation, this would
-        # be an issue for large sets, but we have an upcoming ticket to
-        # download huge sets in batches anyway, which should hopefully fix
-        # this issue.
-
         @task(
-            task_id="download_bindin_batch", task_group=download, trigger_rule="none_skipped"
+            task_id="download_binding_batch", task_group=download, trigger_rule="none_skipped"
         )
         def download_binding_batch(batch):
             ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
@@ -96,7 +82,7 @@ def download_set(dag: DAG, set_id, api, ssh_conn_id, base_path, batch_size) -> T
 
 
 with DAG(
-    dag_id="parallel_download",
+    dag_id="parallel_batch_download",
     schedule="@once",
     catchup=False,
     default_args=default_args,
