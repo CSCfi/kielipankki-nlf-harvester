@@ -3,7 +3,6 @@ Depth-first download procedure
 """
 
 from datetime import timedelta
-import os
 
 from airflow import DAG
 from airflow.operators.empty import EmptyOperator
@@ -35,47 +34,12 @@ default_args = {
 }
 
 
-def list_dc_identifiers(http_conn_id, set_id):
-    """
-    A hopefully temporary helper function to save DC identifiers to file for
-    later reading while rate limits are an issue.
-    """
-    if not os.path.isfile(
-        f"/home/ubuntu/airflow/plugins/bindings_{set_id.replace(':', '_')}"
-    ):
-        http_conn = BaseHook.get_connection(http_conn_id)
-        api = PMH_API(url=http_conn.host)
-        dc_identifiers = api.dc_identifiers(set_id)
-        with open(
-            f"/home/ubuntu/airflow/plugins/bindings_{set_id.replace(':', '_')}", "w"
-        ) as file:
-            for dc in dc_identifiers:
-                file.write(f"{dc}\n")
-
-
-# Again, temporary until rate limits are no longer an issue
-# for set_id in SET_IDS:
-#    list_dc_identifiers(HTTP_CONN_ID, set_id)
-
-
 def download_set(dag: DAG, set_id, api, ssh_conn_id, base_path) -> TaskGroup:
     """
     TaskGroupFactory for downloading METS and ALTOs for one binding.
     """
     with TaskGroup(group_id=f"download_set_{set_id.replace(':', '_')}") as download:
 
-        # Temporary solution while rate limits are an issue:
-        # with open(
-        #    f"/home/ubuntu/airflow/plugins/bindings_{set_id.replace(':', '_')}"
-        # ) as file:
-        #    dc_identifiers = file.read().splitlines()
-
-        # This is how it would preferrably be done:
-        # expand() only accepts lists or dicts, so dc_identifiers need to be
-        # converted to a list. With the current implementation, this would
-        # be an issue for large sets, but we have an upcoming ticket to
-        # download huge sets in batches anyway, which should hopefully fix
-        # this issue.
         dc_identifiers = list(api.dc_identifiers(set_id))
 
         @task(
