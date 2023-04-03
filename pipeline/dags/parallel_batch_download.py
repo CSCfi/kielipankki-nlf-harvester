@@ -24,20 +24,20 @@ BASE_PATH = "/scratch/project_2006633/nlf-harvester/downloads"
 TMPDIR = "/local_scratch/robot_2006633_puhti/harvester-temp"
 SSH_CONN_ID = "puhti_conn"
 HTTP_CONN_ID = "nlf_http_conn"
-SET_IDS = ["col-681", "col-361", "col-25", "sanomalehti"]
+SET_IDS = ["col-24", "col-82", "col-361", "col-501"]
 BINDING_BASE_PATH = Path("/home/ubuntu/binding_ids")
 
 default_args = {
     "owner": "Kielipankki",
     "start_date": "2022-10-01",
     "retry_delay": timedelta(minutes=5),
-    "retries": 4,
+    "retries": 2,
 }
 
 http_conn = BaseHook.get_connection(HTTP_CONN_ID)
 api = PMH_API(url=http_conn.host)
 
-for set_id in [set_id for set_id in api.set_ids() if not set_id.endswith("_rajatut")]:
+for set_id in SET_IDS:
 
     @dag(
         dag_id=f"parallel_batch_download_{set_id.replace(':', '_')}",
