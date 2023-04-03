@@ -9,10 +9,9 @@ import shutil
 
 from airflow.hooks.base import BaseHook
 from airflow.decorators import task, task_group, dag
-
 from harvester.pmh_interface import PMH_API
 
-# SET_IDS = ["col-681", "col-361", "col-25", "sanomalehti"]
+SET_IDS = ["col-24", "col-82", "col-361", "col-501"]
 BASE_PATH = Path("/home/ubuntu/binding_ids")
 HTTP_CONN_ID = "nlf_http_conn"
 CHUNK_SIZE = 500
@@ -21,7 +20,7 @@ default_args = {
     "owner": "Kielipankki",
     "start_date": "2022-10-01",
     "retry_delay": timedelta(minutes=5),
-    "retries": 2,
+    "retries": 4,
 }
 
 
@@ -57,16 +56,14 @@ def fetch_bindings_dag():
                     file_no += 1
                     file_obj.close()
                     file_obj = open(f"{folder_path}/{file_no}", "a")
-                    i = 0
+                    file_obj.write(item + "\n")
+                    i = 1
                 else:
                     file_obj.write(item + "\n")
                     i += 1
             file_obj.close()
 
-        set_ids = [
-            set_id for set_id in api.set_ids() if not set_id.endswith("_rajatut")
-        ]
-        save_ids_for_set.partial(chunk_size=CHUNK_SIZE).expand(set_id=set_ids)
+        save_ids_for_set.partial(chunk_size=CHUNK_SIZE).expand(set_id=SET_IDS)
 
     save_ids()
 
