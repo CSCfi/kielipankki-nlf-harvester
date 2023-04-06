@@ -13,7 +13,6 @@ from harvester.pmh_interface import PMH_API
 SET_IDS = ["col-24", "col-82", "col-361", "col-501"]
 BASE_PATH = Path("/home/ubuntu/binding_ids_all")
 HTTP_CONN_ID = "nlf_http_conn"
-CHUNK_SIZE = 500
 
 default_args = {
     "owner": "Kielipankki",
