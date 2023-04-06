@@ -22,3 +22,29 @@ def test_make_intermediate_dirs(sftp_server, sftp_client):
     root_path = Path(sftp_server.root)
     utils.make_intermediate_dirs(sftp, f"{root_path}/does/not/exist")
     assert sftp.listdir(f"{root_path}/does/not") == ["exist"]
+
+
+def test_calculate_batch_size():
+    """
+    Test that batch sizes are calculated correctly.
+    """
+    assert utils.calculate_batch_size(1) == 1
+    assert utils.calculate_batch_size(100) == 10
+    assert utils.calculate_batch_size(10000) == 100
+    assert utils.calculate_batch_size(100000) == 250
+    assert utils.calculate_batch_size(1000000) == 500
+
+
+def test_split_into_batches():
+    """
+    Test that a collection is split to batches correctly.
+    """
+    bindings = list(range(50))
+    batches = utils.split_into_batches(bindings)
+    assert batches == [
+        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+        [10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+        [20, 21, 22, 23, 24, 25, 26, 27, 28, 29],
+        [30, 31, 32, 33, 34, 35, 36, 37, 38, 39],
+        [40, 41, 42, 43, 44, 45, 46, 47, 48, 49],
+    ]

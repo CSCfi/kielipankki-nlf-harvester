@@ -83,16 +83,25 @@ def construct_mets_download_location(
     return Path(base_path) / Path(file_dir) / Path(filename)
 
 
-def split_into_chunks(generator, chunk_size):
-    """Yield successive chunks from a generator"""
-    chunk = []
+def calculate_batch_size(col_size):
+    """
+    Return a suitable download batch size for a collection.
+    """
+    if col_size < 500:
+        return min(col_size, 10)
+    if col_size < 50000:
+        return 100
+    if col_size < 500000:
+        return 250
+    else:
+        return 500
 
-    for item in generator:
-        if len(chunk) >= chunk_size:
-            yield chunk
-            chunk = [item]
-        else:
-            chunk.append(item)
 
-    if chunk:
-        yield chunk
+def split_into_batches(bindings):
+    """
+    Split a collection into download batches.
+    """
+    col_size = len(bindings)
+    batch_size = calculate_batch_size(col_size)
+    batches = [bindings[i : i + batch_size] for i in range(0, col_size, batch_size)]
+    return batches

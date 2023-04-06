@@ -87,11 +87,11 @@ def test_save_altos_operator(
 
 
 def test_existing_mets_not_downloaded_again(
-        oai_pmh_api_url,
-        mets_dc_identifier,
-        sftp_server,
-        ssh_server,
-        expected_mets_response,
+    oai_pmh_api_url,
+    mets_dc_identifier,
+    sftp_server,
+    ssh_server,
+    expected_mets_response,
 ):
     """
     Test that existing METS files are not redownloaded.
@@ -127,7 +127,6 @@ def test_existing_mets_not_downloaded_again(
         # Ensure that the METS file was not overwritten:
         with sftp.file(f"{output_path}/sub_dir/mets/379973_METS.xml", "r") as sftp_file:
             assert sftp_file.read().decode("utf-8") == "test"
-
 
 
 def test_save_mets_sftp_operator(
@@ -281,11 +280,11 @@ def test_save_altos_sftp_operator(
 
 
 def test_existing_altos_not_downloaded_again(
-        mets_dc_identifier,
-        sftp_server,
-        ssh_server,
-        mock_alto_download_for_test_mets,
-        simple_mets_path,
+    mets_dc_identifier,
+    sftp_server,
+    ssh_server,
+    mock_alto_download_for_test_mets,
+    simple_mets_path,
 ):
     """
     Test that existing ALTO files are not redownloaded.

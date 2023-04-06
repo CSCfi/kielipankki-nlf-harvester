@@ -1,10 +1,10 @@
 """
-Depth-first parallelized download procedure that creates a DAG for each collection
+Depth-first parallelized download procedure that creates a DAG for each collection.
+Collections are split into batches based on their size.
 """
 
 from datetime import timedelta
 from pathlib import Path
-import os
 
 from airflow.operators.empty import EmptyOperator
 from airflow.providers.http.sensors.http import HttpSensor
@@ -25,14 +25,15 @@ TMPDIR = "/local_scratch/robot_2006633_puhti/harvester-temp"
 SSH_CONN_ID = "puhti_conn"
 HTTP_CONN_ID = "nlf_http_conn"
 SET_IDS = ["col-24", "col-82", "col-361", "col-501"]
-BINDING_BASE_PATH = Path("/home/ubuntu/binding_ids")
+BINDING_BASE_PATH = Path("/home/ubuntu/binding_ids_all")
 
 default_args = {
     "owner": "Kielipankki",
     "start_date": "2022-10-01",
     "retry_delay": timedelta(minutes=5),
-    "retries": 2,
+    "retries": 3,
 }
+
 
 http_conn = BaseHook.get_connection(HTTP_CONN_ID)
 api = PMH_API(url=http_conn.host)
@@ -40,7 +41,7 @@ api = PMH_API(url=http_conn.host)
 for set_id in SET_IDS:
 
     @dag(
-        dag_id=f"parallel_batch_download_{set_id.replace(':', '_')}",
+        dag_id=f"dynamic_batch_download_{set_id.replace(':', '_')}",
         schedule="@once",
         catchup=False,
         default_args=default_args,
@@ -105,13 +106,12 @@ for set_id in SET_IDS:
 
                         ssh_client.exec_command(f"rm -r {TMPDIR}/{binding_id}")
 
-            for binding_file in os.listdir(
-                BINDING_BASE_PATH / set_id.replace(":", "_")
-            ):
-                with open(
-                    BINDING_BASE_PATH / set_id.replace(":", "_") / binding_file, "r"
-                ) as f:
-                    batch = [line.rstrip("\n") for line in f]
+            with open(
+                BINDING_BASE_PATH / set_id.replace(":", "_") / "binding_ids", "r"
+            ) as f:
+                bindings = f.read().splitlines()
+
+            for batch in utils.split_into_batches(bindings):
                 download_binding_batch(batch=batch)
 
         @task(task_id="clear_temp_directory", trigger_rule="all_done")
