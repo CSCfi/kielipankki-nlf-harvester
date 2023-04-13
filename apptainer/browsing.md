@@ -8,7 +8,7 @@ The limitations of the shared filesystems on our supercomputers means that it's 
 
 ### Apptainer
 
-You can make your own Apptainer containers with whatever software you like, but for this demostration, we made a simple container that allows you to filter collections by date range and produce zip files of the results. These zip files can then be opened in the temporary storage of CSC supercomputers.
+You can make your own Apptainer containers with whatever software you like, but for this demonstration, we made a simple container that allows you to filter collections by date range and produce zip files of the results. These zip files can then be opened in the temporary storage of CSC supercomputers.
 
 The Apptainer container will be in the form of a single file, usually with a `.sif` file extension. In our case it is `demo.sif`. It's generated from the definition file `demo.def`. If you make your own, you will need to make it either on a machine where you have root access, or use something like [tykky](https://docs.csc.fi/computing/containers/tykky/) on CSC's systems.
 
