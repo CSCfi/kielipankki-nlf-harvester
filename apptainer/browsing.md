@@ -126,6 +126,8 @@ Apptainer> filter col-82-subset/ --start-date 1880 --end-date 1889 | zip -r -@ /
 
 It takes a while, and results in a 502M zip file.
 
+When you are done with the operations, you can close the Apptainer session with `exit` command or ctrl-c.
+
 #### With tykky (extra credit)
 
 If you have a tykky-fied environment set up (see previous section), `setup.sh` also sets up the mounts for that, so you can run `python filter.py` in your regular puhti environment as if the data were really mounted there. For example,
