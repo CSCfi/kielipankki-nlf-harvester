@@ -62,8 +62,8 @@ will result in the path `/scratch/<project>/<username>/<my-tykky-experiment>` (p
 Now you can control the mounts like this:
 
 ```
-$ export CW_EXTRA_BIND_MOUNTS="/scratch/project_2006633/col82-subset.sqfs:/data/col-82-subset:image-src=/"
-$ export CW_EXTRA_BIND_MOUNTS="/scratch/project_2006633/col-361.sqfs:/data/col-361:image-src=/,$CW_EXTRA_BIND_MOUNTS"
+$ export CW_EXTRA_BIND_MOUNTS="/scratch/project_2006633/demo/col82-subset.sqfs:/data/col-82-subset:image-src=/"
+$ export CW_EXTRA_BIND_MOUNTS="/scratch/project_2006633/demo/col-361.sqfs:/data/col-361:image-src=/,$CW_EXTRA_BIND_MOUNTS"
 ```
 
 (Behind the scenes this is of course controlled by a script, most likely run automatically with a `module load` directive.
@@ -75,9 +75,9 @@ $ export CW_EXTRA_BIND_MOUNTS="/scratch/project_2006633/col-361.sqfs:/data/col-3
 On puhti.csc.fi, we have prepared the Apptainer and some METS and ALTO data in `/scratch/project_2006633/`. To set the environment up, you can run `source setup.sh` there, or run the commands
 
 ```
-export SING_IMAGE=/scratch/project_2006633/demo_filter.sif # the Apptainer image
-export SING_FLAGS="-B /scratch/project_2006633/col-361.sqfs:/data/col-361:image-src=/" # bind a collection SquashFS to a path
-export SING_FLAGS="-B /scratch/project_2006633/col82-subset.sqfs:/data/col-82-subset:image-src=/ $SING_FLAGS" # Add another binding
+export SING_IMAGE=/scratch/project_2006633/demo/demo_filter.sif # the Apptainer image
+export SING_FLAGS="-B /scratch/project_2006633/demo/col-361.sqfs:/data/col-361:image-src=/" # bind a collection SquashFS to a path
+export SING_FLAGS="-B /scratch/project_2006633/demo/col82-subset.sqfs:/data/col-82-subset:image-src=/ $SING_FLAGS" # Add another binding
 ```
 
 Now you could go into an interactive computing node session with `sinteractive`, but for this test that's not strictly necessary. You can stick with the login node. Either way, you can jump into a console session in the Apptainer with
