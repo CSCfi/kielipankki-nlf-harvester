@@ -14,7 +14,7 @@ The limitations of the shared filesystems on our supercomputers means that it's 
 
 You can [make your own Apptainer containers](https://docs.csc.fi/support/tutorials/singularity-scratch/) with whatever software you like, but for this demonstration, we made a simple container that allows you to filter collections by date range and produce zip files of the results. These zip files can then be opened in the temporary storage of CSC supercomputers.
 
-The Apptainer container will be in the form of a single file, usually with a `.sif` file extension. In our case it is `demo_filter.sif`. It's generated from the definition file `demo_filter.def`. If you make your own, you will need to make it on a machine where you have root access (or see the following section about building with suppoerted tools directly on Ouhti).
+The Apptainer container will be in the form of a single file, usually with a `.sif` file extension. In our case it is `demo_filter.sif`. It's generated from the definition file `demo_filter.def`. If you make your own, you will need to make it on a machine where you have root access (or see the following section about building with suppoerted tools directly on Puhti).
 
 `demo.def` is simply:
 
