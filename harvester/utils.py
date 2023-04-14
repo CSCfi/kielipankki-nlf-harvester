@@ -83,6 +83,29 @@ def construct_mets_download_location(
     return Path(base_path) / Path(file_dir) / Path(filename)
 
 
+def construct_dir_structure(
+        binding_id, base_path, set_id, depth=None
+):
+    """
+    Construct and return a subdirectory structure of given depth
+    for a binding.
+
+    :param binding_id: Binding id
+    :type binding_id: str
+    :param base_path: Base path of download location (e.g. project folder in Puhti)
+    :type base_path: str
+    :param set_id: Collection ID to which the binding belongs to
+    :type set_id: str
+    :param depth: Depth of the subdirectory structure (defaults to length of binding ID)
+    :type depth: int
+    """
+    if not depth:
+        depth = len(binding_id)
+    sub_dirs = [f"{binding_id[:i]}/" for i in range(1, depth+1)]
+    binding_path = f'{base_path}/{set_id}/{"".join(sub_dirs)}'
+    return binding_path
+
+
 def calculate_batch_size(col_size):
     """
     Return a suitable download batch size for a collection.
