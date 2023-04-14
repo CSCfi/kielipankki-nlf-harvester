@@ -62,7 +62,7 @@ will result in the path `/scratch/<project>/<username>/<my-tykky-experiment>` (p
 Now you can control the mounts like this:
 
 ```
-$ export CW_EXTRA_BIND_MOUNTS="/scratch/project_2006633/col82-subset.sqfs:/data/col-82-subset:image-src=/
+$ export CW_EXTRA_BIND_MOUNTS="/scratch/project_2006633/col82-subset.sqfs:/data/col-82-subset:image-src=/"
 $ export CW_EXTRA_BIND_MOUNTS="/scratch/project_2006633/col-361.sqfs:/data/col-361:image-src=/,$CW_EXTRA_BIND_MOUNTS"
 ```
 
