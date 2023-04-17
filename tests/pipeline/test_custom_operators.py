@@ -46,7 +46,7 @@ def test_save_mets_operator(mets_dc_identifier, expected_mets_response, tmp_path
         task_id="test_save_mets_task",
         http_conn_id="nlf_http_conn",
         dc_identifier=mets_dc_identifier,
-        base_path=tmp_path,
+        binding_path=tmp_path,
     )
 
     operator.execute(context={})
@@ -69,7 +69,7 @@ def test_save_altos_operator(
     alto_operator = SaveAltosOperator(
         task_id="test_save_altos_locally",
         dc_identifier=mets_dc_identifier,
-        base_path=tmp_path,
+        binding_path=tmp_path,
         mets_path="tests/data",
     )
 
@@ -118,7 +118,7 @@ def test_existing_mets_not_downloaded_again(
             ssh_client=ssh_client,
             tmpdir=temp_path,
             dc_identifier=mets_dc_identifier,
-            base_path=output_path,
+            binding_path=output_path,
             file_dir="file_dir",
         )
 
@@ -154,7 +154,7 @@ def test_save_mets_sftp_operator(
             ssh_client=ssh_client,
             tmpdir=temp_path,
             dc_identifier=mets_dc_identifier,
-            base_path=output_path,
+            binding_path=output_path,
             file_dir="file_dir",
         )
 
@@ -189,7 +189,7 @@ def test_empty_mets(
             ssh_client=ssh_client,
             tmpdir=temp_path,
             dc_identifier=empty_mets_dc_identifier,
-            base_path=output_path,
+            binding_path=output_path,
             file_dir="file_dir",
         )
 
@@ -222,7 +222,7 @@ def test_failed_mets_request(
             ssh_client=ssh_client,
             tmpdir=temp_path,
             dc_identifier=failed_mets_dc_identifier,
-            base_path=output_path,
+            binding_path=output_path,
             file_dir="file_dir",
         )
 
@@ -261,7 +261,7 @@ def test_save_altos_sftp_operator(
             task_id="test_save_altos_remote",
             sftp_client=sftp,
             ssh_client=ssh_client,
-            base_path=output_path,
+            binding_path=output_path,
             tmpdir=temp_path,
             file_dir="sub_dir",
             mets_path=f"{output_path}/sub_dir/mets",
@@ -317,7 +317,7 @@ def test_existing_altos_not_downloaded_again(
             task_id="test_save_altos_remote",
             sftp_client=sftp,
             ssh_client=ssh_client,
-            base_path=output_path,
+            binding_path=output_path,
             tmpdir=temp_path,
             file_dir="sub_dir",
             mets_path=f"{output_path}/sub_dir/mets",
