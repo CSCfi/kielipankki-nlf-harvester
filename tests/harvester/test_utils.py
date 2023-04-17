@@ -48,3 +48,15 @@ def test_split_into_batches():
         [30, 31, 32, 33, 34, 35, 36, 37, 38, 39],
         [40, 41, 42, 43, 44, 45, 46, 47, 48, 49],
     ]
+
+
+def test_construct_dir_structure():
+    """
+    Test that subdirectory structure is created correctly
+    """
+    binding_id = "123456"
+    dir_structure = utils.construct_dir_structure(binding_id, "/base", "col-123")
+    assert dir_structure == "/base/col-123/1/12/123/1234/12345/123456/123456"
+
+    dir_structure_set_depth = utils.construct_dir_structure(binding_id, "/base", "col-123", 3)
+    assert dir_structure_set_depth == "/base/col-123/1/12/123/123456"
