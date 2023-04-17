@@ -135,7 +135,7 @@ If you have a tykky-fied environment set up (see previous section), `setup.sh` a
 ```
 $ ls /data # this won't work, because ls is looking in the regular puhti filesystem
 ls: cannot access '/data': No such file or directory
-$ # But this will work, because python is a wrapper to an tykkyfied environment which has the mounts
+$ # But this will work, because python is a wrapper to a tykkyfied environment which has the mounts
 $ python filter.py --start-date 1.1.1888 --end-date 31.1.1888 /data/col-82-subset
 ...
 ```
