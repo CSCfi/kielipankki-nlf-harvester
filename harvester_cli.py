@@ -119,7 +119,7 @@ def download_files_from(mets_file_path, collection_dc_identifier, encoding, base
     mets = METS(collection_dc_identifier, mets_file=open(mets_file_path, "rb"), encoding=encoding)
     for file in mets.files():
         try:
-            output_file_path = utils.construct_file_download_location(
+            output_file_path = utils.file_download_location(
                 file=file, base_path=base_path
             )
             output_file_path.parent.mkdir(parents=True, exist_ok=True)

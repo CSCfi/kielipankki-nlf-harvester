@@ -66,7 +66,7 @@ def test_download_to_default_path(
     """
     Test downloading an ALTO file to the default location.
     """
-    output_path = utils.construct_file_download_location(file=alto_file)
+    output_path = utils.file_download_location(file=alto_file)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     with open(output_path, "wb") as output_file:
