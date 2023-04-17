@@ -5,6 +5,7 @@ Collections are split into batches based on their size.
 
 from datetime import timedelta
 from pathlib import Path
+import os
 
 from airflow.operators.empty import EmptyOperator
 from airflow.providers.http.sensors.http import HttpSensor
@@ -81,12 +82,8 @@ for set_id in SET_IDS:
 
                     for dc_identifier in batch:
                         binding_id = utils.binding_id_from_dc(dc_identifier)
-                        base_path = utils.construct_dir_structure(
-                            binding_id, BASE_PATH, set_id
-                        )
-                        tmp_base_path = utils.construct_dir_structure(
-                            binding_id, TMPDIR, set_id
-                        )
+                        base_path = os.path.join(BASE_PATH, utils.binding_download_location(binding_id, set_id))
+                        tmp_base_path = os.path.join(TMPDIR, utils.binding_download_location(binding_id, set_id))
 
                         SaveMetsSFTPOperator(
                             task_id=f"save_mets_{binding_id}",

@@ -66,7 +66,7 @@ class SaveMetsOperator(BaseOperator):
         http_conn = BaseHook.get_connection(self.http_conn_id)
         api = PMH_API(url=http_conn.host)
         output_file = str(
-            utils.construct_mets_download_location(
+            utils.mets_download_location(
                 dc_identifier=self.dc_identifier,
                 base_path=self.base_path,
                 file_dir="mets",
@@ -99,7 +99,7 @@ class SaveAltosOperator(BaseOperator):
         mets = METS(self.dc_identifier, open(path, "rb"))
         alto_files = mets.files_of_type(ALTOFile)
         for alto_file in alto_files:
-            output_file = utils.construct_file_download_location(
+            output_file = utils.file_download_location(
                 file=alto_file, base_path=self.base_path
             )
             output_file.parent.mkdir(parents=True, exist_ok=True)
@@ -201,7 +201,7 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
 
     def execute(self, context):
         output_file = str(
-            utils.construct_mets_download_location(
+            utils.mets_download_location(
                 dc_identifier=self.dc_identifier,
                 base_path=self.base_path,
                 file_dir=self.file_dir,
@@ -214,7 +214,7 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
         self.ensure_tmp_output_location()
 
         temp_output_file = str(
-            utils.construct_mets_download_location(
+            utils.mets_download_location(
                 dc_identifier=self.dc_identifier,
                 base_path=self.tmpdir,
                 file_dir=self.file_dir,
@@ -273,7 +273,7 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
 
         for alto_file in alto_files:
             output_file = str(
-                utils.construct_file_download_location(
+                utils.file_download_location(
                     file=alto_file,
                     base_path=self.base_path,
                     file_dir=self.file_dir,
@@ -284,7 +284,7 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
                 continue
 
             temp_output_file = str(
-                utils.construct_file_download_location(
+                utils.file_download_location(
                     file=alto_file, base_path=self.tmpdir, file_dir=self.file_dir
                 )
             )

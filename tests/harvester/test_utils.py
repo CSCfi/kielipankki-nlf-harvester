@@ -50,15 +50,15 @@ def test_split_into_batches():
     ]
 
 
-def test_construct_dir_structure():
+def test_binding_download_location():
     """
     Test that subdirectory structure is created correctly
     """
     binding_id = "123456"
-    dir_structure = utils.construct_dir_structure(binding_id, "/base", "col-123")
-    assert dir_structure == "/base/col-123/1/12/123/1234/12345/123456/123456"
+    dir_structure = utils.binding_download_location(binding_id, "col-123")
+    assert dir_structure == "col-123/1/12/123/1234/12345/123456/123456"
 
-    dir_structure_set_depth = utils.construct_dir_structure(
-        binding_id, "/base", "col-123", 3
+    dir_structure_set_depth = utils.binding_download_location(
+        binding_id, "col-123", 3
     )
-    assert dir_structure_set_depth == "/base/col-123/1/12/123/123456"
+    assert dir_structure_set_depth == "col-123/1/12/123/123456"
