@@ -81,8 +81,12 @@ for set_id in SET_IDS:
 
                     for dc_identifier in batch:
                         binding_id = utils.binding_id_from_dc(dc_identifier)
-                        base_path = utils.construct_dir_structure(binding_id, BASE_PATH, set_id)
-                        tmp_base_path = utils.construct_dir_structure(binding_id, TMPDIR, set_id)
+                        base_path = utils.construct_dir_structure(
+                            binding_id, BASE_PATH, set_id
+                        )
+                        tmp_base_path = utils.construct_dir_structure(
+                            binding_id, TMPDIR, set_id
+                        )
 
                         SaveMetsSFTPOperator(
                             task_id=f"save_mets_{binding_id}",
@@ -108,9 +112,7 @@ for set_id in SET_IDS:
 
                         ssh_client.exec_command(f"rm -r {tmp_base_path}")
 
-            with open(
-                BINDING_BASE_PATH / set_id / "binding_ids", "r"
-            ) as f:
+            with open(BINDING_BASE_PATH / set_id / "binding_ids", "r") as f:
                 bindings = f.read().splitlines()
 
             for batch in utils.split_into_batches(bindings):
@@ -124,9 +126,7 @@ for set_id in SET_IDS:
 
         (
             begin_download
-            >> download_set(
-                set_id=set_id, api=api, ssh_conn_id=SSH_CONN_ID
-            )
+            >> download_set(set_id=set_id, api=api, ssh_conn_id=SSH_CONN_ID)
             >> clear_temp_dir()
         )
 

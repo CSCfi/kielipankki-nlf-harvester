@@ -58,5 +58,7 @@ def test_construct_dir_structure():
     dir_structure = utils.construct_dir_structure(binding_id, "/base", "col-123")
     assert dir_structure == "/base/col-123/1/12/123/1234/12345/123456/123456"
 
-    dir_structure_set_depth = utils.construct_dir_structure(binding_id, "/base", "col-123", 3)
+    dir_structure_set_depth = utils.construct_dir_structure(
+        binding_id, "/base", "col-123", 3
+    )
     assert dir_structure_set_depth == "/base/col-123/1/12/123/123456"
