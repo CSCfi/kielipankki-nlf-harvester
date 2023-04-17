@@ -88,7 +88,7 @@ def construct_dir_structure(
 ):
     """
     Construct and return a subdirectory structure of given depth
-    for a binding.
+    for a binding. Default depth is the length of the binding ID.
 
     :param binding_id: Binding id
     :type binding_id: str
@@ -102,6 +102,7 @@ def construct_dir_structure(
     if not depth:
         depth = len(binding_id)
     sub_dirs = [f"{binding_id[:i]}/" for i in range(1, depth+1)]
+    sub_dirs.append(binding_id)
     binding_path = f'{base_path}/{set_id}/{"".join(sub_dirs)}'
     return binding_path
 

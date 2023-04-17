@@ -41,7 +41,7 @@ api = PMH_API(url=http_conn.host)
 for set_id in SET_IDS:
 
     @dag(
-        dag_id=f"dynamic_batch_download_{set_id.replace(':', '_')}",
+        dag_id=f"dynamic_batch_download_{set_id}",
         schedule="@once",
         catchup=False,
         default_args=default_args,
@@ -72,7 +72,7 @@ for set_id in SET_IDS:
         check_api_availability >> [begin_download, cancel_pipeline]
 
         @task_group(group_id="download_set")
-        def download_set(set_id, api, ssh_conn_id, base_path):
+        def download_set(set_id, api, ssh_conn_id):
             @task(task_id="download_binding_batch", trigger_rule="none_skipped")
             def download_binding_batch(batch):
                 ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
@@ -81,33 +81,35 @@ for set_id in SET_IDS:
 
                     for dc_identifier in batch:
                         binding_id = utils.binding_id_from_dc(dc_identifier)
+                        base_path = utils.construct_dir_structure(binding_id, BASE_PATH, set_id)
+                        tmp_base_path = utils.construct_dir_structure(binding_id, TMPDIR, set_id)
 
                         SaveMetsSFTPOperator(
                             task_id=f"save_mets_{binding_id}",
                             api=api,
                             sftp_client=sftp_client,
                             ssh_client=ssh_client,
-                            tmpdir=TMPDIR,
+                            tmpdir=tmp_base_path,
                             dc_identifier=dc_identifier,
                             base_path=base_path,
-                            file_dir=f"{set_id.replace(':', '_')}/{binding_id}/mets",
+                            file_dir="mets",
                         ).execute(context={})
 
                         SaveAltosSFTPOperator(
                             task_id=f"save_altos_{binding_id}",
-                            mets_path=f"{base_path}/{set_id.replace(':', '_')}/{binding_id}/mets",
+                            mets_path=f"{base_path}/mets",
                             sftp_client=sftp_client,
                             ssh_client=ssh_client,
-                            tmpdir=TMPDIR,
+                            tmpdir=tmp_base_path,
                             dc_identifier=dc_identifier,
                             base_path=base_path,
-                            file_dir=f"{set_id.replace(':', '_')}/{binding_id}/alto",
+                            file_dir="alto",
                         ).execute(context={})
 
-                        ssh_client.exec_command(f"rm -r {TMPDIR}/{binding_id}")
+                        ssh_client.exec_command(f"rm -r {tmp_base_path}")
 
             with open(
-                BINDING_BASE_PATH / set_id.replace(":", "_") / "binding_ids", "r"
+                BINDING_BASE_PATH / set_id / "binding_ids", "r"
             ) as f:
                 bindings = f.read().splitlines()
 
@@ -123,7 +125,7 @@ for set_id in SET_IDS:
         (
             begin_download
             >> download_set(
-                set_id=set_id, api=api, ssh_conn_id=SSH_CONN_ID, base_path=BASE_PATH
+                set_id=set_id, api=api, ssh_conn_id=SSH_CONN_ID
             )
             >> clear_temp_dir()
         )
