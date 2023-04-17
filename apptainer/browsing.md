@@ -126,7 +126,7 @@ Apptainer> filter col-82-subset/ --start-date 1880 --end-date 1889 | zip -r -@ /
 
 It takes a while, and results in a 502M zip file.
 
-When you are done with the operations, you can close the Apptainer session with `exit` command or ctrl-c.
+When you are done, you can close the Apptainer session with `exit` or ctrl-c.
 
 #### With tykky (extra credit)
 
