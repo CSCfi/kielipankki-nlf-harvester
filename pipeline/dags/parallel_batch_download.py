@@ -82,32 +82,32 @@ for set_id in SET_IDS:
 
                     for dc_identifier in batch:
                         binding_id = utils.binding_id_from_dc(dc_identifier)
-                        base_path = os.path.join(BASE_PATH, utils.binding_download_location(binding_id, set_id))
-                        tmp_base_path = os.path.join(TMPDIR, utils.binding_download_location(binding_id, set_id))
+                        binding_path = os.path.join(BASE_PATH, utils.binding_download_location(binding_id, set_id))
+                        tmp_binding_path = os.path.join(TMPDIR, utils.binding_download_location(binding_id, set_id))
 
                         SaveMetsSFTPOperator(
                             task_id=f"save_mets_{binding_id}",
                             api=api,
                             sftp_client=sftp_client,
                             ssh_client=ssh_client,
-                            tmpdir=tmp_base_path,
+                            tmpdir=tmp_binding_path,
                             dc_identifier=dc_identifier,
-                            base_path=base_path,
+                            binding_path=binding_path,
                             file_dir="mets",
                         ).execute(context={})
 
                         SaveAltosSFTPOperator(
                             task_id=f"save_altos_{binding_id}",
-                            mets_path=f"{base_path}/mets",
+                            mets_path=f"{binding_path}/mets",
                             sftp_client=sftp_client,
                             ssh_client=ssh_client,
-                            tmpdir=tmp_base_path,
+                            tmpdir=tmp_binding_path,
                             dc_identifier=dc_identifier,
-                            base_path=base_path,
+                            binding_path=binding_path,
                             file_dir="alto",
                         ).execute(context={})
 
-                        ssh_client.exec_command(f"rm -r {tmp_base_path}")
+                        ssh_client.exec_command(f"rm -r {tmp_binding_path}")
 
             with open(BINDING_BASE_PATH / set_id / "binding_ids", "r") as f:
                 bindings = f.read().splitlines()

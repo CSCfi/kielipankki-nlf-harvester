@@ -53,14 +53,14 @@ class SaveMetsOperator(BaseOperator):
 
     :param http_conn_id: Connection ID of API
     :param dc_identifier: DC identifier of binding
-    :param base_path: Base path for download location
+    :param binding_path: Base path for download location
     """
 
-    def __init__(self, http_conn_id, dc_identifier, base_path, **kwargs):
+    def __init__(self, http_conn_id, dc_identifier, binding_path, **kwargs):
         super().__init__(**kwargs)
         self.http_conn_id = http_conn_id
         self.dc_identifier = dc_identifier
-        self.base_path = base_path
+        self.binding_path = binding_path
 
     def execute(self, context):
         http_conn = BaseHook.get_connection(self.http_conn_id)
@@ -68,11 +68,11 @@ class SaveMetsOperator(BaseOperator):
         output_file = str(
             utils.mets_download_location(
                 dc_identifier=self.dc_identifier,
-                base_path=self.base_path,
+                base_path=self.binding_path,
                 file_dir="mets",
             )
         )
-        mets_path = self.base_path / "mets"
+        mets_path = self.binding_path / "mets"
         mets_path.mkdir(parents=True, exist_ok=True)
         with open(output_file, "wb") as file:
             api.download_mets(dc_identifier=self.dc_identifier, output_mets_file=file)
@@ -83,13 +83,13 @@ class SaveAltosOperator(BaseOperator):
     Save ALTO files for one binding on local filesystem.
 
     :param dc_identifier: DC identifier of binding
-    :param base_path: Base path for download location
+    :param binding_path: Base path for download location
     """
 
-    def __init__(self, dc_identifier, base_path, mets_path, **kwargs):
+    def __init__(self, dc_identifier, binding_path, mets_path, **kwargs):
         super().__init__(**kwargs)
         self.dc_identifier = dc_identifier
-        self.base_path = base_path
+        self.binding_path = binding_path
         self.mets_path = mets_path
 
     def execute(self, context):
@@ -100,7 +100,7 @@ class SaveAltosOperator(BaseOperator):
         alto_files = mets.files_of_type(ALTOFile)
         for alto_file in alto_files:
             output_file = utils.file_download_location(
-                file=alto_file, base_path=self.base_path
+                file=alto_file, base_path=self.binding_path
             )
             output_file.parent.mkdir(parents=True, exist_ok=True)
             with open(output_file, "wb") as file:
@@ -115,7 +115,7 @@ class SaveFilesSFTPOperator(BaseOperator):
     :param ssh_client: SSHClient
     :param tmpdir: Absolute path for a temporary directory on the remote server
     :param dc_identifier: DC identifier of binding
-    :param base_path: Base path for download location
+    :param binding_path: Base path for download location
     :param file_dir: Directory where file will be saved
     """
 
@@ -125,7 +125,7 @@ class SaveFilesSFTPOperator(BaseOperator):
         ssh_client,
         tmpdir,
         dc_identifier,
-        base_path,
+        binding_path,
         file_dir,
         **kwargs,
     ):
@@ -133,7 +133,7 @@ class SaveFilesSFTPOperator(BaseOperator):
         self.sftp_client = sftp_client
         self.ssh_client = ssh_client
         self.dc_identifier = dc_identifier
-        self.base_path = base_path
+        self.binding_path = binding_path
         self.file_dir = file_dir
         self.tmpdir = tmpdir
 
@@ -152,7 +152,7 @@ class SaveFilesSFTPOperator(BaseOperator):
         """
         utils.make_intermediate_dirs(
             sftp_client=self.sftp_client,
-            remote_directory=f"{self.base_path}/{self.file_dir}",
+            remote_directory=f"{self.binding_path}/{self.file_dir}",
         )
 
     def move_file_to_final_location(self, temp_output_file, output_file):
@@ -203,7 +203,7 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
         output_file = str(
             utils.mets_download_location(
                 dc_identifier=self.dc_identifier,
-                base_path=self.base_path,
+                base_path=self.binding_path,
                 file_dir=self.file_dir,
             )
         )
@@ -275,7 +275,7 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
             output_file = str(
                 utils.file_download_location(
                     file=alto_file,
-                    base_path=self.base_path,
+                    base_path=self.binding_path,
                     file_dir=self.file_dir,
                 )
             )
