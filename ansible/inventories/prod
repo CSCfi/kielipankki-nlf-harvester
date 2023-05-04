@@ -1,0 +1,12 @@
+all:
+  hosts:
+    localhost:
+      ansible_connection: local
+      ansible_python_interpreter: "{{ansible_playbook_python}}"
+      floating_ip: 86.50.229.130
+      vm_name_postfix: prod
+  children:
+    airflow:
+      hosts:
+        86.50.229.130
+           ansible_user: ubuntu

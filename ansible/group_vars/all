@@ -1,0 +1,39 @@
+instance_name: 'harvester'
+vm_name_postfix: 'dev'
+pouta_instance_name: "{{ instance_name }}-{{ vm_name_postfix }}"
+
+std_image: "Ubuntu-22.04"
+project_key: "kielipouta"
+project_sg: "airflow-sg"
+project_security_groups: "default,{{ project_sg }}" # don't add spaces here!
+
+airflow_db_name: "airflow_db"
+airflow_db_user: "airflow"
+airflow_db_password: "{{ lookup('passwordstore', 'lb_passwords/airflow/db_password') }}"
+airflow_db_root_password: "{{ lookup('passwordstore', 'lb_passwords/airflow/db_root_password') }}"
+
+airflow_username: "kielipankki"
+airflow_password: "{{ lookup('passwordstore', 'lb_passwords/airflow/airflow_password') }}"
+airflow_firstname: "Kielipankki"
+airflow_lastname: "User"
+airflow_email: "ling-admin@listat.csc.fi"
+
+puhti_robot_password: "{{ lookup('passwordstore', 'lb_passwords/airflow/robot_2006633_puhti') }}"
+
+ssh_keys: "../all/files/ssh_keys"
+authorized_users:
+  - ktegel
+  - ajarven
+  - kaisakui
+  - matthies
+  - helhotti
+  # - hardwick
+
+servers:
+  - name: "{{ pouta_instance_name }}"
+    image: "{{ std_image }}"
+    flavor: standard.xlarge
+    key_name: "{{ project_key }}"
+    security_groups: "{{ project_security_groups }}"
+    meta:
+      group: default

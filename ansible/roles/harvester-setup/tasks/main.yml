@@ -1,0 +1,58 @@
+- name: Create temporary directory for downloading repositories
+  ansible.builtin.tempfile:
+    state: directory
+    suffix: git
+  register: harvester
+
+- name: Clone kielipankki-nlf-harvester
+  ansible.builtin.git:
+    repo: "https://github.com/CSCfi/kielipankki-nlf-harvester.git"
+    dest: "{{ harvester.path }}/"
+    clone: yes
+
+- name: Install required packages for harvester
+  ansible.builtin.pip:
+    requirements: "{{ harvester.path }}/requirements.txt"
+  become: yes
+
+- name: Install required Airflow packages for harvester pipeline
+  ansible.builtin.pip:
+    requirements: "{{ harvester.path }}/pipeline/requirements.txt"
+  become: yes
+
+- name: Copy dags and plugins from harvester to airflow directory
+  ansible.builtin.copy:
+    src: "{{ harvester.path }}/pipeline/{{ item }}/"
+    dest: "{{ airflow_directory }}/{{ item }}/"
+    remote_src: yes
+  with_items:
+    - dags
+    - plugins
+
+- name: Copy harvester files to airflow plugins directory
+  ansible.builtin.copy:
+    src: "{{ harvester.path }}/harvester"
+    dest: "{{ airflow_directory }}/plugins/"
+    remote_src: yes
+
+# The or-operator ("||") means that the latter part of the command (new
+# connection creation) is only executed if the former (grepping for puhti_conn
+# in pre-existing connections) fails (i.e. puhti_conn not found).
+- name: Create SSH connection to Puhti if not already present
+  ansible.builtin.shell: >
+    airflow connections list | grep 'puhti_conn'
+    ||
+    airflow connections add 'puhti_conn'
+    --conn-type 'ssh'
+    --conn-host 'puhti.csc.fi'
+    --conn-login 'robot_2006633_puhti'
+    --conn-password {{ puhti_robot_password }}
+
+- name: Create HTTP connection to NLF if not already present
+  ansible.builtin.shell: >
+    airflow connections list | grep 'nlf_http_conn'
+    ||
+    airflow connections add 'nlf_http_conn'
+    --conn-type 'http'
+    --conn-host 'https://digi.kansalliskirjasto.fi/interfaces/OAI-PMH'
+    --conn-schema 'HTTPS'
