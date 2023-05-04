@@ -2,7 +2,7 @@
   hosts: localhost # The OpenStack Shade modules run by Shade on your local machine.
 
   roles:
-    - role: ../all/roles/create_instances
+    - role: kielipankki.common.create_instances
       tags: create_instances
 
   vars:
