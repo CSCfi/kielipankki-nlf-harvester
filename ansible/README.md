@@ -7,14 +7,6 @@
 - Key pair for cPouta instances. Created in https://pouta.csc.fi/ (Project > Compute > Key Pairs) and must be named "kielipouta".
 - A fresh copy of [`Kielipankki-passwords`](https://github.com/CSCfi/Kielipankki-passwords) repository to access the needed secrets for Airflow and Puhti, synced with your passwordstore.
 
-## Clone the git repository
-
-Clone this repository and navigate to the correct directory.
-
-```
-$ git clone https://github.com/CSCfi/Kielipankki.git
-$ cd Kielipankki/servers/harvester`
-```
 
 ## Install requirements
 For Python requirements, it is recommended to use a virtual environment:
