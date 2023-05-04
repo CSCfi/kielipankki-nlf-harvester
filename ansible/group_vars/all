@@ -20,14 +20,13 @@ airflow_email: "ling-admin@listat.csc.fi"
 
 puhti_robot_password: "{{ lookup('passwordstore', 'lb_passwords/airflow/robot_2006633_puhti') }}"
 
-ssh_keys: "../all/files/ssh_keys"
 authorized_users:
   - ktegel
   - ajarven
   - kaisakui
   - matthies
   - helhotti
-  # - hardwick
+  - hardwick
 
 servers:
   - name: "{{ pouta_instance_name }}"
