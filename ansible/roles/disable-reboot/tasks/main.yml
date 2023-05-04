@@ -1,0 +1,18 @@
+- name: Create cron.disabled directory
+  ansible.builtin.file:
+    path: /etc/cron.disabled
+    state: directory
+  become: yes
+
+- name: Copy check_reboot file from cron.daily to cron.disabled
+  ansible.builtin.copy: 
+    src: /etc/cron.daily/check_reboot
+    dest: /etc/cron.disabled/check_reboot
+    remote_src: yes
+  become: yes
+
+- name: Remove check_reboot file from cron.daily
+  ansible.builtin.file:
+    path: /etc/cron.daily/check_reboot
+    state: absent
+  become: yes

@@ -1,0 +1,13 @@
+airflow_directory: "/home/{{ ansible_user }}/airflow"
+executor: LocalExecutor
+parallel_tasks: 8  # Default value, likely too big for medium pouta?
+max_active_tasks_per_dag: 16  # Default value, likely too big for medium pouta?
+max_active_runs_per_dag: 16  # Default value, pretty big but on the other hand mostly relevant when backgilling?
+fernet_key: "{{ lookup('passwordstore', 'lb_passwords/airflow/fernet_key') }}"
+sql_alchemy_conn: "mysql+mysqldb://{{ airflow_db_user }}:{{ airflow_db_password }}@localhost/{{ airflow_db_name }}"
+base_url: "http://{{ ansible_host }}"
+flask_secret_key: "{{ lookup('ansible.builtin.password', '/dev/null length=32') }}"
+gunicorn_workers: 7  # gunicorn recommendation (2 x $num_cores) + 1 for a medium flavor VM
+navbar_color: "#fff"
+email_on_retry: False
+email_on_failure: False  # consider making this/these True for prod instance when properly in production

@@ -1,0 +1,47 @@
+- name: Update webserver and scheduler configurations
+  template:
+    src: "airflow-{{ item }}.service.j2"
+    dest: "/usr/lib/systemd/system/airflow-{{ item }}.service"
+  become: yes
+  with_items:
+    - webserver
+    - scheduler
+
+- name: Update airflow config file for systemd
+  template:
+    src: airflow.conf.j2
+    dest: /usr/lib/tmpfiles.d/airflow.conf
+  become: yes
+
+- name: Update airflow unit file for systemd
+  template:
+    src: airflow.j2
+    dest: /usr/lib/systemd/system/airflow
+  become: yes
+
+- name: Ensure that /run/airflow directory exists
+  ansible.builtin.file:
+    path: /run/airflow
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  become: yes
+
+- name: Enable scheduler and webserver daemons
+  ansible.builtin.systemd:
+    name: "airflow-{{ item }}"
+    enabled: yes
+  with_items:
+    - scheduler
+    - webserver
+  become: yes
+
+- name: Start scheduler and webserver daemons
+  ansible.builtin.systemd:
+    name: "airflow-{{ item }}"
+    state: started
+    enabled: yes
+  with_items:
+    - scheduler
+    - webserver
+  become: yes

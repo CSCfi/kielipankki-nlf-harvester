@@ -1,0 +1,53 @@
+---
+
+- name: Install MySQL
+  ansible.builtin.apt:
+    name:
+      - mysql-server
+      - mysql-client
+      - python3-mysqldb
+      - libmysqlclient-dev
+    update_cache: yes
+  become: yes
+
+- name: Start and enable mysql service
+  service:
+    name: mysql
+    state: started
+    enabled: yes
+
+- name: Set mysql root user password
+  community.mysql.mysql_user:
+    name: root
+    password: "{{ airflow_db_root_password }}"
+  become: yes
+  ignore_errors: yes  # this only succeeds if the password has not already been set
+
+- name: Create a database for Airflow
+  community.mysql.mysql_db:
+    name: "{{ airflow_db_name }}"
+    state: present
+    login_user: root
+    login_password: "{{ airflow_db_root_password }}"
+
+- name: Create a MySQL user for Airflow
+  community.mysql.mysql_user:
+    name: "{{ airflow_db_user }}"
+    password: "{{ airflow_db_password }}"
+    priv: "{{ airflow_db_name }}.*:ALL"
+    state: present
+    login_user: root
+    login_password: "{{ airflow_db_root_password }}"
+
+- name: Initialize the database
+  ansible.builtin.shell: airflow db init
+
+- name: Create Airflow admin user
+  ansible.builtin.shell: >
+    airflow users create 
+    --username {{ airflow_username }} 
+    --password {{ airflow_password }} 
+    --firstname {{ airflow_firstname }} 
+    --lastname {{ airflow_lastname }} 
+    --email {{ airflow_email }}
+    --role Admin 

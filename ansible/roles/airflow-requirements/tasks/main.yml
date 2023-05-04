@@ -1,0 +1,25 @@
+---
+
+- name: Install required packages
+  ansible.builtin.apt:
+    name:
+      - pip
+      - libpq-dev
+      - nginx
+      - ufw
+    update_cache: yes
+  become: yes
+
+- name: Install Airflow
+  ansible.builtin.pip:
+    name: apache-airflow[async,postgres,google]
+    extra_args: --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-latest/constraints-3.10.txt"
+  become: yes
+
+- name: Create gunicorn log directory
+  ansible.builtin.file:
+    path: /var/log/gunicorn
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  become: yes
