@@ -35,9 +35,7 @@ def make_intermediate_dirs(sftp_client, remote_directory):
             continue
 
 
-def file_download_location(
-    file, base_path=None, file_dir=None, filename=None
-):
+def file_download_location(file, base_path=None, file_dir=None, filename=None):
     """
     The output location can be specified with the components ``base_path``,
     ``file_dir`` and ``filename``. If not given, the output location is as
@@ -59,9 +57,7 @@ def file_download_location(
     return Path(base_path) / Path(file_dir) / Path(filename)
 
 
-def mets_download_location(
-    dc_identifier, base_path=None, file_dir=None, filename=None
-):
+def mets_download_location(dc_identifier, base_path=None, file_dir=None, filename=None):
     """
     The output location can be specified with the components ``base_path``,
     ``file_dir`` and ``filename``. If not given, the output location is as
@@ -83,9 +79,7 @@ def mets_download_location(
     return Path(base_path) / Path(file_dir) / Path(filename)
 
 
-def binding_download_location(
-        binding_id, set_id, depth=None
-):
+def binding_download_location(binding_id, set_id, depth=None):
     """
     Construct and return a subdirectory structure of given depth
     for a binding. Default depth is the length of the binding ID.
@@ -99,7 +93,7 @@ def binding_download_location(
     """
     if not depth:
         depth = len(binding_id)
-    sub_dirs = [f"{binding_id[:i]}" for i in range(1, depth+1)]
+    sub_dirs = [f"{binding_id[:i]}" for i in range(1, depth + 1)]
     sub_dirs.append(binding_id)
     binding_path = os.path.join(set_id, *sub_dirs)
     return binding_path
@@ -127,3 +121,36 @@ def split_into_batches(bindings):
     batch_size = calculate_batch_size(col_size)
     batches = [bindings[i : i + batch_size] for i in range(0, col_size, batch_size)]
     return batches
+
+
+def divide_bindings_to_images(set_id):
+    """
+    Return (name for image, list of bindings) for each batch of image content
+    """
+    with open(f"binding_ids/{set_id}/binding_ids", "r") as f:
+        bindings = f.read().splitlines()
+
+    img_contents = []
+
+    if len(bindings) < 10000:
+        img_contents.append((set_id, len(bindings)))
+        return img_contents
+
+    for i in range(10):
+        img_name = f"{set_id}_{i}"
+        img_bindings = [b for b in bindings if binding_id_from_dc(b).startswith(str(i))]
+        if len(img_bindings) > 100000:
+            for j in range(10):
+                new_img_name = f"{set_id}_{i}{j}"
+                new_img_bindings = [
+                    b
+                    for b in img_bindings
+                    if binding_id_from_dc(b).startswith(f"{i}{j}")
+                ]
+                if new_img_bindings:
+                    img_contents.append((new_img_name, len(new_img_bindings)))
+        else:
+            if img_bindings:
+                img_contents.append((img_name, len(img_bindings)))
+
+    return img_contents
