@@ -4,7 +4,6 @@ General utility functions for working with the OAI-PMH API, metadata and files.
 
 import os
 from pathlib import Path
-import math
 
 
 def binding_id_from_dc(dc_identifier):
