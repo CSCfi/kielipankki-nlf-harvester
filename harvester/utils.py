@@ -4,6 +4,7 @@ General utility functions for working with the OAI-PMH API, metadata and files.
 
 import os
 from pathlib import Path
+import math
 
 
 def binding_id_from_dc(dc_identifier):
@@ -123,34 +124,26 @@ def split_into_batches(bindings):
     return batches
 
 
-def divide_bindings_to_images(set_id):
+def bindings_with_prefix(bindings, prefix):
     """
-    Return (name for image, list of bindings) for each batch of image content
+    Find DC identifiers of which binding ID start with a given prefix.
     """
-    with open(f"binding_ids/{set_id}/binding_ids", "r") as f:
-        bindings = f.read().splitlines()
+    return [binding for binding in bindings if binding_id_from_dc(binding).startswith(prefix)]
 
-    img_contents = []
 
-    if len(bindings) < 10000:
-        img_contents.append((set_id, len(bindings)))
-        return img_contents
-
+def assign_bindings_to_images(bindings, max_bindings_per_image, shared_prefix=''):
+    """
+    Split a list of bindings into images, each image containing no more than 
+    max_bindings_per_image bindings.
+    """
+    images = []
     for i in range(10):
-        img_name = f"{set_id}_{i}"
-        img_bindings = [b for b in bindings if binding_id_from_dc(b).startswith(str(i))]
-        if len(img_bindings) > 100000:
-            for j in range(10):
-                new_img_name = f"{set_id}_{i}{j}"
-                new_img_bindings = [
-                    b
-                    for b in img_bindings
-                    if binding_id_from_dc(b).startswith(f"{i}{j}")
-                ]
-                if new_img_bindings:
-                    img_contents.append((new_img_name, len(new_img_bindings)))
+        prefix = shared_prefix + str(i)
+        prefixed_bindings = bindings_with_prefix(bindings, prefix)
+        if len(prefixed_bindings) <= max_bindings_per_image:
+            images.append({"prefix": prefix, "bindings": prefixed_bindings})
         else:
-            if img_bindings:
-                img_contents.append((img_name, len(img_bindings)))
-
-    return img_contents
+            images.extend(
+                assign_bindings_to_images(prefixed_bindings, max_bindings_per_image, prefix)
+                )
+    return images
