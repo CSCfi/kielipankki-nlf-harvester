@@ -20,3 +20,5 @@ pipeline/logs/*
 pipeline/plugins/harvester
 airflow/
 !.gitkeep
+
+binding_ids/
