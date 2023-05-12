@@ -114,7 +114,7 @@ def calculate_batch_size(col_size):
         return 500
 
 
-def split_into_batches(bindings):
+def split_into_download_batches(bindings):
     """
     Split a collection into download batches.
     """

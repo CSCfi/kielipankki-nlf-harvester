@@ -35,12 +35,12 @@ def test_calculate_batch_size():
     assert utils.calculate_batch_size(1000000) == 500
 
 
-def test_split_into_batches():
+def test_split_into_download_batches():
     """
     Test that a collection is split to batches correctly.
     """
     bindings = list(range(50))
-    batches = utils.split_into_batches(bindings)
+    batches = utils.split_into_download_batches(bindings)
     assert batches == [
         [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
         [10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
