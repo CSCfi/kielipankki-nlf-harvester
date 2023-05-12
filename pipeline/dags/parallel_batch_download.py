@@ -82,8 +82,13 @@ for set_id in SET_IDS:
 
                     for dc_identifier in batch:
                         binding_id = utils.binding_id_from_dc(dc_identifier)
-                        binding_path = os.path.join(BASE_PATH, utils.binding_download_location(binding_id, set_id))
-                        tmp_binding_path = os.path.join(TMPDIR, utils.binding_download_location(binding_id, set_id))
+                        binding_path = os.path.join(
+                            BASE_PATH,
+                            utils.binding_download_location(binding_id, set_id),
+                        )
+                        tmp_binding_path = os.path.join(
+                            TMPDIR, utils.binding_download_location(binding_id, set_id)
+                        )
 
                         SaveMetsSFTPOperator(
                             task_id=f"save_mets_{binding_id}",

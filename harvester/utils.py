@@ -128,12 +128,16 @@ def bindings_with_prefix(bindings, prefix):
     """
     Find DC identifiers of which binding ID start with a given prefix.
     """
-    return [binding for binding in bindings if binding_id_from_dc(binding).startswith(prefix)]
+    return [
+        binding
+        for binding in bindings
+        if binding_id_from_dc(binding).startswith(prefix)
+    ]
 
 
-def assign_bindings_to_images(bindings, max_bindings_per_image, shared_prefix=''):
+def assign_bindings_to_images(bindings, max_bindings_per_image, shared_prefix=""):
     """
-    Split a list of bindings into images, each image containing no more than 
+    Split a list of bindings into images, each image containing no more than
     max_bindings_per_image bindings.
     """
     images = []
@@ -144,6 +148,8 @@ def assign_bindings_to_images(bindings, max_bindings_per_image, shared_prefix=''
             images.append({"prefix": prefix, "bindings": prefixed_bindings})
         else:
             images.extend(
-                assign_bindings_to_images(prefixed_bindings, max_bindings_per_image, prefix)
+                assign_bindings_to_images(
+                    prefixed_bindings, max_bindings_per_image, prefix
                 )
+            )
     return images
