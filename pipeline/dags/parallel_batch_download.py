@@ -117,7 +117,7 @@ for set_id in SET_IDS:
             with open(BINDING_BASE_PATH / set_id / "binding_ids", "r") as f:
                 bindings = f.read().splitlines()
 
-            for batch in utils.split_into_batches(bindings):
+            for batch in utils.split_into_download_batches(bindings):
                 download_binding_batch(batch=batch)
 
         @task(task_id="clear_temp_directory", trigger_rule="all_done")
