@@ -3,6 +3,7 @@ Tests for utility functions.
 """
 
 from pathlib import Path
+from pprint import pprint
 
 from harvester import utils
 
@@ -62,3 +63,23 @@ def test_binding_download_location():
         binding_id, "col-123", 3
     )
     assert dir_structure_set_depth == "col-123/1/12/123/123456"
+
+
+def test_assign_bindings_to_images():
+    """
+    Test that bindings are assigned to disk images correctly,
+    the correct number of disk images are created.
+    """
+    with open(f"tests/data/test_col_bindings", "r") as f:
+        bindings = f.read().splitlines()
+
+    images_1 = utils.assign_bindings_to_images(bindings, 1000)
+    assert len(images_1) == 1
+    assert images_1 == [{"prefix": "", "bindings": bindings}]
+
+    images_2 = utils.assign_bindings_to_images(bindings, 300)
+    assert len(images_2) == 10
+
+    for image in images_2:
+        for binding in image["bindings"]:
+            assert utils.binding_id_from_dc(binding).startswith(image["prefix"])
