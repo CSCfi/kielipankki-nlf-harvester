@@ -139,16 +139,13 @@ def assign_bindings_to_images(bindings, max_bindings_per_image, shared_prefix=""
     Split a list of bindings into images, each image containing no more than
     max_bindings_per_image bindings.
     """
+    if len(bindings) <= max_bindings_per_image:
+        return [{"prefix": shared_prefix, "bindings": bindings}]
     images = []
     for i in range(10):
         prefix = shared_prefix + str(i)
         prefixed_bindings = bindings_with_prefix(bindings, prefix)
-        if len(prefixed_bindings) <= max_bindings_per_image:
-            images.append({"prefix": prefix, "bindings": prefixed_bindings})
-        else:
-            images.extend(
-                assign_bindings_to_images(
-                    prefixed_bindings, max_bindings_per_image, prefix
-                )
-            )
+        images.extend(
+            assign_bindings_to_images(prefixed_bindings, max_bindings_per_image, prefix)
+        )
     return images
