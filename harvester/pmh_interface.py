@@ -29,13 +29,14 @@ class PMH_API:
         for set_id in sets:
             yield set_id
 
-    def dc_identifiers(self, set_id):
+    def dc_identifiers(self, set_id, from_date=None):
         """
         Iterate over all DC identifiers in the given set.
 
         :param set_id: Set (also known as collection) identifier
         """
-        binding_ids = self._sickle.ListIdentifiers(metadataPrefix="oai_dc", set=set_id)
+        request_params = {"metadataPrefix": "oai_dc", "set": set_id, "from": from_date}
+        binding_ids = self._sickle.ListIdentifiers(**request_params)
         for binding_id in binding_ids:
             yield f"https://digi.kansalliskirjasto.fi/sanomalehti/binding/{binding_id.identifier.rsplit(':')[-1]}"
 
