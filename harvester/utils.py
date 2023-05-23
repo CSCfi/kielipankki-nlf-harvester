@@ -79,7 +79,7 @@ def mets_download_location(dc_identifier, base_path=None, file_dir=None, filenam
     return Path(base_path) / Path(file_dir) / Path(filename)
 
 
-def binding_download_location(binding_id, set_id, depth=None):
+def binding_download_location(binding_id, set_id=None, depth=None):
     """
     Construct and return a subdirectory structure of given depth
     for a binding. Default depth is the length of the binding ID.
@@ -95,8 +95,10 @@ def binding_download_location(binding_id, set_id, depth=None):
         depth = len(binding_id)
     sub_dirs = [f"{binding_id[:i]}" for i in range(1, depth + 1)]
     sub_dirs.append(binding_id)
-    binding_path = os.path.join(set_id, *sub_dirs)
-    return binding_path
+    if set_id:
+        return os.path.join(set_id, *sub_dirs)
+    else:
+        return os.path.join(*sub_dirs)
 
 
 def calculate_batch_size(col_size):
