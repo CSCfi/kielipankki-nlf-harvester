@@ -30,7 +30,7 @@ BASE_PATH = "/scratch/project_2006633/nlf-harvester/images"
 TMPDIR = "/local_scratch/robot_2006633_puhti/harvester-temp"
 SSH_CONN_ID = "puhti_conn"
 HTTP_CONN_ID = "nlf_http_conn"
-SET_IDS = ["col-361", "col-501"]
+SET_IDS = ["col-361"]
 BINDING_BASE_PATH = Path("/home/ubuntu/binding_ids_all")
 
 default_args = {
@@ -95,47 +95,49 @@ for set_id in SET_IDS:
             with open(BINDING_BASE_PATH / set_id / "binding_ids", "r") as f:
                 bindings = f.read().splitlines()
 
-            for image in utils.assign_bindings_to_images(bindings, 5000):
+            image_downloads = []
+
+            for image in utils.assign_bindings_to_images(bindings, 200):
                 if image["bindings"]:
-
-                    @task(task_id=f"ensure_image_{set_id}_{image['prefix']}")
-                    def ensure_image(image):
-                        """
-                        Create an empty directory for image contents or extract an existing disk image.
-                        """
-
-                        image_base_name = f"image_{set_id}_{image['prefix']}".rstrip(
-                            "_"
-                        )
-                        image_dir_path = os.path.join(BASE_PATH, image_base_name)
-
-                        # Check if image exists
-                        ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
-                        with ssh_hook.get_conn() as ssh_client:
-                            sftp_client = ssh_client.open_sftp()
-                            utils.make_intermediate_dirs(
-                                sftp_client=sftp_client,
-                                remote_directory=BASE_PATH,
-                            )
-                            # if exists, extract with a bash command
-                            if f"{image_base_name}.sqfs" in sftp_client.listdir(
-                                BASE_PATH
-                            ):
-                                sftp_client.chdir(BASE_PATH)
-                                ssh_client.exec_command(
-                                    f"unsquashfs -d {image_dir_path} {image_dir_path}.sqfs"
-                                )
-                                ssh_client.exec_command(f"rm {image_dir_path}.sqfs")
-
-                            # if not exist, create image folder
-                            else:
-                                utils.make_intermediate_dirs(
-                                    sftp_client=sftp_client,
-                                    remote_directory=image_dir_path,
-                                )
 
                     @task_group(group_id=f"download_image_{set_id}_{image['prefix']}")
                     def download_image(image):
+                        @task(task_id=f"ensure_image_{set_id}_{image['prefix']}")
+                        def ensure_image(image):
+                            """
+                            Create an empty directory for image contents or extract an existing disk image.
+                            """
+
+                            image_base_name = (
+                                f"image_{set_id}_{image['prefix']}".rstrip("_")
+                            )
+                            image_dir_path = os.path.join(BASE_PATH, image_base_name)
+
+                            # Check if image exists
+                            ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
+                            with ssh_hook.get_conn() as ssh_client:
+                                sftp_client = ssh_client.open_sftp()
+                                utils.make_intermediate_dirs(
+                                    sftp_client=sftp_client,
+                                    remote_directory=BASE_PATH,
+                                )
+                                # if exists, extract with a bash command
+                                if f"{image_base_name}.sqfs" in sftp_client.listdir(
+                                    BASE_PATH
+                                ):
+                                    sftp_client.chdir(BASE_PATH)
+                                    ssh_client.exec_command(
+                                        f"unsquashfs -d {image_dir_path} {image_dir_path}.sqfs"
+                                    )
+                                    ssh_client.exec_command(f"rm {image_dir_path}.sqfs")
+
+                                # if not exist, create image folder
+                                else:
+                                    utils.make_intermediate_dirs(
+                                        sftp_client=sftp_client,
+                                        remote_directory=image_dir_path,
+                                    )
+
                         @task(
                             task_id="download_binding_batch",
                             trigger_rule="none_skipped",
@@ -209,9 +211,12 @@ for set_id in SET_IDS:
                         ):
                             batch_downloads.append(download_binding_batch(batch=batch))
 
-                        batch_downloads >> create_image(image)
+                        ensure_image(image) >> batch_downloads >> create_image(image)
 
-                    ensure_image(image) >> download_image(image)
+                    image_download_tg = download_image(image)
+                    if image_downloads:
+                        image_downloads[-1] >> image_download_tg
+                    image_downloads.append(image_download_tg)
 
         @task(task_id="clear_temp_directory", trigger_rule="all_done")
         def clear_temp_dir():
