@@ -59,6 +59,7 @@ def save_image_split(image_split, set_id):
     if os.path.exists(IMAGE_SPLIT_DIR / f"{set_id}_images.json"):
         return
     with open(IMAGE_SPLIT_DIR / f"{set_id}_images.json", "w") as json_file:
+        image_split = [{"prefix": d["prefix"], "bindings": []} for d in image_split]
         json.dump(image_split, json_file)
 
 
