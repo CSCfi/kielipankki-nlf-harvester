@@ -7,6 +7,7 @@ from datetime import timedelta
 from pathlib import Path
 from datetime import date
 import os
+import json
 
 from airflow.operators.empty import EmptyOperator
 from airflow.providers.http.sensors.http import HttpSensor
@@ -27,12 +28,15 @@ from operators.custom_operators import (
     SaveAltosSFTPOperator,
 )
 
+INITIAL_DOWNLOAD = True
+
 BASE_PATH = "/scratch/project_2006633/nlf-harvester/images"
 TMPDIR = "/local_scratch/robot_2006633_puhti/harvester-temp"
+IMAGE_SPLIT_DIR = Path("/home/ubuntu/image_split/")
+BINDING_BASE_PATH = Path("/home/ubuntu/binding_ids_all")
 SSH_CONN_ID = "puhti_conn"
 HTTP_CONN_ID = "nlf_http_conn"
 SET_IDS = ["col-361"]
-BINDING_BASE_PATH = Path("/home/ubuntu/binding_ids_all")
 
 default_args = {
     "owner": "Kielipankki",
@@ -45,14 +49,17 @@ http_conn = BaseHook.get_connection(HTTP_CONN_ID)
 api = PMH_API(url=http_conn.host)
 
 
-def read_bindings(set_id, current_date=None):
-    if current_date:
-        with open(BINDING_BASE_PATH / set_id / f"binding_ids_{current_date}", "r") as f:
-            bindings = f.read().splitlines()
-    else:
-        with open(BINDING_BASE_PATH / set_id / f"binding_ids", "r") as f:
-            bindings = f.read().splitlines()
+def read_bindings(set_id):
+    with open(BINDING_BASE_PATH / set_id / f"binding_ids_{date.today()}", "r") as f:
+        bindings = f.read().splitlines()
     return bindings
+
+
+def save_image_split(image_split, set_id):
+    if os.path.exists(IMAGE_SPLIT_DIR / f"{set_id}_images.json"):
+        return
+    with open(IMAGE_SPLIT_DIR / f"{set_id}_images.json", "w") as json_file:
+        json.dump(image_split, json_file)
 
 
 for set_id in SET_IDS:
@@ -74,7 +81,7 @@ for set_id in SET_IDS:
         @task.branch(task_id="check_if_download_should_begin")
         def check_if_download_should_begin():
             """
-            Check if API is responding and if there are new bindings to download. 
+            Check if API is responding and if there are new bindings to download.
             If not, cancel pipeline.
             """
             api_ok = HttpSensor(
@@ -97,12 +104,20 @@ for set_id in SET_IDS:
         @task_group(group_id="download_set")
         def download_set(set_id, api, ssh_conn_id):
 
-            with open(BINDING_BASE_PATH / set_id / "binding_ids", "r") as f:
-                bindings = f.read().splitlines()
+            bindings = read_bindings(set_id)
+
+            if INITIAL_DOWNLOAD:
+                image_split = utils.assign_bindings_to_images(bindings, 150)
+                save_image_split(image_split, set_id)
+
+            else:
+                image_split = utils.assign_update_bindings_to_images(
+                    bindings, IMAGE_SPLIT_DIR / f"{set_id}_images.json"
+                )
 
             image_downloads = []
 
-            for image in utils.assign_bindings_to_images(bindings, 200):
+            for image in image_split:
                 if image["bindings"]:
 
                     @task_group(group_id=f"download_image_{set_id}_{image['prefix']}")
