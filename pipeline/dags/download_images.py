@@ -5,6 +5,7 @@ Collections are split into chunks and downloaded into disk images.
 
 from datetime import timedelta
 from pathlib import Path
+from datetime import date
 import os
 
 from airflow.operators.empty import EmptyOperator
@@ -40,9 +41,19 @@ default_args = {
     "retries": 3,
 }
 
-
 http_conn = BaseHook.get_connection(HTTP_CONN_ID)
 api = PMH_API(url=http_conn.host)
+
+
+def read_bindings(set_id, current_date=None):
+    if current_date:
+        with open(BINDING_BASE_PATH / set_id / f"binding_ids_{current_date}", "r") as f:
+            bindings = f.read().splitlines()
+    else:
+        with open(BINDING_BASE_PATH / set_id / f"binding_ids", "r") as f:
+            bindings = f.read().splitlines()
+    return bindings
+
 
 for set_id in SET_IDS:
 
@@ -56,38 +67,32 @@ for set_id in SET_IDS:
         doc_md=__doc__,
     )
     def download_dag():
-        @task
-        def get_most_recent_dag_run(dag_id):
-            dag_runs = DagRun.find(dag_id=dag_id, state="success")
-            dag_runs.sort(key=lambda x: x.execution_date, reverse=True)
-            last_run = (
-                dag_runs[0].execution_date.strftime("%Y-%m-%d") if dag_runs else None
-            )
-            return last_run
-
-        last_run = get_most_recent_dag_run(current_dag_id)
-
         begin_download = EmptyOperator(task_id="begin_download")
 
         cancel_pipeline = EmptyOperator(task_id="cancel_pipeline")
 
-        @task.branch(task_id="check_api_availability")
-        def check_api_availability():
+        @task.branch(task_id="check_if_download_should_begin")
+        def check_if_download_should_begin():
             """
-            Check if API is responding and download can begin. If not, cancel pipeline.
+            Check if API is responding and if there are new bindings to download. 
+            If not, cancel pipeline.
             """
             api_ok = HttpSensor(
                 task_id="http_sensor", http_conn_id=HTTP_CONN_ID, endpoint="/"
             ).poke(context={})
 
-            if api_ok:
-                return "begin_download"
-            else:
+            bindings = read_bindings(set_id)
+
+            if not bindings:
+                print("No new bindings after previous download.")
                 return "cancel_pipeline"
+            if not api_ok:
+                print("NLF api does not respond.")
+                return "cancel_pipeline"
+            else:
+                return "begin_download"
 
-        check_api_availability = check_api_availability()
-
-        check_api_availability >> [begin_download, cancel_pipeline]
+        check_if_download_should_begin() >> [begin_download, cancel_pipeline]
 
         @task_group(group_id="download_set")
         def download_set(set_id, api, ssh_conn_id):
@@ -108,9 +113,7 @@ for set_id in SET_IDS:
                             Create an empty directory for image contents or extract an existing disk image.
                             """
 
-                            image_base_name = (
-                                f"image_{set_id}_{image['prefix']}".rstrip("_")
-                            )
+                            image_base_name = f"{set_id}_{image['prefix']}".rstrip("_")
                             image_dir_path = os.path.join(BASE_PATH, image_base_name)
 
                             # Check if image exists
@@ -150,7 +153,7 @@ for set_id in SET_IDS:
                                 for dc_identifier in batch:
                                     binding_id = utils.binding_id_from_dc(dc_identifier)
                                     image_base_name = (
-                                        f"image_{set_id}_{image['prefix']}".rstrip("_")
+                                        f"{set_id}_{image['prefix']}".rstrip("_")
                                     )
                                     binding_path = os.path.join(
                                         BASE_PATH,
@@ -189,9 +192,7 @@ for set_id in SET_IDS:
                         @task(task_id=f"create_image_{set_id}_{image['prefix']}")
                         def create_image(image):
                             print(f"Creating image_{set_id}_{image['prefix']} on Puhti")
-                            image_base_name = (
-                                f"image_{set_id}_{image['prefix']}".rstrip("_")
-                            )
+                            image_base_name = f"{set_id}_{image['prefix']}".rstrip("_")
                             image_dir_path = os.path.join(BASE_PATH, image_base_name)
 
                             ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
@@ -226,7 +227,6 @@ for set_id in SET_IDS:
 
         (
             begin_download
-            >> last_run
             >> download_set(set_id=set_id, api=api, ssh_conn_id=SSH_CONN_ID)
             >> clear_temp_dir()
         )
