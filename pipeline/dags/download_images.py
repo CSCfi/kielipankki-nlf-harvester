@@ -50,9 +50,15 @@ api = PMH_API(url=http_conn.host)
 
 
 def read_bindings(set_id):
-    with open(BINDING_BASE_PATH / set_id / f"binding_ids_{date.today()}", "r") as f:
-        bindings = f.read().splitlines()
-    return bindings
+    try:
+        with open(BINDING_BASE_PATH / set_id / f"binding_ids_{date.today()}", "r") as f:
+            bindings = f.read().splitlines()
+        return bindings
+    except FileNotFoundError:
+        print(
+            "No binding file found for today. Make sure to run DAG 'fetch_binding_ids' first."
+        )
+        return []
 
 
 def save_image_split(image_split, set_id):
