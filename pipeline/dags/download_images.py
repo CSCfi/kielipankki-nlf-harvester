@@ -14,7 +14,6 @@ from airflow.providers.http.sensors.http import HttpSensor
 from airflow.providers.ssh.hooks.ssh import SSHHook
 from airflow.hooks.base import BaseHook
 from airflow.decorators import task, task_group, dag
-from airflow.models import DagRun
 
 from harvester.pmh_interface import PMH_API
 from harvester import utils
