@@ -152,6 +152,16 @@ def assign_bindings_to_images(bindings, max_bindings_per_image, shared_prefix=""
     return images
 
 
+def image_for_binding(dc_identifier, prefixes):
+    """
+    Find the image of which prefix matches the prefix of the given binding ID.
+    """
+    binding_id = binding_id_from_dc(dc_identifier)
+    matches = [re.search(f"^{prefix}", binding_id) for prefix in prefixes]
+    image = [match.group(0) for match in matches if match][0]
+    return image
+
+
 def assign_update_bindings_to_images(bindings, image_split_file):
     """
     Assign an incoming list of new bindings into existing disk images
@@ -159,15 +169,9 @@ def assign_update_bindings_to_images(bindings, image_split_file):
     """
     with open(image_split_file, "r") as json_file:
         image_split = json.load(json_file)
-
-        image_split = [{"prefix": d["prefix"], "bindings": []} for d in image_split]
-
         prefixes = [d["prefix"] for d in image_split]
         for dc_identifier in bindings:
-            binding_id = binding_id_from_dc(dc_identifier)
-            matches = [re.search(f"^{prefix}", binding_id) for prefix in prefixes]
-            image_options = [match.group(0) for match in matches if match]
-            image = max(image_options, key=len)
+            image = image_for_binding(dc_identifier, prefixes)
             [d for d in image_split if d["prefix"] == image][0]["bindings"].append(
                 dc_identifier
             )
