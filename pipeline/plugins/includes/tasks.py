@@ -3,6 +3,7 @@ from airflow.providers.http.sensors.http import HttpSensor
 from airflow.providers.ssh.hooks.ssh import SSHHook
 
 from datetime import date
+from urllib.error import HTTPError
 import os
 import json
 
@@ -48,8 +49,7 @@ def check_if_download_should_begin(set_id, binding_base_path, http_conn_id):
         print("No new bindings after previous download.")
         return "cancel_pipeline"
     if not api_ok:
-        print("NLF api does not respond.")
-        return "cancel_pipeline"
+        raise HTTPError("NLF API is not responding.")
     else:
         return "begin_download"
 
