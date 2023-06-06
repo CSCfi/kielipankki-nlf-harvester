@@ -14,9 +14,10 @@ from airflow.decorators import task, task_group, dag
 from harvester.pmh_interface import PMH_API
 
 
-SET_IDS = ["col-361", "col-501", "col-24", "col-82"]
+SET_IDS = ["col-361"]
 BASE_PATH = Path("/home/ubuntu/binding_ids_all")
 HTTP_CONN_ID = "nlf_http_conn"
+INITIAL_DOWNLOAD = True
 
 default_args = {
     "owner": "Kielipankki",
@@ -58,11 +59,15 @@ def fetch_bindings_dag():
 
             with open(f"{folder_path}/binding_ids_{date.today()}", "w") as file_obj:
 
-                try:
-                    for item in api.dc_identifiers(set_id, from_date=last_run):
+                if INITIAL_DOWNLOAD:
+                    for item in api.dc_identifiers(set_id):
                         file_obj.write(item + "\n")
-                except NoRecordsMatch:
-                    print(f"No new bindings after date {last_run}")
+                else:
+                    try:
+                        for item in api.dc_identifiers(set_id, from_date=last_run):
+                            file_obj.write(item + "\n")
+                    except NoRecordsMatch:
+                        print(f"No new bindings after date {last_run} for set {set_id}")
 
         save_ids_for_set.expand(set_id=SET_IDS)
 
