@@ -19,10 +19,9 @@ def read_bindings(binding_base_path, set_id):
             bindings = f.read().splitlines()
         return bindings
     except FileNotFoundError:
-        print(
-            "No binding file found for today. Make sure to run DAG 'fetch_binding_ids' first."
+        raise FileNotFoundError(
+            f"No binding file found for today for set {set_id}. Make sure to run DAG 'fetch_binding_ids' first."
         )
-        return []
 
 
 def save_image_split(image_split, image_split_dir, set_id):
