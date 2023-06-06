@@ -86,7 +86,6 @@ def download_set(
                             ssh_client.exec_command(
                                 f"unsquashfs -d {image_dir_path} {image_dir_path}.sqfs"
                             )
-                            ssh_client.exec_command(f"rm {image_dir_path}.sqfs")
 
                         # if not exist, create image folder
                         else:
@@ -149,6 +148,7 @@ def download_set(
 
                     ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
                     with ssh_hook.get_conn() as ssh_client:
+                        ssh_client.exec_command(f"rm {image_dir_path}.sqfs")
                         _, stdout, stderr = ssh_client.exec_command(
                             f"mksquashfs {image_dir_path} {image_dir_path}.sqfs"
                         )
