@@ -36,7 +36,7 @@ def get_most_recent_dag_run(dag_id):
 
 @dag(
     dag_id="fetch_binding_ids",
-    schedule="@once",
+    schedule="0 5 * * *",
     default_args=default_args,
     catchup=False,
     doc_md=__doc__,
@@ -55,7 +55,7 @@ def fetch_bindings_dag():
 
             if not os.path.isdir(folder_path):
                 os.makedirs(folder_path)
-            last_run = get_most_recent_dag_run("fetch_binding_ids")
+            last_run = get_most_recent_dag_run(f"image_download_{set_id}")
 
             with open(f"{folder_path}/binding_ids_{date.today()}", "w") as file_obj:
 
