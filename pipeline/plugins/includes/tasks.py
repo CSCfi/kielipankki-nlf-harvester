@@ -2,35 +2,14 @@ from airflow.decorators import task, task_group
 from airflow.providers.http.sensors.http import HttpSensor
 from airflow.providers.ssh.hooks.ssh import SSHHook
 
-from datetime import date
 from urllib.error import HTTPError
 import os
-import json
 
 from harvester import utils
 from operators.custom_operators import (
     SaveMetsSFTPOperator,
     SaveAltosSFTPOperator,
 )
-
-
-def read_bindings(binding_base_path, set_id):
-    try:
-        with open(binding_base_path / set_id / f"binding_ids_{date.today()}", "r") as f:
-            bindings = f.read().splitlines()
-        return bindings
-    except FileNotFoundError:
-        raise FileNotFoundError(
-            f"No binding file found for today for set {set_id}. Make sure to run DAG 'fetch_binding_ids' first."
-        )
-
-
-def save_image_split(image_split, image_split_dir, set_id):
-    if os.path.exists(image_split_dir / f"{set_id}_images.json"):
-        return
-    with open(image_split_dir / f"{set_id}_images.json", "w") as json_file:
-        image_split = [{"prefix": d["prefix"], "bindings": []} for d in image_split]
-        json.dump(image_split, json_file)
 
 
 @task.branch(task_id="check_if_download_should_begin")
@@ -43,7 +22,7 @@ def check_if_download_should_begin(set_id, binding_base_path, http_conn_id):
         task_id="http_sensor", http_conn_id=http_conn_id, endpoint="/"
     ).poke(context={})
 
-    bindings = read_bindings(binding_base_path, set_id)
+    bindings = utils.read_bindings(binding_base_path, set_id)
 
     if not bindings:
         print("No new bindings after previous download.")
@@ -66,11 +45,11 @@ def download_set(
     tmpdir,
 ):
 
-    bindings = read_bindings(binding_base_path, set_id)
+    bindings = utils.read_bindings(binding_base_path, set_id)
 
     if initial_download:
         image_split = utils.assign_bindings_to_images(bindings, 150)
-        save_image_split(image_split, image_split_dir, set_id)
+        utils.save_image_split(image_split, image_split_dir, set_id)
 
     else:
         image_split = utils.assign_update_bindings_to_images(
