@@ -6,6 +6,7 @@ import os
 import json
 import re
 from pathlib import Path
+from datetime import date
 
 
 def binding_id_from_dc(dc_identifier):
@@ -176,3 +177,25 @@ def assign_update_bindings_to_images(bindings, image_split_file):
                 dc_identifier
             )
     return image_split
+
+
+def read_bindings(binding_base_path, set_id):
+    """
+    Read and return a list of bindings from file.
+    """
+    try:
+        with open(binding_base_path / set_id / f"binding_ids_{date.today()}", "r") as f:
+            bindings = f.read().splitlines()
+        return bindings
+    except FileNotFoundError:
+        raise FileNotFoundError(
+            f"No binding file found for today for set {set_id}. Make sure to run DAG 'fetch_binding_ids' first."
+        )
+
+
+def save_image_split(image_split, image_split_dir, set_id):
+    if os.path.exists(image_split_dir / f"{set_id}_images.json"):
+        return
+    with open(image_split_dir / f"{set_id}_images.json", "w") as json_file:
+        image_split = [{"prefix": d["prefix"], "bindings": []} for d in image_split]
+        json.dump(image_split, json_file)
