@@ -149,12 +149,12 @@ def download_set(
 
                     ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
                     with ssh_hook.get_conn() as ssh_client:
-                        _, stdout, _ = ssh_client.exec_command(
+                        _, stdout, stderr = ssh_client.exec_command(
                             f"mksquashfs {image_dir_path} {image_dir_path}.sqfs"
                         )
                         if stdout.channel.recv_exit_status() != 0:
                             raise Exception(
-                                f"Creation of image {image_dir_path}.sqfs failed"
+                                f"Creation of image {image_dir_path}.sqfs failed: {stderr.read().decode('utf-8')}"
                             )
                         ssh_client.exec_command(f"rm -r {image_dir_path}")
 
