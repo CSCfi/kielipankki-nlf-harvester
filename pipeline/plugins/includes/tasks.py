@@ -63,8 +63,8 @@ def download_set(
 
             @task_group(group_id=f"download_image_{set_id}_{image['prefix']}")
             def download_image(image):
-                @task(task_id=f"ensure_image_{set_id}_{image['prefix']}")
-                def ensure_image(image):
+                @task(task_id=f"prepare_download_location_{set_id}_{image['prefix']}")
+                def prepare_download_location(image):
                     """
                     Create an empty directory for image contents or extract an existing disk image.
                     """
@@ -162,7 +162,7 @@ def download_set(
                 for batch in utils.split_into_download_batches(image["bindings"]):
                     batch_downloads.append(download_binding_batch(batch=batch))
 
-                ensure_image(image) >> batch_downloads >> create_image(image)
+                prepare_download_location(image) >> batch_downloads >> create_image(image)
 
             image_download_tg = download_image(image)
             if image_downloads:
