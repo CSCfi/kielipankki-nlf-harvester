@@ -56,13 +56,13 @@ def test_binding_download_location():
     Test that subdirectory structure is created correctly
     """
     binding_id = "123456"
-    dir_structure = utils.binding_download_location(binding_id, "col-123")
-    assert dir_structure == "col-123/1/12/123/1234/12345/123456/123456"
+    dir_structure = utils.binding_download_location(binding_id)
+    assert dir_structure == "1/12/123/1234/12345/123456/123456"
 
     dir_structure_set_depth = utils.binding_download_location(
-        binding_id, "col-123", 3
+        binding_id, 3
     )
-    assert dir_structure_set_depth == "col-123/1/12/123/123456"
+    assert dir_structure_set_depth == "1/12/123/123456"
 
 
 def test_assign_bindings_to_images():
