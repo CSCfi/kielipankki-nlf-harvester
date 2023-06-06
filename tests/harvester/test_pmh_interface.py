@@ -65,9 +65,7 @@ def test_fetch_mets_with_default_path(
     """
     api = PMH_API(oai_pmh_api_url)
     binding_id = utils.binding_id_from_dc(mets_dc_identifier)
-    output_file = str(
-        utils.mets_download_location(dc_identifier=mets_dc_identifier)
-    )
+    output_file = str(utils.mets_download_location(dc_identifier=mets_dc_identifier))
     mocker.patch("builtins.open")
     with open(output_file, "wb") as mets_file:
         response = api.download_mets(mets_dc_identifier, mets_file)
