@@ -5,16 +5,12 @@ Collections are split into chunks and downloaded into disk images.
 
 from datetime import timedelta
 from pathlib import Path
-from datetime import date
-import os
-import json
 
 from airflow.operators.empty import EmptyOperator
-from airflow.providers.http.sensors.http import HttpSensor
-from airflow.providers.ssh.hooks.ssh import SSHHook
 from airflow.hooks.base import BaseHook
-from airflow.decorators import task, task_group, dag
+from airflow.decorators import dag
 
+from includes.tasks import check_if_download_should_begin, download_set, clear_temp_dir
 from harvester.pmh_interface import PMH_API
 from harvester import utils
 
@@ -22,10 +18,6 @@ from importlib import reload
 
 reload(utils)
 
-from operators.custom_operators import (
-    SaveMetsSFTPOperator,
-    SaveAltosSFTPOperator,
-)
 
 INITIAL_DOWNLOAD = True
 
@@ -48,26 +40,6 @@ http_conn = BaseHook.get_connection(HTTP_CONN_ID)
 api = PMH_API(url=http_conn.host)
 
 
-def read_bindings(set_id):
-    try:
-        with open(BINDING_BASE_PATH / set_id / f"binding_ids_{date.today()}", "r") as f:
-            bindings = f.read().splitlines()
-        return bindings
-    except FileNotFoundError:
-        print(
-            "No binding file found for today. Make sure to run DAG 'fetch_binding_ids' first."
-        )
-        return []
-
-
-def save_image_split(image_split, set_id):
-    if os.path.exists(IMAGE_SPLIT_DIR / f"{set_id}_images.json"):
-        return
-    with open(IMAGE_SPLIT_DIR / f"{set_id}_images.json", "w") as json_file:
-        image_split = [{"prefix": d["prefix"], "bindings": []} for d in image_split]
-        json.dump(image_split, json_file)
-
-
 for set_id in SET_IDS:
 
     current_dag_id = f"image_download_{set_id}"
@@ -84,172 +56,28 @@ for set_id in SET_IDS:
 
         cancel_pipeline = EmptyOperator(task_id="cancel_pipeline")
 
-        @task.branch(task_id="check_if_download_should_begin")
-        def check_if_download_should_begin():
-            """
-            Check if API is responding and if there are new bindings to download.
-            If not, cancel pipeline.
-            """
-            api_ok = HttpSensor(
-                task_id="http_sensor", http_conn_id=HTTP_CONN_ID, endpoint="/"
-            ).poke(context={})
-
-            bindings = read_bindings(set_id)
-
-            if not bindings:
-                print("No new bindings after previous download.")
-                return "cancel_pipeline"
-            if not api_ok:
-                print("NLF api does not respond.")
-                return "cancel_pipeline"
-            else:
-                return "begin_download"
-
-        check_if_download_should_begin() >> [begin_download, cancel_pipeline]
-
-        @task_group(group_id="download_set")
-        def download_set(set_id, api, ssh_conn_id):
-
-            bindings = read_bindings(set_id)
-
-            if INITIAL_DOWNLOAD:
-                image_split = utils.assign_bindings_to_images(bindings, 150)
-                save_image_split(image_split, set_id)
-
-            else:
-                image_split = utils.assign_update_bindings_to_images(
-                    bindings, IMAGE_SPLIT_DIR / f"{set_id}_images.json"
-                )
-
-            image_downloads = []
-
-            for image in image_split:
-                if image["bindings"]:
-
-                    @task_group(group_id=f"download_image_{set_id}_{image['prefix']}")
-                    def download_image(image):
-                        @task(task_id=f"ensure_image_{set_id}_{image['prefix']}")
-                        def ensure_image(image):
-                            """
-                            Create an empty directory for image contents or extract an existing disk image.
-                            """
-
-                            image_base_name = f"{set_id}_{image['prefix']}".rstrip("_")
-                            image_dir_path = os.path.join(BASE_PATH, image_base_name)
-
-                            # Check if image exists
-                            ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
-                            with ssh_hook.get_conn() as ssh_client:
-                                sftp_client = ssh_client.open_sftp()
-                                utils.make_intermediate_dirs(
-                                    sftp_client=sftp_client,
-                                    remote_directory=BASE_PATH,
-                                )
-                                # if exists, extract with a bash command
-                                if f"{image_base_name}.sqfs" in sftp_client.listdir(
-                                    BASE_PATH
-                                ):
-                                    sftp_client.chdir(BASE_PATH)
-                                    ssh_client.exec_command(
-                                        f"unsquashfs -d {image_dir_path} {image_dir_path}.sqfs"
-                                    )
-                                    ssh_client.exec_command(f"rm {image_dir_path}.sqfs")
-
-                                # if not exist, create image folder
-                                else:
-                                    utils.make_intermediate_dirs(
-                                        sftp_client=sftp_client,
-                                        remote_directory=image_dir_path,
-                                    )
-
-                        @task(
-                            task_id="download_binding_batch",
-                            trigger_rule="none_skipped",
-                        )
-                        def download_binding_batch(batch):
-                            ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
-                            with ssh_hook.get_conn() as ssh_client:
-                                sftp_client = ssh_client.open_sftp()
-
-                                for dc_identifier in batch:
-                                    binding_id = utils.binding_id_from_dc(dc_identifier)
-                                    image_base_name = (
-                                        f"{set_id}_{image['prefix']}".rstrip("_")
-                                    )
-                                    binding_path = os.path.join(
-                                        BASE_PATH,
-                                        image_base_name,
-                                        utils.binding_download_location(binding_id),
-                                    )
-                                    tmp_binding_path = os.path.join(
-                                        TMPDIR,
-                                        utils.binding_download_location(binding_id),
-                                    )
-
-                                    SaveMetsSFTPOperator(
-                                        task_id=f"save_mets_{binding_id}",
-                                        api=api,
-                                        sftp_client=sftp_client,
-                                        ssh_client=ssh_client,
-                                        tmpdir=tmp_binding_path,
-                                        dc_identifier=dc_identifier,
-                                        binding_path=binding_path,
-                                        file_dir="mets",
-                                    ).execute(context={})
-
-                                    SaveAltosSFTPOperator(
-                                        task_id=f"save_altos_{binding_id}",
-                                        mets_path=f"{binding_path}/mets",
-                                        sftp_client=sftp_client,
-                                        ssh_client=ssh_client,
-                                        tmpdir=tmp_binding_path,
-                                        dc_identifier=dc_identifier,
-                                        binding_path=binding_path,
-                                        file_dir="alto",
-                                    ).execute(context={})
-
-                                    ssh_client.exec_command(f"rm -r {tmp_binding_path}")
-
-                        @task(task_id=f"create_image_{set_id}_{image['prefix']}")
-                        def create_image(image):
-                            print(f"Creating image_{set_id}_{image['prefix']} on Puhti")
-                            image_base_name = f"{set_id}_{image['prefix']}".rstrip("_")
-                            image_dir_path = os.path.join(BASE_PATH, image_base_name)
-
-                            ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
-                            with ssh_hook.get_conn() as ssh_client:
-                                _, stdout, _ = ssh_client.exec_command(
-                                    f"mksquashfs {image_dir_path} {image_dir_path}.sqfs"
-                                )
-                                if stdout.channel.recv_exit_status() != 0:
-                                    raise Exception(
-                                        f"Creation of image {image_dir_path}.sqfs failed"
-                                    )
-                                ssh_client.exec_command(f"rm -r {image_dir_path}")
-
-                        batch_downloads = []
-                        for batch in utils.split_into_download_batches(
-                            image["bindings"]
-                        ):
-                            batch_downloads.append(download_binding_batch(batch=batch))
-
-                        ensure_image(image) >> batch_downloads >> create_image(image)
-
-                    image_download_tg = download_image(image)
-                    if image_downloads:
-                        image_downloads[-1] >> image_download_tg
-                    image_downloads.append(image_download_tg)
-
-        @task(task_id="clear_temp_directory", trigger_rule="all_done")
-        def clear_temp_dir():
-            ssh_hook = SSHHook(ssh_conn_id=SSH_CONN_ID)
-            with ssh_hook.get_conn() as ssh_client:
-                ssh_client.exec_command(f"rm -r {TMPDIR}/*")
+        check_if_download_should_begin(
+            set_id=set_id,
+            binding_base_path=BINDING_BASE_PATH,
+            http_conn_id=HTTP_CONN_ID,
+        ) >> [
+            begin_download,
+            cancel_pipeline,
+        ]
 
         (
             begin_download
-            >> download_set(set_id=set_id, api=api, ssh_conn_id=SSH_CONN_ID)
-            >> clear_temp_dir()
+            >> download_set(
+                set_id=set_id,
+                api=api,
+                ssh_conn_id=SSH_CONN_ID,
+                initial_download=INITIAL_DOWNLOAD,
+                image_split_dir=IMAGE_SPLIT_DIR,
+                binding_base_path=BINDING_BASE_PATH,
+                base_path=BASE_PATH,
+                tmpdir=TMPDIR,
+            )
+            >> clear_temp_dir(SSH_CONN_ID, TMPDIR)
         )
 
     download_dag()
