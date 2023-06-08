@@ -36,6 +36,7 @@ def check_if_download_should_begin(set_id, binding_base_path, http_conn_id):
 @task_group(group_id="download_set")
 def download_set(
     set_id,
+    image_size,
     api,
     ssh_conn_id,
     initial_download,
@@ -48,7 +49,7 @@ def download_set(
     bindings = utils.read_bindings(binding_base_path, set_id)
 
     if initial_download:
-        image_split = utils.assign_bindings_to_images(bindings, 150)
+        image_split = utils.assign_bindings_to_images(bindings, image_size)
         utils.save_image_split(image_split, image_split_dir, set_id)
 
     else:
@@ -162,7 +163,11 @@ def download_set(
                 for batch in utils.split_into_download_batches(image["bindings"]):
                     batch_downloads.append(download_binding_batch(batch=batch))
 
-                prepare_download_location(image) >> batch_downloads >> create_image(image)
+                (
+                    prepare_download_location(image)
+                    >> batch_downloads
+                    >> create_image(image)
+                )
 
             image_download_tg = download_image(image)
             if image_downloads:

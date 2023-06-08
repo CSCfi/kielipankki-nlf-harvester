@@ -14,7 +14,7 @@ from airflow.decorators import task, task_group, dag
 from harvester.pmh_interface import PMH_API
 
 
-SET_IDS = ["col-361"]
+SET_IDS = ["col-361", "col-501", "col-24", "col-82"]
 BASE_PATH = Path("/home/ubuntu/binding_ids_all")
 HTTP_CONN_ID = "nlf_http_conn"
 INITIAL_DOWNLOAD = True
