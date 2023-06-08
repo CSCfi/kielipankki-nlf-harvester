@@ -118,6 +118,13 @@ def test_assign_update_bindings_to_images():
         bindings[3]
     ]
 
+    small_image_split = utils.assign_update_bindings_to_images(
+        bindings, "tests/data/small_image_split.json"
+    )
+
+    assert len(small_image_split) == 1
+    assert [d for d in small_image_split if not d["prefix"]][0]["bindings"] == bindings
+
 
 def test_read_bindings(tmpdir):
     """
