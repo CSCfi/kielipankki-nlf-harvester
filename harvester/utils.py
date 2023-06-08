@@ -170,12 +170,12 @@ def assign_update_bindings_to_images(bindings, image_split_file):
     """
     with open(image_split_file, "r") as json_file:
         image_split = json.load(json_file)
-        prefixes = [d["prefix"] for d in image_split]
-        for dc_identifier in bindings:
-            image = image_for_binding(dc_identifier, prefixes)
-            [d for d in image_split if d["prefix"] == image][0]["bindings"].append(
-                dc_identifier
-            )
+    prefixes = [d["prefix"] for d in image_split]
+    for dc_identifier in bindings:
+        image = image_for_binding(dc_identifier, prefixes)
+        [d for d in image_split if d["prefix"] == image][0]["bindings"].append(
+            dc_identifier
+        )
     return image_split
 
 
