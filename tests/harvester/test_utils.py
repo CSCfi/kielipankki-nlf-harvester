@@ -75,22 +75,14 @@ def test_assign_bindings_to_images():
 
     images_1 = utils.assign_bindings_to_images(bindings, 1000)
     assert len(images_1) == 1
-    assert images_1 == [{"prefix": "", "bindings": bindings}]
+    assert images_1 == {"": bindings}
 
     images_2 = utils.assign_bindings_to_images(bindings, 300)
     assert len(images_2) == 10
 
-    for image in images_2:
-        for binding in image["bindings"]:
-            assert utils.binding_id_from_dc(binding).startswith(image["prefix"])
-
-
-def test_image_for_binding(mets_dc_identifier):
-    """
-    Test that a binding is assigned to the correct image based on its ID.
-    """
-    prefixes = [1, 2, 31, 32, 33, 34, 37, 4, 51, 52, 53, 54, 55, 6, 7, 8, 9]
-    assert utils.image_for_binding(mets_dc_identifier, prefixes) == "37"
+    for prefix, bindings in images_2.items():
+        for binding in bindings:
+            assert utils.binding_id_from_dc(binding).startswith(prefix)
 
 
 def test_assign_update_bindings_to_images():
@@ -104,26 +96,18 @@ def test_assign_update_bindings_to_images():
         bindings, "tests/data/image_split.json"
     )
 
-    assert [d for d in image_split if d["prefix"] == "20"][0]["bindings"] == [
-        bindings[0]
-    ]
-    assert [d for d in image_split if d["prefix"] == "21"][0]["bindings"] == [
-        bindings[1]
-    ]
-    assert [d for d in image_split if d["prefix"] == "22"][0]["bindings"] == []
-    assert [d for d in image_split if d["prefix"] == "3"][0]["bindings"] == [
-        bindings[2]
-    ]
-    assert [d for d in image_split if d["prefix"] == "9"][0]["bindings"] == [
-        bindings[3]
-    ]
+    assert image_split["20"] == [bindings[0]]
+    assert image_split["21"] == [bindings[1]]
+    assert image_split["22"] == []
+    assert image_split["3"] == [bindings[2]]
+    assert image_split["9"] == [bindings[3]]
 
     small_image_split = utils.assign_update_bindings_to_images(
         bindings, "tests/data/small_image_split.json"
     )
 
     assert len(small_image_split) == 1
-    assert [d for d in small_image_split if not d["prefix"]][0]["bindings"] == bindings
+    assert small_image_split[""] == bindings
 
 
 def test_read_bindings(tmpdir):

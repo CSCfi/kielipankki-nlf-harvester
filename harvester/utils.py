@@ -142,25 +142,25 @@ def assign_bindings_to_images(bindings, max_bindings_per_image, shared_prefix=""
     max_bindings_per_image bindings.
     """
     if len(bindings) <= max_bindings_per_image:
-        return [{"prefix": shared_prefix, "bindings": bindings}]
-    images = []
+        return {shared_prefix: bindings}
+    images = {}
     for i in range(10):
         prefix = shared_prefix + str(i)
         prefixed_bindings = bindings_with_prefix(bindings, prefix)
-        images.extend(
+        images.update(
             assign_bindings_to_images(prefixed_bindings, max_bindings_per_image, prefix)
         )
     return images
 
 
-def image_for_binding(dc_identifier, prefixes):
+def image_for_binding(dc_identifier, image_split):
     """
     Find the image of which prefix matches the prefix of the given binding ID.
     """
     binding_id = binding_id_from_dc(dc_identifier)
-    matches = [re.search(f"^{prefix}", binding_id) for prefix in prefixes]
-    image = [match.group(0) for match in matches if match][0]
-    return image
+    for prefix in image_split:
+        if binding_id.startswith(prefix):
+            return prefix
 
 
 def assign_update_bindings_to_images(bindings, image_split_file):
@@ -170,12 +170,9 @@ def assign_update_bindings_to_images(bindings, image_split_file):
     """
     with open(image_split_file, "r") as json_file:
         image_split = json.load(json_file)
-    prefixes = [d["prefix"] for d in image_split]
     for dc_identifier in bindings:
-        image = image_for_binding(dc_identifier, prefixes)
-        [d for d in image_split if d["prefix"] == image][0]["bindings"].append(
-            dc_identifier
-        )
+        image = image_for_binding(dc_identifier, image_split)
+        image_split[image].append(dc_identifier)
     return image_split
 
 
@@ -197,5 +194,5 @@ def save_image_split(image_split, image_split_dir, set_id):
     if os.path.exists(image_split_dir / f"{set_id}_images.json"):
         return
     with open(image_split_dir / f"{set_id}_images.json", "w") as json_file:
-        image_split = [{"prefix": d["prefix"], "bindings": []} for d in image_split]
+        image_split = {k: [] for k in image_split}
         json.dump(image_split, json_file)
