@@ -62,15 +62,18 @@ def download_set(
     for image in image_split:
         if image["bindings"]:
 
-            @task_group(group_id=f"download_image_{set_id}_{image['prefix']}".rstrip("_"))
+            if image['prefix']:
+                image_base_name = f"{set_id}_{image['prefix']}"
+            else:
+                image_base_name = set_id
+
+            @task_group(group_id=f"download_image_{image_base_name}")
             def download_image(image):
-                @task(task_id=f"prepare_download_location_{set_id}_{image['prefix']}".rstrip("_"))
-                def prepare_download_location(image):
+                @task(task_id=f"prepare_download_location_{image_base_name}")
+                def prepare_download_location():
                     """
                     Create an empty directory for image contents or extract an existing disk image.
                     """
-
-                    image_base_name = f"{set_id}_{image['prefix']}".rstrip("_")
                     image_dir_path = os.path.join(base_path, image_base_name)
 
                     # Check if image exists
@@ -106,7 +109,6 @@ def download_set(
 
                         for dc_identifier in batch:
                             binding_id = utils.binding_id_from_dc(dc_identifier)
-                            image_base_name = f"{set_id}_{image['prefix']}".rstrip("_")
                             binding_path = os.path.join(
                                 base_path,
                                 image_base_name,
@@ -141,10 +143,9 @@ def download_set(
 
                             ssh_client.exec_command(f"rm -r {tmp_binding_path}")
 
-                @task(task_id=f"create_image_{set_id}_{image['prefix']}".rstrip("_"))
-                def create_image(image):
-                    print(f"Creating image_{set_id}_{image['prefix']} on Puhti")
-                    image_base_name = f"{set_id}_{image['prefix']}".rstrip("_")
+                @task(task_id=f"create_image_{image_base_name}")
+                def create_image():
+                    print(f"Creating image {image_base_name} on Puhti")
                     image_dir_path = os.path.join(base_path, image_base_name)
 
                     ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
@@ -164,9 +165,9 @@ def download_set(
                     batch_downloads.append(download_binding_batch(batch=batch))
 
                 (
-                    prepare_download_location(image)
+                    prepare_download_location()
                     >> batch_downloads
-                    >> create_image(image)
+                    >> create_image()
                 )
 
             image_download_tg = download_image(image)
