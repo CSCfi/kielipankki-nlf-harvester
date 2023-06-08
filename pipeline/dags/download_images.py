@@ -12,11 +12,6 @@ from airflow.decorators import dag
 
 from includes.tasks import check_if_download_should_begin, download_set, clear_temp_dir
 from harvester.pmh_interface import PMH_API
-from harvester import utils
-
-from importlib import reload
-
-reload(utils)
 
 
 INITIAL_DOWNLOAD = True
@@ -27,7 +22,12 @@ IMAGE_SPLIT_DIR = Path("/home/ubuntu/image_split/")
 BINDING_BASE_PATH = Path("/home/ubuntu/binding_ids_all")
 SSH_CONN_ID = "puhti_conn"
 HTTP_CONN_ID = "nlf_http_conn"
-SET_IDS = ["col-361"]
+COLLECTIONS = [
+    {"id": "col-361", "image_size": 150},
+    {"id": "col-501", "image_size": 5000},
+    #    {"id": "col-82", "image_size": 150000},
+    #    {"id": "col-24", "image_size": 100000},
+]
 
 default_args = {
     "owner": "Kielipankki",
@@ -40,9 +40,9 @@ http_conn = BaseHook.get_connection(HTTP_CONN_ID)
 api = PMH_API(url=http_conn.host)
 
 
-for set_id in SET_IDS:
+for col in COLLECTIONS:
 
-    current_dag_id = f"image_download_{set_id}"
+    current_dag_id = f"image_download_{col['id']}"
 
     @dag(
         dag_id=current_dag_id,
@@ -57,7 +57,7 @@ for set_id in SET_IDS:
         cancel_pipeline = EmptyOperator(task_id="cancel_pipeline")
 
         check_if_download_should_begin(
-            set_id=set_id,
+            set_id=col["id"],
             binding_base_path=BINDING_BASE_PATH,
             http_conn_id=HTTP_CONN_ID,
         ) >> [
@@ -68,7 +68,8 @@ for set_id in SET_IDS:
         (
             begin_download
             >> download_set(
-                set_id=set_id,
+                set_id=col["id"],
+                image_size=col["image_size"],
                 api=api,
                 ssh_conn_id=SSH_CONN_ID,
                 initial_download=INITIAL_DOWNLOAD,

@@ -34,8 +34,8 @@ def test_calculate_batch_size():
     assert utils.calculate_batch_size(1) == 1
     assert utils.calculate_batch_size(100) == 10
     assert utils.calculate_batch_size(10000) == 100
-    assert utils.calculate_batch_size(100000) == 250
-    assert utils.calculate_batch_size(1000000) == 500
+    assert utils.calculate_batch_size(100000) == 500
+    assert utils.calculate_batch_size(1000000) == 2000
 
 
 def test_split_into_download_batches():
