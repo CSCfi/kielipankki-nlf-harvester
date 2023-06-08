@@ -59,16 +59,17 @@ def download_set(
 
     image_downloads = []
 
-    for image in image_split:
-        if image["bindings"]:
+    for prefix in image_split:
+        if image_split[prefix]:
 
-            if image['prefix']:
-                image_base_name = f"{set_id}_{image['prefix']}"
-            else:
-                image_base_name = set_id
-
-            @task_group(group_id=f"download_image_{image_base_name}")
+            @task_group(group_id=f"download_image_{set_id}_{prefix}".rstrip("_"))
             def download_image(image):
+
+                if prefix:
+                    image_base_name = f"{set_id}_{prefix}"
+                else:
+                    image_base_name = set_id
+
                 @task(task_id=f"prepare_download_location_{image_base_name}")
                 def prepare_download_location():
                     """
@@ -161,16 +162,12 @@ def download_set(
                         ssh_client.exec_command(f"rm -r {image_dir_path}")
 
                 batch_downloads = []
-                for batch in utils.split_into_download_batches(image["bindings"]):
+                for batch in utils.split_into_download_batches(image_split[image]):
                     batch_downloads.append(download_binding_batch(batch=batch))
 
-                (
-                    prepare_download_location()
-                    >> batch_downloads
-                    >> create_image()
-                )
+                (prepare_download_location() >> batch_downloads >> create_image())
 
-            image_download_tg = download_image(image)
+            image_download_tg = download_image(prefix)
             if image_downloads:
                 image_downloads[-1] >> image_download_tg
             image_downloads.append(image_download_tg)
