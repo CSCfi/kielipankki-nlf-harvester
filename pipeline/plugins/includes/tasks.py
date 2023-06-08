@@ -62,9 +62,9 @@ def download_set(
     for image in image_split:
         if image["bindings"]:
 
-            @task_group(group_id=f"download_image_{set_id}_{image['prefix']}")
+            @task_group(group_id=f"download_image_{set_id}_{image['prefix']}".rstrip("_"))
             def download_image(image):
-                @task(task_id=f"prepare_download_location_{set_id}_{image['prefix']}")
+                @task(task_id=f"prepare_download_location_{set_id}_{image['prefix']}".rstrip("_"))
                 def prepare_download_location(image):
                     """
                     Create an empty directory for image contents or extract an existing disk image.
@@ -141,7 +141,7 @@ def download_set(
 
                             ssh_client.exec_command(f"rm -r {tmp_binding_path}")
 
-                @task(task_id=f"create_image_{set_id}_{image['prefix']}")
+                @task(task_id=f"create_image_{set_id}_{image['prefix']}".rstrip("_"))
                 def create_image(image):
                     print(f"Creating image_{set_id}_{image['prefix']} on Puhti")
                     image_base_name = f"{set_id}_{image['prefix']}".rstrip("_")
