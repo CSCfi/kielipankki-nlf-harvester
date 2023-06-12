@@ -84,23 +84,21 @@ def download_set(
                     image_base_name=image_base_name,
                 )
 
-                batch_downloads = []
-                for i, batch in enumerate(
-                    utils.split_into_download_batches(image_split[image])
-                ):
-                    download_binding_batch = DownloadBindingBatchOperator(
-                        task_id=f"download_binding_batch_{i}",
+                (
+                    prepare_download_location
+                    >> DownloadBindingBatchOperator.partial(
+                        task_id=f"download_binding_batch",
                         trigger_rule="none_failed_min_one_success",
-                        batch=batch,
                         ssh_conn_id=ssh_conn_id,
                         base_path=base_path,
                         image_base_name=image_base_name,
                         tmpdir=tmpdir,
                         api=api,
+                    ).expand(
+                        batch=utils.split_into_download_batches(image_split[image])
                     )
-                    batch_downloads.append(download_binding_batch)
-
-                (prepare_download_location >> batch_downloads >> create_image)
+                    >> create_image
+                )
 
             image_download_tg = download_image(prefix)
             if image_downloads:
