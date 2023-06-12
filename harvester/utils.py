@@ -161,6 +161,7 @@ def image_for_binding(dc_identifier, image_split):
     for prefix in image_split:
         if binding_id.startswith(prefix):
             return prefix
+    raise ValueError(f"No prefix found for binding {binding_id}")
 
 
 def assign_update_bindings_to_images(bindings, image_split_file):
