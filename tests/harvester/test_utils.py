@@ -85,6 +85,24 @@ def test_assign_bindings_to_images():
             assert utils.binding_id_from_dc(binding).startswith(prefix)
 
 
+def test_image_for_binding(mets_dc_identifier):
+    """
+    Test that the correct image prefix is found for a binding and if
+    no prefix is found, an error is raised.
+    """
+    image_split = {"36": [], "37": []}
+    prefix = utils.image_for_binding(mets_dc_identifier, image_split)
+    assert prefix == "37"
+
+    image_split = {"": []}
+    prefix = utils.image_for_binding(mets_dc_identifier, image_split)
+    assert prefix == ""
+
+    image_split = {"12": [], "13": []}
+    with pytest.raises(ValueError):
+        prefix = utils.image_for_binding(mets_dc_identifier, image_split)
+
+
 def test_assign_update_bindings_to_images():
     """
     Test that incoming bindings are assigned to the existing images correctly.
