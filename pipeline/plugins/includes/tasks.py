@@ -3,12 +3,12 @@ from airflow.providers.http.sensors.http import HttpSensor
 from airflow.providers.ssh.hooks.ssh import SSHHook
 
 from urllib.error import HTTPError
-import os
 
 from harvester import utils
 from operators.custom_operators import (
-    SaveMetsSFTPOperator,
-    SaveAltosSFTPOperator,
+    PrepareDownloadLocationOperator,
+    CreateImageOperator,
+    DownloadBindingBatchOperator,
 )
 
 
@@ -70,102 +70,37 @@ def download_set(
                 else:
                     image_base_name = set_id
 
-                @task(task_id=f"prepare_download_location_{image_base_name}")
-                def prepare_download_location():
-                    """
-                    Create an empty directory for image contents or extract an existing disk image.
-                    """
-                    image_dir_path = os.path.join(base_path, image_base_name)
-
-                    # Check if image exists
-                    ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
-                    with ssh_hook.get_conn() as ssh_client:
-                        sftp_client = ssh_client.open_sftp()
-                        utils.make_intermediate_dirs(
-                            sftp_client=sftp_client,
-                            remote_directory=base_path,
-                        )
-                        # if exists, extract with a bash command
-                        if f"{image_base_name}.sqfs" in sftp_client.listdir(base_path):
-                            sftp_client.chdir(base_path)
-                            ssh_client.exec_command(
-                                f"unsquashfs -d {image_dir_path} {image_dir_path}.sqfs"
-                            )
-
-                        # if not exist, create image folder
-                        else:
-                            utils.make_intermediate_dirs(
-                                sftp_client=sftp_client,
-                                remote_directory=image_dir_path,
-                            )
-
-                @task(
-                    task_id="download_binding_batch",
-                    trigger_rule="none_skipped",
+                prepare_download_location = PrepareDownloadLocationOperator(
+                    task_id=f"prepare_download_location_{image_base_name}",
+                    ssh_conn_id=ssh_conn_id,
+                    base_path=base_path,
+                    image_base_name=image_base_name,
                 )
-                def download_binding_batch(batch):
-                    ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
-                    with ssh_hook.get_conn() as ssh_client:
-                        sftp_client = ssh_client.open_sftp()
 
-                        for dc_identifier in batch:
-                            binding_id = utils.binding_id_from_dc(dc_identifier)
-                            binding_path = os.path.join(
-                                base_path,
-                                image_base_name,
-                                utils.binding_download_location(binding_id),
-                            )
-                            tmp_binding_path = os.path.join(
-                                tmpdir,
-                                utils.binding_download_location(binding_id),
-                            )
-
-                            SaveMetsSFTPOperator(
-                                task_id=f"save_mets_{binding_id}",
-                                api=api,
-                                sftp_client=sftp_client,
-                                ssh_client=ssh_client,
-                                tmpdir=tmp_binding_path,
-                                dc_identifier=dc_identifier,
-                                binding_path=binding_path,
-                                file_dir="mets",
-                            ).execute(context={})
-
-                            SaveAltosSFTPOperator(
-                                task_id=f"save_altos_{binding_id}",
-                                mets_path=f"{binding_path}/mets",
-                                sftp_client=sftp_client,
-                                ssh_client=ssh_client,
-                                tmpdir=tmp_binding_path,
-                                dc_identifier=dc_identifier,
-                                binding_path=binding_path,
-                                file_dir="alto",
-                            ).execute(context={})
-
-                            ssh_client.exec_command(f"rm -r {tmp_binding_path}")
-
-                @task(task_id=f"create_image_{image_base_name}")
-                def create_image():
-                    print(f"Creating image {image_base_name} on Puhti")
-                    image_dir_path = os.path.join(base_path, image_base_name)
-
-                    ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
-                    with ssh_hook.get_conn() as ssh_client:
-                        ssh_client.exec_command(f"rm {image_dir_path}.sqfs")
-                        _, stdout, stderr = ssh_client.exec_command(
-                            f"mksquashfs {image_dir_path} {image_dir_path}.sqfs"
-                        )
-                        if stdout.channel.recv_exit_status() != 0:
-                            raise Exception(
-                                f"Creation of image {image_dir_path}.sqfs failed: {stderr.read().decode('utf-8')}"
-                            )
-                        ssh_client.exec_command(f"rm -r {image_dir_path}")
+                create_image = CreateImageOperator(
+                    task_id=f"create_image_{image_base_name}",
+                    ssh_conn_id=ssh_conn_id,
+                    base_path=base_path,
+                    image_base_name=image_base_name,
+                )
 
                 batch_downloads = []
-                for batch in utils.split_into_download_batches(image_split[image]):
-                    batch_downloads.append(download_binding_batch(batch=batch))
+                for i, batch in enumerate(
+                    utils.split_into_download_batches(image_split[image])
+                ):
+                    download_binding_batch = DownloadBindingBatchOperator(
+                        task_id=f"download_binding_batch_{i}",
+                        trigger_rule="none_failed_min_one_success",
+                        batch=batch,
+                        ssh_conn_id=ssh_conn_id,
+                        base_path=base_path,
+                        image_base_name=image_base_name,
+                        tmpdir=tmpdir,
+                        api=api,
+                    )
+                    batch_downloads.append(download_binding_batch)
 
-                (prepare_download_location() >> batch_downloads >> create_image())
+                (prepare_download_location >> batch_downloads >> create_image)
 
             image_download_tg = download_image(prefix)
             if image_downloads:
