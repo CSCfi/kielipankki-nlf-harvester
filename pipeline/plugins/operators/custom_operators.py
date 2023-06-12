@@ -2,6 +2,7 @@ import os
 
 from airflow.models import BaseOperator
 from airflow.hooks.base import BaseHook
+from airflow.providers.ssh.hooks.ssh import SSHHook
 from airflow.models import Connection
 from airflow import settings
 
@@ -309,3 +310,175 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
                 self.log.error(
                     f"Moving ALTO file {alto_file.download_url} from temp to destination failed"
                 )
+
+
+class DownloadBindingBatchOperator(BaseOperator):
+    """
+    Download a batch of bindings.
+
+    :param batch: a list of DC identifiers
+    :param ssh_conn_id: SSH connection id
+    :param base_path: Base path for images
+    :param image_base_name: Name for disk image
+    :param tmpdir: Absolute path for a temporary directory on the remote server
+    :param api: OAI-PMH api
+    """
+
+    def __init__(
+        self,
+        batch,
+        ssh_conn_id,
+        base_path,
+        image_base_name,
+        tmpdir,
+        api,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.batch = batch
+        self.ssh_conn_id = ssh_conn_id
+        self.base_path = base_path
+        self.image_base_name = image_base_name
+        self.tmpdir = tmpdir
+        self.api = api
+
+    def execute(self, context):
+        ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
+        with ssh_hook.get_conn() as ssh_client:
+            sftp_client = ssh_client.open_sftp()
+
+            for dc_identifier in self.batch:
+                binding_id = utils.binding_id_from_dc(dc_identifier)
+                binding_path = os.path.join(
+                    self.base_path,
+                    self.image_base_name,
+                    utils.binding_download_location(binding_id),
+                )
+                tmp_binding_path = os.path.join(
+                    self.tmpdir,
+                    utils.binding_download_location(binding_id),
+                )
+
+                SaveMetsSFTPOperator(
+                    task_id=f"save_mets_{binding_id}",
+                    api=self.api,
+                    sftp_client=sftp_client,
+                    ssh_client=ssh_client,
+                    tmpdir=tmp_binding_path,
+                    dc_identifier=dc_identifier,
+                    binding_path=binding_path,
+                    file_dir="mets",
+                ).execute(context={})
+
+                SaveAltosSFTPOperator(
+                    task_id=f"save_altos_{binding_id}",
+                    mets_path=f"{binding_path}/mets",
+                    sftp_client=sftp_client,
+                    ssh_client=ssh_client,
+                    tmpdir=tmp_binding_path,
+                    dc_identifier=dc_identifier,
+                    binding_path=binding_path,
+                    file_dir="alto",
+                ).execute(context={})
+
+                ssh_client.exec_command(f"rm -r {tmp_binding_path}")
+
+
+class PrepareDownloadLocationOperator(BaseOperator):
+    """
+    Prepare download location for a disk image.
+
+    :param ssh_conn_id: SSH connection id
+    :param base_path: Base path for images
+    :param image_base_name: Name for disk image
+    """
+
+    def __init__(
+        self,
+        ssh_conn_id,
+        base_path,
+        image_base_name,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.ssh_conn_id = ssh_conn_id
+        self.base_path = base_path
+        self.image_base_name = image_base_name
+
+    def ensure_image_location(self, sftp_client):
+        """
+        Ensure that image location exists.
+        """
+        utils.make_intermediate_dirs(
+            sftp_client=sftp_client,
+            remote_directory=self.base_path,
+        )
+
+    def extract_image(self, ssh_client, sftp_client, image_dir_path):
+        """
+        Extract contents of a disk image in given path.
+        """
+        sftp_client.chdir(self.base_path)
+        ssh_client.exec_command(f"unsquashfs -d {image_dir_path} {image_dir_path}.sqfs")
+
+    def create_image_folder(self, sftp_client, image_dir_path):
+        """
+        Create folder to store image contents in.
+        """
+        utils.make_intermediate_dirs(
+            sftp_client=sftp_client,
+            remote_directory=image_dir_path,
+        )
+
+    def execute(self, context):
+        image_dir_path = os.path.join(self.base_path, self.image_base_name)
+
+        ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
+        with ssh_hook.get_conn() as ssh_client:
+            sftp_client = ssh_client.open_sftp()
+
+            self.ensure_image_location(sftp_client)
+
+            if f"{self.image_base_name}.sqfs" in sftp_client.listdir(self.base_path):
+                self.extract_image(ssh_client, sftp_client, image_dir_path)
+
+            else:
+                self.create_image_folder(sftp_client, image_dir_path)
+
+
+class CreateImageOperator(BaseOperator):
+    """
+    Prepare download location for a disk image.
+
+    :param ssh_conn_id: SSH connection id
+    :param base_path: Base path for images
+    :param image_base_name: Name for disk image
+    """
+
+    def __init__(
+        self,
+        ssh_conn_id,
+        base_path,
+        image_base_name,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.ssh_conn_id = ssh_conn_id
+        self.base_path = base_path
+        self.image_base_name = image_base_name
+
+    def execute(self, context):
+        self.log.info(f"Creating image {self.image_base_name} on Puhti")
+        image_dir_path = os.path.join(self.base_path, self.image_base_name)
+
+        ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
+        with ssh_hook.get_conn() as ssh_client:
+            ssh_client.exec_command(f"rm {image_dir_path}.sqfs")
+            _, stdout, stderr = ssh_client.exec_command(
+                f"mksquashfs {image_dir_path} {image_dir_path}.sqfs"
+            )
+            if stdout.channel.recv_exit_status() != 0:
+                raise Exception(
+                    f"Creation of image {image_dir_path}.sqfs failed: {stderr.read().decode('utf-8')}"
+                )
+            ssh_client.exec_command(f"rm -r {image_dir_path}")
