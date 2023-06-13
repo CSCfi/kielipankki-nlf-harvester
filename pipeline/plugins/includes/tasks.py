@@ -72,6 +72,7 @@ def download_set(
 
                 prepare_download_location = PrepareDownloadLocationOperator(
                     task_id=f"prepare_download_location_{image_base_name}",
+                    trigger_rule="none_skipped",
                     ssh_conn_id=ssh_conn_id,
                     base_path=base_path,
                     image_base_name=image_base_name,
@@ -79,6 +80,7 @@ def download_set(
 
                 create_image = CreateImageOperator(
                     task_id=f"create_image_{image_base_name}",
+                    trigger_rule="none_skipped",
                     ssh_conn_id=ssh_conn_id,
                     base_path=base_path,
                     image_base_name=image_base_name,
@@ -88,7 +90,7 @@ def download_set(
                     prepare_download_location
                     >> DownloadBindingBatchOperator.partial(
                         task_id=f"download_binding_batch",
-                        trigger_rule="none_failed_min_one_success",
+                        trigger_rule="none_skipped",
                         ssh_conn_id=ssh_conn_id,
                         base_path=base_path,
                         image_base_name=image_base_name,
