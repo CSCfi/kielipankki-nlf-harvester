@@ -13,7 +13,6 @@ from airflow.decorators import dag
 from includes.tasks import check_if_download_should_begin, download_set, clear_temp_dir
 from harvester.pmh_interface import PMH_API
 
-
 INITIAL_DOWNLOAD = True
 
 BASE_PATH = Path("/scratch/project_2006633/nlf-harvester/images")
@@ -25,8 +24,8 @@ HTTP_CONN_ID = "nlf_http_conn"
 COLLECTIONS = [
     {"id": "col-361", "image_size": 150},
     {"id": "col-501", "image_size": 5000},
-    #    {"id": "col-82", "image_size": 150000},
-    #    {"id": "col-24", "image_size": 100000},
+    {"id": "col-82", "image_size": 150000},
+    {"id": "col-24", "image_size": 100000},
 ]
 
 default_args = {
