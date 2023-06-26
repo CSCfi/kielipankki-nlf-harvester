@@ -344,7 +344,7 @@ log_format = [%%(asctime)s] {%%(filename)s:%%(lineno)d} %%(levelname)s - %%(mess
 simple_log_format = %%(asctime)s %%(levelname)s - %%(message)s
 
 # Where to send dag parser logs. If "file", logs are sent to log files defined by child_process_log_directory.
-dag_processor_log_target = file
+dag_processor_log_target = {{ airflow_directory }}/logs/dag-processor.log
 
 # Format of Dag Processor Log line
 dag_processor_log_format = [%%(asctime)s] [SOURCE:DAG_PROCESSOR] {%%(filename)s:%%(lineno)d} %%(levelname)s - %%(message)s

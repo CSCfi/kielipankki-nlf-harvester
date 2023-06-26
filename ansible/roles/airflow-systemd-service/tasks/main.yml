@@ -6,6 +6,7 @@
   with_items:
     - webserver
     - scheduler
+    - dagprocessor
 
 - name: Update airflow config file for systemd
   template:
@@ -27,16 +28,17 @@
     group: "{{ ansible_user }}"
   become: yes
 
-- name: Enable scheduler and webserver daemons
+- name: Enable scheduler, dag-processor and webserver daemons
   ansible.builtin.systemd:
     name: "airflow-{{ item }}"
     enabled: yes
   with_items:
     - scheduler
     - webserver
+    - dagprocessor
   become: yes
 
-- name: Start scheduler and webserver daemons
+- name: Start scheduler, dag-processor and webserver daemons
   ansible.builtin.systemd:
     name: "airflow-{{ item }}"
     state: started
@@ -44,8 +46,5 @@
   with_items:
     - scheduler
     - webserver
+    - dagprocessor
   become: yes
-
-# NEEDS TO BE MADE INTO A SYSTEMD SERVICE
-- name: Start standalone dag-processor process
-  ansible.builtin.shell: airflow dag-processor -D
