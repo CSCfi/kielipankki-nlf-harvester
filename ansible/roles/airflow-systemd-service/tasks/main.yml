@@ -45,3 +45,7 @@
     - scheduler
     - webserver
   become: yes
+
+# NEEDS TO BE MADE INTO A SYSTEMD SERVICE
+- name: Start standalone dag-processor process
+  ansible.builtin.shell: airflow dag-processor -D
