@@ -36,7 +36,7 @@ def get_most_recent_dag_run(dag_id):
 
 @dag(
     dag_id="fetch_binding_ids",
-    schedule="0 5 * * *",
+    schedule="@once",
     default_args=default_args,
     catchup=False,
     doc_md=__doc__,
