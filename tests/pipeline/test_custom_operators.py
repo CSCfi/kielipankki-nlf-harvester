@@ -39,9 +39,8 @@ def test_existing_mets_not_downloaded_again(
     Test that existing METS files are not redownloaded.
     """
     api = PMH_API(oai_pmh_api_url)
-    output_path = Path(sftp_server.root) / "sub_dir" / "binding_dir"
-    mets_dir = output_path / "mets"
     temp_path = Path(sftp_server.root) / "tmp"
+    mets_dir = temp_path / "mets"
 
     with ssh_server.client("user") as ssh_client:
         sftp = ssh_client.open_sftp()
@@ -61,7 +60,6 @@ def test_existing_mets_not_downloaded_again(
             ssh_client=ssh_client,
             tmpdir=temp_path,
             dc_identifier=mets_dc_identifier,
-            binding_path=output_path,
             file_dir="mets",
         )
 
@@ -73,7 +71,7 @@ def test_existing_mets_not_downloaded_again(
 
         # Check that the METS file was not downloaded to another location within
         # output_path either
-        files_in_output_path = sum(len(files) for _, _, files in os.walk(output_path))
+        files_in_output_path = sum(len(files) for _, _, files in os.walk(temp_path))
         assert files_in_output_path == 1
 
 
@@ -102,13 +100,12 @@ def test_save_mets_sftp_operator(
             ssh_client=ssh_client,
             tmpdir=temp_path,
             dc_identifier=mets_dc_identifier,
-            binding_path=output_path,
             file_dir="file_dir",
         )
 
         sftp_mets_operator.execute(context={})
 
-        with sftp.file(str(output_path / "file_dir" / "379973_METS.xml"), "r") as file:
+        with sftp.file(str(temp_path / "file_dir" / "379973_METS.xml"), "r") as file:
             assert file.read().decode("utf-8") == expected_mets_response
 
 
@@ -124,7 +121,6 @@ def test_empty_mets(
     """
 
     api = PMH_API(oai_pmh_api_url)
-    output_path = Path(sftp_server.root) / "some" / "sub" / "path"
     temp_path = Path(sftp_server.root) / "tmp" / "sub" / "path"
 
     with ssh_server.client("user") as ssh_client:
@@ -137,7 +133,6 @@ def test_empty_mets(
             ssh_client=ssh_client,
             tmpdir=temp_path,
             dc_identifier=empty_mets_dc_identifier,
-            binding_path=output_path,
             file_dir="file_dir",
         )
 
@@ -170,7 +165,6 @@ def test_failed_mets_request(
             ssh_client=ssh_client,
             tmpdir=temp_path,
             dc_identifier=failed_mets_dc_identifier,
-            binding_path=output_path,
             file_dir="file_dir",
         )
 
@@ -189,11 +183,10 @@ def test_save_altos_sftp_operator(
     Check that executing SaveAltosForMetsSFTPOperator correctly saves ALTO files
     to a remote server.
     """
-    output_path = Path(sftp_server.root) / "dir"
-    mets_dir = output_path / "sub_dir" / "mets"
-    alto_dir = output_path / "sub_dir" / "alto"
-    mets_file = mets_dir / "379973_METS.xml"
     temp_path = Path(sftp_server.root) / "tmp"
+    mets_dir = temp_path / "sub_dir" / "mets"
+    alto_dir = temp_path / "sub_dir" / "alto"
+    mets_file = mets_dir / "379973_METS.xml"
 
     with ssh_server.client("user") as ssh_client:
         sftp = ssh_client.open_sftp()
@@ -211,7 +204,6 @@ def test_save_altos_sftp_operator(
             task_id="test_save_altos_remote",
             sftp_client=sftp,
             ssh_client=ssh_client,
-            binding_path=output_path,
             tmpdir=temp_path,
             file_dir=alto_dir,
             mets_path=mets_dir,
@@ -275,7 +267,6 @@ def test_existing_altos_not_downloaded_again(
             task_id="test_save_altos_remote",
             sftp_client=sftp,
             ssh_client=ssh_client,
-            binding_path=output_path,
             tmpdir=temp_path,
             file_dir=alto_dir,
             mets_path=mets_dir,

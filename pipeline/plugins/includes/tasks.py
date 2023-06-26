@@ -74,6 +74,7 @@ def download_set(
                     task_id=f"prepare_download_location_{image_base_name}",
                     trigger_rule="none_skipped",
                     ssh_conn_id=ssh_conn_id,
+                    tmp_path=tmpdir,
                     base_path=base_path,
                     image_base_name=image_base_name,
                 )
@@ -82,6 +83,7 @@ def download_set(
                     task_id=f"create_image_{image_base_name}",
                     trigger_rule="none_skipped",
                     ssh_conn_id=ssh_conn_id,
+                    tmp_path=tmpdir,
                     base_path=base_path,
                     image_base_name=image_base_name,
                 )
@@ -92,7 +94,6 @@ def download_set(
                         task_id="download_binding_batch",
                         trigger_rule="none_skipped",
                         ssh_conn_id=ssh_conn_id,
-                        base_path=base_path,
                         image_base_name=image_base_name,
                         tmpdir=tmpdir,
                         api=api,
