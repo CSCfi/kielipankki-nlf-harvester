@@ -3,6 +3,9 @@ from urllib.error import HTTPError
 from airflow.decorators import task, task_group
 from airflow.providers.http.sensors.http import HttpSensor
 from airflow.providers.ssh.hooks.ssh import SSHHook
+from airflow.models import DagRun
+
+from requests.exceptions import RequestException
 
 from harvester import utils
 from operators.custom_operators import (
@@ -18,9 +21,12 @@ def check_if_download_should_begin(set_id, binding_base_path, http_conn_id):
     Check if API is responding and if there are new bindings to download.
     If not, cancel pipeline.
     """
-    api_ok = HttpSensor(
-        task_id="http_sensor", http_conn_id=http_conn_id, endpoint="/"
-    ).poke(context={})
+    try:
+        api_ok = HttpSensor(
+            task_id="http_sensor", http_conn_id=http_conn_id, endpoint="/"
+        ).poke(context={})
+    except RequestException:
+        api_ok = False
 
     bindings = utils.read_bindings(binding_base_path, set_id)
 
@@ -28,9 +34,18 @@ def check_if_download_should_begin(set_id, binding_base_path, http_conn_id):
         print("No new bindings after previous download.")
         return "cancel_pipeline"
     if not api_ok:
-        raise HTTPError("NLF API is not responding.")
-
-    return "begin_download"
+        dag_runs = DagRun.find(dag_id=f"image_download_{set_id}", state="running")
+        dag_runs.sort(key=lambda x: x.execution_date, reverse=True)
+        dag_instance = dag_runs[0]
+        task_instance = dag_instance.get_task_instance("check_if_download_should_begin")
+        if task_instance.try_number < task_instance.max_tries:
+            raise RequestException("NLF API is not responding.")
+        else:
+            # If maximum number of retries has been reached, cancel pipeline
+            print("NLF API is not responding.")
+            return "cancel_pipeline"
+    else:
+        return "begin_download"
 
 
 @task_group(group_id="download_set")
