@@ -1,52 +1,73 @@
 ---
 
-- name: Install MySQL
+- name: Install Postgres
   ansible.builtin.apt:
     name:
-      - mysql-server
-      - mysql-client
-      - python3-mysqldb
-      - libmysqlclient-dev
+      - postgresql
+      - postgresql-contrib
     update_cache: yes
   become: yes
 
-- name: Start and enable mysql service
+- name: Install Python dependency for Postgres
+  ansible.builtin.pip:
+    name: psycopg2-binary
+  become: yes
+
+- name: Start and enable Postgres service
   service:
-    name: mysql
+    name: postgresql
     state: started
     enabled: yes
-
-- name: Set mysql root user password
-  community.mysql.mysql_user:
-    name: root
-    password: "{{ airflow_db_root_password }}"
   become: yes
+
+- name: "Grant connection privileges for postgres and airflow users"
+  community.postgresql.postgresql_pg_hba:
+    dest: "/etc/postgresql/14/main/pg_hba.conf"
+    contype: local
+    databases: all
+    method: trust
+    users: postgres, airflow
+    create: true
+  become: yes
+
+- name: Restart Postgres service
+  service:
+    name: postgresql
+    state: restarted
+  become: yes
+
+- name: Set postgres user password
+  community.postgresql.postgresql_user:
+    name: postgres
+    password: "{{ airflow_db_root_password }}"
+  become_user: postgres
   ignore_errors: yes  # this only succeeds if the password has not already been set
 
-- name: Create a database for Airflow
-  community.mysql.mysql_db:
-    name: "{{ airflow_db_name }}"
+- name: "Create a Postgres database for Airflow"
+  community.postgresql.postgresql_db:
     state: present
-    login_user: root
+    name: "{{ airflow_db_name }}"
+    login_user: postgres
     login_password: "{{ airflow_db_root_password }}"
 
-- name: Create a MySQL user for Airflow
-  community.mysql.mysql_user:
+- name: Create airflow database user
+  community.postgresql.postgresql_user:
     name: "{{ airflow_db_user }}"
     password: "{{ airflow_db_password }}"
-    priv: "{{ airflow_db_name }}.*:ALL"
     state: present
-    login_user: root
+    db: "{{ airflow_db_name }}"
+    login_user: postgres
     login_password: "{{ airflow_db_root_password }}"
+
+- name: Grant database privileges for airflow user
+  community.postgresql.postgresql_privs:
+    type: database
+    database: "{{ airflow_db_name }}"
+    role: "{{ airflow_db_user }}"
+    privs: ALL
 
 - name: Initialize the database
   ansible.builtin.shell: airflow db init
-
-- name: Update mysql configuration
-  template:
-    src: my.cnf.j2
-    dest: "/etc/mysql/my.cnf"
-  become: yes
 
 - name: Create Airflow admin user
   ansible.builtin.shell: >
