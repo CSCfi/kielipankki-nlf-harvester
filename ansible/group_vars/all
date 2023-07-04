@@ -7,6 +7,8 @@ project_key: "kielipouta"
 project_sg: "airflow-sg"
 project_security_groups: "default,{{ project_sg }}" # don't add spaces here!
 
+harvester_branch: "main"
+
 airflow_db_name: "airflow_db"
 airflow_db_user: "airflow"
 airflow_db_password: "{{ lookup('passwordstore', 'lb_passwords/airflow/db_password') }}"
