@@ -44,7 +44,7 @@
     ||
     airflow connections add 'puhti_conn'
     --conn-type 'ssh'
-    --conn-host 'puhti.csc.fi'
+    --conn-host 'puhti-login12.csc.fi'
     --conn-login 'robot_2006633_puhti'
     --conn-password {{ puhti_robot_password }}
 
