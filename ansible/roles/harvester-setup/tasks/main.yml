@@ -9,6 +9,7 @@
 - name: Clone kielipankki-nlf-harvester
   ansible.builtin.git:
     repo: "https://github.com/CSCfi/kielipankki-nlf-harvester.git"
+    version: "{{ harvester_branch }}"
     dest: "{{ harvester.path }}/"
     clone: yes
   tags:

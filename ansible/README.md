@@ -46,3 +46,9 @@ full provisioning, you can run
 ```
 ansible-playbook harvesterPouta.yml -i inventories/dev --tags dag-update
 ```
+
+If you have a specific branch/tag/SHA-1 you wish to use, you can provide that:
+
+```
+ansible-playbook harvesterPouta.yml -i inventories/dev --tags dag-update --extra-vars "harvester_branch=[KP-yourbranch]"
+```
