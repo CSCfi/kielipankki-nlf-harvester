@@ -3,22 +3,30 @@
     state: directory
     suffix: git
   register: harvester
+  tags:
+    - dag-update
 
 - name: Clone kielipankki-nlf-harvester
   ansible.builtin.git:
     repo: "https://github.com/CSCfi/kielipankki-nlf-harvester.git"
     dest: "{{ harvester.path }}/"
     clone: yes
+  tags:
+    - dag-update
 
 - name: Install required packages for harvester
   ansible.builtin.pip:
     requirements: "{{ harvester.path }}/requirements.txt"
   become: yes
+  tags:
+    - dag-update
 
 - name: Install required Airflow packages for harvester pipeline
   ansible.builtin.pip:
     requirements: "{{ harvester.path }}/pipeline/requirements.txt"
   become: yes
+  tags:
+    - dag-update
 
 - name: Copy dags and plugins from harvester to airflow directory
   ansible.builtin.copy:
@@ -28,12 +36,16 @@
   with_items:
     - dags
     - plugins
+  tags:
+    - dag-update
 
 - name: Copy harvester files to airflow plugins directory
   ansible.builtin.copy:
     src: "{{ harvester.path }}/harvester"
     dest: "{{ airflow_directory }}/plugins/"
     remote_src: yes
+  tags:
+    - dag-update
 
 # The or-operator ("||") means that the latter part of the command (new
 # connection creation) is only executed if the former (grepping for puhti_conn

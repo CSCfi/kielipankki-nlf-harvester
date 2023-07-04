@@ -25,7 +25,7 @@ ansible-galaxy install -r requirements.yml
 
 ## Source your cPouta (OpenStack) auth file.
 
-The [OpenStack auth file](https://docs.csc.fi/#cloud/pouta/install-client/#configure-your-terminal-environment-for-openstack) is necessary for provisioning the OpenStack resources. 
+The [OpenStack auth file](https://docs.csc.fi/#cloud/pouta/install-client/#configure-your-terminal-environment-for-openstack) is necessary for provisioning the OpenStack resources.
 
 ```
 $ source project_2006633-openrc.sh
@@ -37,4 +37,12 @@ $ source project_2006633-openrc.sh
 ansible-playbook -i inventories/dev harvesterPouta.yml
 ```
 
-Have your `kielipouta` password and `Kielipankki-passwords` GPG key password at hand, they may need to be inputted during provisioning. 
+Have your `kielipouta` password and `Kielipankki-passwords` GPG key password at hand, they may need to be inputted during provisioning.
+
+### Update DAGs only
+
+If you only wish to update the DAG files and their dependencies instead of a
+full provisioning, you can run
+```
+ansible-playbook harvesterPouta.yml -i inventories/dev --tags dag-update
+```
