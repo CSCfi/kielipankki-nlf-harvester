@@ -48,6 +48,18 @@
   tags:
     - dag-update
 
+- name: Restart Airflow services to ensure refreshing cached plugins when only updating DAGs
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: restarted
+  with_items:
+    - airflow-scheduler
+    - airflow-dagprocessor
+  become: yes
+  tags:
+    - never
+    - dag-update
+
 # The or-operator ("||") means that the latter part of the command (new
 # connection creation) is only executed if the former (grepping for puhti_conn
 # in pre-existing connections) fails (i.e. puhti_conn not found).
