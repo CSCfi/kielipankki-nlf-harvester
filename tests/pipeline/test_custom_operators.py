@@ -77,11 +77,11 @@ def test_save_altos_operator(
 
     binding_id = utils.binding_id_from_dc(mets_dc_identifier)
     alto_locations = [
-        tmp_path / f"{binding_id}/alto/{file}"
+        tmp_path / binding_id / "alto" / file
         for file in ["00001.xml", "00002.xml", "00003.xml", "00004.xml"]
     ]
     for alto_location in alto_locations:
-        assert os.path.exists(alto_location)
+        assert alto_location.is_file()
         with open(alto_location, "r", encoding="utf-8") as alto:
             assert alto.read() == mock_alto_download_for_test_mets
 
@@ -97,18 +97,19 @@ def test_existing_mets_not_downloaded_again(
     Test that existing METS files are not redownloaded.
     """
     api = PMH_API(oai_pmh_api_url)
-    output_path = str(Path(sftp_server.root) / "dir")
-    temp_path = str(Path(sftp_server.root) / "tmp")
+    output_path = Path(sftp_server.root) / "dir"
+    mets_dir = output_path / "sub_dir" / "mets"
+    temp_path = Path(sftp_server.root) / "tmp"
 
     with ssh_server.client("user") as ssh_client:
         sftp = ssh_client.open_sftp()
 
         utils.make_intermediate_dirs(
             sftp_client=sftp,
-            remote_directory=f"{output_path}/sub_dir/mets",
+            remote_directory=mets_dir,
         )
 
-        with sftp.file(f"{output_path}/sub_dir/mets/379973_METS.xml", "w") as sftp_file:
+        with sftp.file(str(mets_dir / "379973_METS.xml"), "w") as sftp_file:
             sftp_file.write("test")
 
         sftp_mets_operator = SaveMetsSFTPOperator(
@@ -125,7 +126,7 @@ def test_existing_mets_not_downloaded_again(
         sftp_mets_operator.execute(context={})
 
         # Ensure that the METS file was not overwritten:
-        with sftp.file(f"{output_path}/sub_dir/mets/379973_METS.xml", "r") as sftp_file:
+        with sftp.file(str(mets_dir / "379973_METS.xml"), "r") as sftp_file:
             assert sftp_file.read().decode("utf-8") == "test"
 
 
@@ -141,8 +142,8 @@ def test_save_mets_sftp_operator(
     """
 
     api = PMH_API(oai_pmh_api_url)
-    output_path = str(Path(sftp_server.root) / "some" / "sub" / "path")
-    temp_path = str(Path(sftp_server.root) / "tmp" / "sub" / "path")
+    output_path = Path(sftp_server.root) / "tmp" / "sub" / "path"
+    temp_path = Path(sftp_server.root) / "tmp" / "sub" / "path"
 
     with ssh_server.client("user") as ssh_client:
         sftp = ssh_client.open_sftp()
@@ -160,7 +161,7 @@ def test_save_mets_sftp_operator(
 
         sftp_mets_operator.execute(context={})
 
-        with sftp.file(f"{output_path}/file_dir/379973_METS.xml", "r") as file:
+        with sftp.file(str(output_path / "file_dir" / "379973_METS.xml"), "r") as file:
             assert file.read().decode("utf-8") == expected_mets_response
 
 
@@ -176,8 +177,8 @@ def test_empty_mets(
     """
 
     api = PMH_API(oai_pmh_api_url)
-    output_path = str(Path(sftp_server.root) / "some" / "sub" / "path")
-    temp_path = str(Path(sftp_server.root) / "tmp" / "sub" / "path")
+    output_path = Path(sftp_server.root) / "some" / "sub" / "path"
+    temp_path = Path(sftp_server.root) / "tmp" / "sub" / "path"
 
     with ssh_server.client("user") as ssh_client:
         sftp = ssh_client.open_sftp()
@@ -209,8 +210,8 @@ def test_failed_mets_request(
     """
 
     api = PMH_API(oai_pmh_api_url)
-    output_path = str(Path(sftp_server.root) / "some" / "sub" / "path")
-    temp_path = str(Path(sftp_server.root) / "tmp" / "sub" / "path")
+    output_path = Path(sftp_server.root) / "some" / "sub" / "path"
+    temp_path = Path(sftp_server.root) / "tmp" / "sub" / "path"
 
     with ssh_server.client("user") as ssh_client:
         sftp = ssh_client.open_sftp()
@@ -241,19 +242,21 @@ def test_save_altos_sftp_operator(
     Check that executing SaveAltosForMetsSFTPOperator correctly saves ALTO files
     to a remote server.
     """
-
-    output_path = str(Path(sftp_server.root) / "dir")
-    temp_path = str(Path(sftp_server.root) / "tmp")
+    output_path = Path(sftp_server.root) / "dir"
+    mets_dir = output_path / "sub_dir" / "mets"
+    alto_dir = output_path / "sub_dir" / "alto"
+    mets_file = mets_dir / "379973_METS.xml"
+    temp_path = Path(sftp_server.root) / "tmp"
 
     with ssh_server.client("user") as ssh_client:
         sftp = ssh_client.open_sftp()
 
         utils.make_intermediate_dirs(
             sftp_client=sftp,
-            remote_directory=f"{output_path}/sub_dir/mets",
+            remote_directory=mets_dir,
         )
 
-        with sftp.file(f"{output_path}/sub_dir/mets/379973_METS.xml", "w") as sftp_file:
+        with sftp.file(str(mets_file), "w") as sftp_file:
             with open(simple_mets_path, encoding="utf-8") as local_file:
                 sftp_file.write(local_file.read())
 
@@ -263,19 +266,19 @@ def test_save_altos_sftp_operator(
             ssh_client=ssh_client,
             binding_path=output_path,
             tmpdir=temp_path,
-            file_dir="sub_dir",
-            mets_path=f"{output_path}/sub_dir/mets",
+            file_dir=alto_dir,
+            mets_path=mets_dir,
             dc_identifier=mets_dc_identifier,
         )
 
         operator.execute(context={})
 
         alto_locations = [
-            f"{output_path}/sub_dir/{file}"
+            alto_dir / file
             for file in ["00001.xml", "00002.xml", "00003.xml", "00004.xml"]
         ]
         for alto_location in alto_locations:
-            with sftp.file(alto_location, "r") as alto:
+            with sftp.file(str(alto_location), "r") as alto:
                 assert alto.read().decode("utf-8") == mock_alto_download_for_test_mets
 
 
@@ -289,29 +292,37 @@ def test_existing_altos_not_downloaded_again(
     """
     Test that existing ALTO files are not redownloaded.
     """
-    output_path = str(Path(sftp_server.root) / "dir")
-    temp_path = str(Path(sftp_server.root) / "tmp")
+    output_path = Path(sftp_server.root) / "dir"
+    mets_dir = output_path / "sub_dir" / "mets"
+    alto_dir = output_path / "sub_dir" / "alto"
+    mets_file = mets_dir / "379973_METS.xml"
+    temp_path = Path(sftp_server.root) / "tmp"
 
     with ssh_server.client("user") as ssh_client:
         sftp = ssh_client.open_sftp()
 
         utils.make_intermediate_dirs(
             sftp_client=sftp,
-            remote_directory=f"{output_path}/sub_dir/mets",
+            remote_directory=mets_dir,
         )
 
-        with sftp.file(f"{output_path}/sub_dir/mets/379973_METS.xml", "w") as sftp_file:
+        with sftp.file(str(mets_file), "w") as sftp_file:
             with open(simple_mets_path, encoding="utf-8") as local_file:
                 sftp_file.write(local_file.read())
 
         alto_locations = [
-            f"{output_path}/sub_dir/{file}"
-            for file in ["00001.xml", "00002.xml", "00003.xml", "00004.xml"]
+            alto_dir / filename
+            for filename in ["00001.xml", "00002.xml", "00003.xml", "00004.xml"]
         ]
 
+        utils.make_intermediate_dirs(
+            sftp_client=sftp,
+            remote_directory=alto_dir,
+        )
+
         for alto_location in alto_locations:
-            with sftp.file(alto_location, "w") as alto:
-                alto.write(alto_location)
+            with sftp.file(str(alto_location), "w") as alto:
+                alto.write("test content")
 
         operator = SaveAltosSFTPOperator(
             task_id="test_save_altos_remote",
@@ -319,8 +330,8 @@ def test_existing_altos_not_downloaded_again(
             ssh_client=ssh_client,
             binding_path=output_path,
             tmpdir=temp_path,
-            file_dir="sub_dir",
-            mets_path=f"{output_path}/sub_dir/mets",
+            file_dir=alto_dir,
+            mets_path=mets_dir,
             dc_identifier=mets_dc_identifier,
         )
 
@@ -328,5 +339,5 @@ def test_existing_altos_not_downloaded_again(
 
         # Ensure that the alto files were not overwritten
         for alto_location in alto_locations:
-            with sftp.file(alto_location, "r") as alto:
-                assert alto.read().decode("utf-8") == alto_location
+            with sftp.file(str(alto_location), "r") as alto:
+                assert alto.read().decode("utf-8") == "test content"

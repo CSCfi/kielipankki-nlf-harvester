@@ -23,8 +23,13 @@ def test_make_intermediate_dirs(sftp_server, sftp_client):
     """
     sftp = sftp_client.open_sftp()
     root_path = Path(sftp_server.root)
-    utils.make_intermediate_dirs(sftp, f"{root_path}/does/not/exist")
-    assert sftp.listdir(f"{root_path}/does/not") == ["exist"]
+    new_path = root_path / "does" / "not" / "exist"
+    utils.make_intermediate_dirs(sftp, new_path)
+
+    try:
+        sftp.chdir(str(new_path))
+    except IOError:
+        assert False, "Path {new_path} was not created"
 
 
 def test_calculate_batch_size():
@@ -70,7 +75,7 @@ def test_assign_bindings_to_images():
     Test that bindings are assigned to disk images correctly,
     the correct number of disk images are created.
     """
-    with open(f"tests/data/test_col_bindings", "r") as f:
+    with open("tests/data/test_col_bindings", "r") as f:
         bindings = f.read().splitlines()
 
     images_1 = utils.assign_bindings_to_images(bindings, 1000)
@@ -135,7 +140,7 @@ def test_read_bindings(tmpdir):
     with open("tests/data/binding_list.txt", "r") as f1:
         bindings = f1.read().splitlines()
         os.mkdir(Path(tmpdir) / "col-000")
-        with open(Path(tmpdir) / f"col-000/binding_ids_{date.today()}", "w") as f2:
+        with open(Path(tmpdir) / "col-000" / f"binding_ids_{date.today()}", "w") as f2:
             for binding in bindings:
                 f2.write(binding + "\n")
 

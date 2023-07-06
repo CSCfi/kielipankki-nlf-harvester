@@ -103,20 +103,18 @@ def test_download_to_remote(alto_file, sftp_client, sftp_server, mock_alto_downl
     """
 
     sftp = sftp_client.open_sftp()
-    output_path = str(
-        Path(sftp_server.root) / "some" / "sub" / "path" / "test_alto.xml"
-    )
+    output_path = Path(sftp_server.root) / "some" / "sub" / "path" / "test_alto.xml"
 
     utils.make_intermediate_dirs(
         sftp_client=sftp,
-        remote_directory=output_path.rsplit("/", maxsplit=1)[0],
+        remote_directory=output_path.parent,
     )
 
-    with sftp.file(output_path, "wb") as file:
+    with sftp.file(str(output_path), "wb") as file:
         alto_file.download(
             output_file=file,
             chunk_size=1024 * 1024,
         )
 
-    with sftp.file(output_path, "r") as file:
+    with sftp.file(str(output_path), "r") as file:
         assert file.read().decode("utf-8") == mock_alto_download
