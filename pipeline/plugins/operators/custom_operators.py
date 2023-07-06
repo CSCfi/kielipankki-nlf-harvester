@@ -1,4 +1,5 @@
 import os
+from requests.exceptions import RequestException
 
 from airflow.models import BaseOperator
 from airflow.hooks.base import BaseHook
@@ -10,8 +11,6 @@ from harvester.mets import METS, METSFileEmptyError
 from harvester.file import ALTOFile
 from harvester.pmh_interface import PMH_API
 from harvester import utils
-
-from requests.exceptions import RequestException
 
 
 class CreateConnectionOperator(BaseOperator):

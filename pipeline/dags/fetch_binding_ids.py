@@ -2,11 +2,10 @@
 DAG to fetch binding ids and save them to files.
 """
 
-from datetime import timedelta
-from pathlib import Path
-from datetime import date
-from sickle.oaiexceptions import NoRecordsMatch
+from datetime import date, timedelta
 import os
+from pathlib import Path
+from sickle.oaiexceptions import NoRecordsMatch
 
 from airflow.models import DagRun
 from airflow.hooks.base import BaseHook

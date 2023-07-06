@@ -1,8 +1,8 @@
+from urllib.error import HTTPError
+
 from airflow.decorators import task, task_group
 from airflow.providers.http.sensors.http import HttpSensor
 from airflow.providers.ssh.hooks.ssh import SSHHook
-
-from urllib.error import HTTPError
 
 from harvester import utils
 from operators.custom_operators import (
@@ -29,8 +29,8 @@ def check_if_download_should_begin(set_id, binding_base_path, http_conn_id):
         return "cancel_pipeline"
     if not api_ok:
         raise HTTPError("NLF API is not responding.")
-    else:
-        return "begin_download"
+
+    return "begin_download"
 
 
 @task_group(group_id="download_set")
