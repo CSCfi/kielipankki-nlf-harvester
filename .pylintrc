@@ -6,6 +6,7 @@ init-hook="from pylint.config import find_pylintrc; import os, sys; project_root
 
 [FORMAT]
 max-line-length=88
+good-names=i,j,k,e,ex,Run,_
 
 [MESSAGES CONTROL]
 # cell-var-from-loop: This works fine for generating Airflow tasks in loop
