@@ -48,64 +48,6 @@ class CreateConnectionOperator(BaseOperator):
             session.commit()
 
 
-class SaveMetsOperator(BaseOperator):
-    """
-    Save METS file for one binding on local filesystem.
-
-    :param http_conn_id: Connection ID of API
-    :param dc_identifier: DC identifier of binding
-    :param binding_path: Base path for download location
-    """
-
-    def __init__(self, http_conn_id, dc_identifier, binding_path, **kwargs):
-        super().__init__(**kwargs)
-        self.http_conn_id = http_conn_id
-        self.dc_identifier = dc_identifier
-        self.binding_path = binding_path
-
-    def execute(self, context):
-        http_conn = BaseHook.get_connection(self.http_conn_id)
-        api = PMH_API(url=http_conn.host)
-        output_file = utils.mets_download_location(
-            dc_identifier=self.dc_identifier,
-            base_path=self.binding_path,
-            file_dir="mets",
-        )
-
-        output_file.parent.mkdir(parents=True, exist_ok=True)
-        with open(output_file, "wb") as file:
-            api.download_mets(dc_identifier=self.dc_identifier, output_mets_file=file)
-
-
-class SaveAltosOperator(BaseOperator):
-    """
-    Save ALTO files for one binding on local filesystem.
-
-    :param dc_identifier: DC identifier of binding
-    :param binding_path: Base path for download location
-    """
-
-    def __init__(self, dc_identifier, binding_path, mets_path, **kwargs):
-        super().__init__(**kwargs)
-        self.dc_identifier = dc_identifier
-        self.binding_path = binding_path
-        self.mets_path = mets_path
-
-    def execute(self, context):
-        path = os.path.join(
-            self.mets_path, f"{utils.binding_id_from_dc(self.dc_identifier)}_METS.xml"
-        )
-        mets = METS(self.dc_identifier, open(path, "rb"))
-        alto_files = mets.files_of_type(ALTOFile)
-        for alto_file in alto_files:
-            output_file = utils.file_download_location(
-                file=alto_file, base_path=self.binding_path
-            )
-            output_file.parent.mkdir(parents=True, exist_ok=True)
-            with open(output_file, "wb") as file:
-                alto_file.download(output_file=file)
-
-
 class SaveFilesSFTPOperator(BaseOperator):
     """
     Save file to a remote filesystem using SSH connection.
