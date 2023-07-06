@@ -33,7 +33,7 @@ class CreateConnectionOperator(BaseOperator):
         conn_ids = [conn.conn_id for conn in session.query(Connection).all()]
         if self.conn_id not in conn_ids:
             self.log.info(
-                f"Creating a new {self.conn_type} connection with ID {self.conn_id}"
+                "Creating a new %s connection with ID %s", self.conn_type, self.conn_id
             )
             conn = Connection(
                 conn_id=self.conn_id,
@@ -231,8 +231,9 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
                     )
                 except RequestException as e:
                     self.log.error(
-                        f"ALTO download with URL {alto_file.download_url} failed: "
-                        f"{e.response}"
+                        "ALTO download with URL %s failed: %s",
+                        alto_file.download_url,
+                        e.response,
                     )
                     continue
 
@@ -242,8 +243,8 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
 
             if exit_status != 0:
                 self.log.error(
-                    f"Moving ALTO file {alto_file.download_url} from temp to "
-                    "destination failed"
+                    "Moving ALTO file %s from temp to destination failed",
+                    alto_file.download_url,
                 )
 
 
@@ -403,7 +404,7 @@ class CreateImageOperator(BaseOperator):
         self.image_base_name = image_base_name
 
     def execute(self, context):
-        self.log.info(f"Creating image {self.image_base_name} on Puhti")
+        self.log.info("Creating image %s on Puhti", self.image_base_name)
         image_dir_path = os.path.join(self.base_path, self.image_base_name)
 
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
