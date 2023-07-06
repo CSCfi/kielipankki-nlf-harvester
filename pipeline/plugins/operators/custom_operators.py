@@ -168,7 +168,8 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
                 )
             except OSError as e:
                 raise OSError(
-                    f"Writing METS {self.dc_identifier} to file failed with error number {e.errno}"
+                    f"Writing METS {self.dc_identifier} to file failed with error "
+                    f"number {e.errno}"
                 )
 
         self.ensure_final_output_location()
@@ -230,7 +231,8 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
                     )
                 except RequestException as e:
                     self.log.error(
-                        f"ALTO download with URL {alto_file.download_url} failed: {e.response}"
+                        f"ALTO download with URL {alto_file.download_url} failed: "
+                        f"{e.response}"
                     )
                     continue
 
@@ -240,7 +242,8 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
 
             if exit_status != 0:
                 self.log.error(
-                    f"Moving ALTO file {alto_file.download_url} from temp to destination failed"
+                    f"Moving ALTO file {alto_file.download_url} from temp to "
+                    "destination failed"
                 )
 
 
@@ -411,6 +414,7 @@ class CreateImageOperator(BaseOperator):
             )
             if stdout.channel.recv_exit_status() != 0:
                 raise Exception(
-                    f"Creation of image {image_dir_path}.sqfs failed: {stderr.read().decode('utf-8')}"
+                    f"Creation of image {image_dir_path}.sqfs failed: "
+                    f"{stderr.read().decode('utf-8')}"
                 )
             ssh_client.exec_command(f"rm -r {image_dir_path}")
