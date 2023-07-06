@@ -6,6 +6,7 @@ from airflow import settings
 from harvester import utils
 from harvester.mets import METSFileEmptyError
 from pipeline.plugins.operators.custom_operators import *
+from harvester.pmh_interface import PMH_API
 
 
 def test_create_connection_operator():
