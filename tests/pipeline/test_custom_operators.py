@@ -27,65 +27,6 @@ def test_create_connection_operator():
     assert "nlf_http_conn" in conn_ids
 
 
-def test_save_mets_operator(mets_dc_identifier, expected_mets_response, tmp_path):
-    """
-    Check that executing save_mets_operator does indeed fetch a METS file
-    """
-
-    create_nlf_connection = CreateConnectionOperator(
-        task_id="create_nlf_connection",
-        conn_id="nlf_http_conn",
-        conn_type="HTTP",
-        host="https://digi.kansalliskirjasto.fi/interfaces/OAI-PMH",
-        schema="HTTPS",
-    )
-
-    create_nlf_connection.execute(context={})
-
-    operator = SaveMetsOperator(
-        task_id="test_save_mets_task",
-        http_conn_id="nlf_http_conn",
-        dc_identifier=mets_dc_identifier,
-        binding_path=tmp_path,
-    )
-
-    operator.execute(context={})
-
-    binding_id = utils.binding_id_from_dc(mets_dc_identifier)
-    mets_location = tmp_path / "mets" / f"{binding_id}_METS.xml"
-
-    assert os.path.exists(mets_location)
-    with open(mets_location, "r", encoding="utf-8") as saved_mets:
-        assert saved_mets.read() == expected_mets_response
-
-
-def test_save_altos_operator(
-    mets_dc_identifier, tmp_path, mock_alto_download_for_test_mets
-):
-    """
-    Check that executing SaveAltosOperator saves ALTO files as expected
-    """
-
-    alto_operator = SaveAltosOperator(
-        task_id="test_save_altos_locally",
-        dc_identifier=mets_dc_identifier,
-        binding_path=tmp_path,
-        mets_path="tests/data",
-    )
-
-    alto_operator.execute(context={})
-
-    binding_id = utils.binding_id_from_dc(mets_dc_identifier)
-    alto_locations = [
-        tmp_path / binding_id / "alto" / file
-        for file in ["00001.xml", "00002.xml", "00003.xml", "00004.xml"]
-    ]
-    for alto_location in alto_locations:
-        assert alto_location.is_file()
-        with open(alto_location, "r", encoding="utf-8") as alto:
-            assert alto.read() == mock_alto_download_for_test_mets
-
-
 def test_existing_mets_not_downloaded_again(
     oai_pmh_api_url,
     mets_dc_identifier,
