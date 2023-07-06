@@ -6,3 +6,9 @@ init-hook="from pylint.config import find_pylintrc; import os, sys; project_root
 
 [FORMAT]
 max-line-length=88
+
+[MESSAGES CONTROL]
+# cell-var-from-loop: This works fine for generating Airflow tasks in loop
+# expression-not-assigned: False positives from '>>' operators in Airflow DAGs
+# pointless-statement: False positives from '>>' operators in Airflow DAGs
+disable=cell-var-from-loop,expression-not-assigned,pointless-statement
