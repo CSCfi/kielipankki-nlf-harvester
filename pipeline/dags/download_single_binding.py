@@ -1,5 +1,6 @@
 """
-#### Debugging/testing DAG for downloading METS and ALTO files for a single binding to a remote server (Puhti).
+#### Debugging/testing DAG
+Downloads METS and ALTO files for a single binding to a remote server (Puhti).
 """
 
 from datetime import timedelta
@@ -20,10 +21,12 @@ from operators.custom_operators import (
     CreateConnectionOperator,
 )
 
-# DC_IDENTIFIER = "https://digi.kansalliskirjasto.fi/sanomalehti/binding/4699" # this fails
-DC_IDENTIFIER = (
-    "https://digi.kansalliskirjasto.fi/sanomalehti/binding/379973"  # this doesn't fail
-)
+# this fails
+# DC_IDENTIFIER = "https://digi.kansalliskirjasto.fi/sanomalehti/binding/4699"
+
+# this doesn't fail
+DC_IDENTIFIER = "https://digi.kansalliskirjasto.fi/sanomalehti/binding/379973"
+
 BASE_PATH = "/scratch/project_2006633/nlf-harvester/downloads/temp_test/"
 TMPDIR = "/local_scratch/robot_2006633_puhti/harvester-temp"
 SET_ID = "col-681"
