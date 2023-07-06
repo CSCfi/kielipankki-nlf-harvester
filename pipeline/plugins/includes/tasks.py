@@ -89,7 +89,7 @@ def download_set(
                 (
                     prepare_download_location
                     >> DownloadBindingBatchOperator.partial(
-                        task_id=f"download_binding_batch",
+                        task_id="download_binding_batch",
                         trigger_rule="none_skipped",
                         ssh_conn_id=ssh_conn_id,
                         base_path=base_path,
