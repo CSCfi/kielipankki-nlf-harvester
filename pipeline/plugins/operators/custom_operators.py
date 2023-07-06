@@ -2,14 +2,12 @@ import os
 from requests.exceptions import RequestException
 
 from airflow.models import BaseOperator
-from airflow.hooks.base import BaseHook
 from airflow.providers.ssh.hooks.ssh import SSHHook
 from airflow.models import Connection
 from airflow import settings
 
 from harvester.mets import METS, METSFileEmptyError
 from harvester.file import ALTOFile
-from harvester.pmh_interface import PMH_API
 from harvester import utils
 
 
