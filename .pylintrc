@@ -1,2 +1,8 @@
+[MASTER]
+# Add some directories to pythonpath:
+# - pipeline/plugins because Airflow would add the corresponding directory to path
+# - project root, because that emulates harvester being found under plugins in provisioned Airflow machines
+init-hook="from pylint.config import find_pylintrc; import os, sys; project_root=os.path.dirname(find_pylintrc()); sys.path.append(project_root); sys.path.append(os.path.join(project_root, 'pipeline', 'plugins'))"
+
 [FORMAT]
 max-line-length=88
