@@ -16,8 +16,8 @@ from harvester.pmh_interface import PMH_API
 
 INITIAL_DOWNLOAD = True
 
-BASE_PATH = "/scratch/project_2006633/nlf-harvester/images"
-TMPDIR = "/local_scratch/robot_2006633_puhti/harvester-temp"
+BASE_PATH = Path("/scratch/project_2006633/nlf-harvester/images")
+TMPDIR = Path("/local_scratch/robot_2006633_puhti/harvester-temp")
 IMAGE_SPLIT_DIR = Path("/home/ubuntu/image_split/")
 BINDING_BASE_PATH = Path("/home/ubuntu/binding_ids_all")
 SSH_CONN_ID = "puhti_conn"

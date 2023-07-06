@@ -66,15 +66,13 @@ class SaveMetsOperator(BaseOperator):
     def execute(self, context):
         http_conn = BaseHook.get_connection(self.http_conn_id)
         api = PMH_API(url=http_conn.host)
-        output_file = str(
-            utils.mets_download_location(
-                dc_identifier=self.dc_identifier,
-                base_path=self.binding_path,
-                file_dir="mets",
-            )
+        output_file = utils.mets_download_location(
+            dc_identifier=self.dc_identifier,
+            base_path=self.binding_path,
+            file_dir="mets",
         )
-        mets_path = self.binding_path / "mets"
-        mets_path.mkdir(parents=True, exist_ok=True)
+
+        output_file.parent.mkdir(parents=True, exist_ok=True)
         with open(output_file, "wb") as file:
             api.download_mets(dc_identifier=self.dc_identifier, output_mets_file=file)
 
@@ -143,8 +141,7 @@ class SaveFilesSFTPOperator(BaseOperator):
         Make sure that all intermediate directories exist for temporary storage
         """
         utils.make_intermediate_dirs(
-            sftp_client=self.sftp_client,
-            remote_directory=f"{self.tmpdir}/{self.file_dir}",
+            sftp_client=self.sftp_client, remote_directory=self.tmpdir / self.file_dir
         )
 
     def ensure_final_output_location(self):
@@ -153,7 +150,7 @@ class SaveFilesSFTPOperator(BaseOperator):
         """
         utils.make_intermediate_dirs(
             sftp_client=self.sftp_client,
-            remote_directory=f"{self.binding_path}/{self.file_dir}",
+            remote_directory=self.binding_path / self.file_dir,
         )
 
     def move_file_to_final_location(self, temp_output_file, output_file):
@@ -180,7 +177,7 @@ class SaveFilesSFTPOperator(BaseOperator):
         :return: True if a non-empty file exists, otherwise False
         """
         try:
-            file_size = self.sftp_client.stat(path).st_size
+            file_size = self.sftp_client.stat(str(path)).st_size
         except OSError:
             return False
         else:
@@ -214,16 +211,14 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
 
         self.ensure_tmp_output_location()
 
-        temp_output_file = str(
-            utils.mets_download_location(
-                dc_identifier=self.dc_identifier,
-                base_path=self.tmpdir,
-                file_dir=self.file_dir,
-                filename=f"{utils.binding_id_from_dc(self.dc_identifier)}_METS.xml.temp",
-            )
+        temp_output_file = utils.mets_download_location(
+            dc_identifier=self.dc_identifier,
+            base_path=self.tmpdir,
+            file_dir=self.file_dir,
+            filename=f"{utils.binding_id_from_dc(self.dc_identifier)}_METS.xml.temp",
         )
 
-        with self.sftp_client.file(temp_output_file, "w") as file:
+        with self.sftp_client.file(str(temp_output_file), "w") as file:
             try:
                 self.api.download_mets(
                     dc_identifier=self.dc_identifier, output_mets_file=file
@@ -239,7 +234,7 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
 
         self.ensure_final_output_location()
 
-        if self.sftp_client.stat(temp_output_file).st_size == 0:
+        if not self.file_exists(temp_output_file):
             raise METSFileEmptyError(f"METS file {self.dc_identifier} is empty.")
 
         exit_status = self.move_file_to_final_location(temp_output_file, output_file)
@@ -284,13 +279,11 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
             if self.file_exists(output_file):
                 continue
 
-            temp_output_file = str(
-                utils.file_download_location(
-                    file=alto_file, base_path=self.tmpdir, file_dir=self.file_dir
-                )
+            temp_output_file = utils.file_download_location(
+                file=alto_file, base_path=self.tmpdir, file_dir=self.file_dir
             )
 
-            with self.sftp_client.file(temp_output_file, "wb") as file:
+            with self.sftp_client.file(str(temp_output_file), "wb") as file:
                 try:
                     alto_file.download(
                         output_file=file,

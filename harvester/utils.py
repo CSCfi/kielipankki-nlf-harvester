@@ -30,10 +30,11 @@ def make_intermediate_dirs(sftp_client, remote_directory):
     :param sftp_client: A Paramiko SFTP client.
     :param remote_directory: Absolute Path of the directory containing the file
     """
-    for i in range(1, len(remote_directory.split("/")) + 1):
-        remote_dir = "/".join(remote_directory.split("/")[:i])
+    remote_directory_parts = remote_directory.parts
+    for i in range(1, len(remote_directory_parts) + 1):
+        remote_dir = Path(*remote_directory_parts[:i])
         try:
-            sftp_client.mkdir(remote_dir)
+            sftp_client.mkdir(str(remote_dir))
         except IOError:
             continue
 
@@ -75,7 +76,7 @@ def mets_download_location(dc_identifier, base_path=None, file_dir=None, filenam
     if not base_path:
         base_path = Path(os.getcwd()) / "downloads"
     if not file_dir:
-        file_dir = f"{binding_id_from_dc(dc_identifier)}/mets"
+        file_dir = Path(binding_id_from_dc(dc_identifier)) / "mets"
     if not filename:
         filename = f"{binding_id_from_dc(dc_identifier)}_METS.xml"
 
@@ -182,7 +183,10 @@ def read_bindings(binding_base_path, set_id):
     Read and return a list of bindings from the latest binding ID file.
     """
     try:
-        binding_id_files = [datetime.strptime(fname.split("_")[-1], "%Y-%m-%d").date() for fname in os.listdir(binding_base_path / set_id)]
+        binding_id_files = [
+            datetime.strptime(fname.split("_")[-1], "%Y-%m-%d").date()
+            for fname in os.listdir(binding_base_path / set_id)
+        ]
     except FileNotFoundError:
         raise FileNotFoundError(f"No binding ID file found for set {set_id}")
     latest = max(binding_id_files)
