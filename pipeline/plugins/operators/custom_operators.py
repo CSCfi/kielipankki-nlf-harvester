@@ -285,14 +285,13 @@ class DownloadBindingBatchOperator(BaseOperator):
 
             for dc_identifier in self.batch:
                 binding_id = utils.binding_id_from_dc(dc_identifier)
-                binding_path = os.path.join(
-                    self.base_path,
-                    self.image_base_name,
-                    utils.binding_download_location(binding_id),
+                binding_path = (
+                    self.base_path
+                    / self.image_base_name
+                    / utils.binding_download_location(binding_id)
                 )
-                tmp_binding_path = os.path.join(
-                    self.tmpdir,
-                    utils.binding_download_location(binding_id),
+                tmp_binding_path = self.tmpdir / utils.binding_download_location(
+                    binding_id
                 )
 
                 SaveMetsSFTPOperator(
@@ -308,7 +307,7 @@ class DownloadBindingBatchOperator(BaseOperator):
 
                 SaveAltosSFTPOperator(
                     task_id=f"save_altos_{binding_id}",
-                    mets_path=f"{binding_path}/mets",
+                    mets_path=binding_path / "mets",
                     sftp_client=sftp_client,
                     ssh_client=ssh_client,
                     tmpdir=tmp_binding_path,
@@ -354,7 +353,7 @@ class PrepareDownloadLocationOperator(BaseOperator):
         """
         Extract contents of a disk image in given path.
         """
-        sftp_client.chdir(self.base_path)
+        sftp_client.chdir(str(self.base_path))
         ssh_client.exec_command(f"unsquashfs -d {image_dir_path} {image_dir_path}.sqfs")
 
     def create_image_folder(self, sftp_client, image_dir_path):
@@ -367,7 +366,7 @@ class PrepareDownloadLocationOperator(BaseOperator):
         )
 
     def execute(self, context):
-        image_dir_path = os.path.join(self.base_path, self.image_base_name)
+        image_dir_path = self.base_path / self.image_base_name
 
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
@@ -375,7 +374,9 @@ class PrepareDownloadLocationOperator(BaseOperator):
 
             self.ensure_image_location(sftp_client)
 
-            if f"{self.image_base_name}.sqfs" in sftp_client.listdir(self.base_path):
+            if f"{self.image_base_name}.sqfs" in sftp_client.listdir(
+                str(self.base_path)
+            ):
                 self.extract_image(ssh_client, sftp_client, image_dir_path)
 
             else:
@@ -405,7 +406,7 @@ class CreateImageOperator(BaseOperator):
 
     def execute(self, context):
         self.log.info("Creating image %s on Puhti", self.image_base_name)
-        image_dir_path = os.path.join(self.base_path, self.image_base_name)
+        image_dir_path = self.base_path / self.image_base_name
 
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
