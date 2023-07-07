@@ -39,8 +39,8 @@ def test_existing_mets_not_downloaded_again(
     Test that existing METS files are not redownloaded.
     """
     api = PMH_API(oai_pmh_api_url)
-    output_path = Path(sftp_server.root) / "dir"
-    mets_dir = output_path / "sub_dir" / "mets"
+    output_path = Path(sftp_server.root) / "sub_dir" / "binding_dir"
+    mets_dir = output_path / "mets"
     temp_path = Path(sftp_server.root) / "tmp"
 
     with ssh_server.client("user") as ssh_client:
@@ -62,7 +62,7 @@ def test_existing_mets_not_downloaded_again(
             tmpdir=temp_path,
             dc_identifier=mets_dc_identifier,
             binding_path=output_path,
-            file_dir="file_dir",
+            file_dir="mets",
         )
 
         sftp_mets_operator.execute(context={})
@@ -70,6 +70,11 @@ def test_existing_mets_not_downloaded_again(
         # Ensure that the METS file was not overwritten:
         with sftp.file(str(mets_dir / "379973_METS.xml"), "r") as sftp_file:
             assert sftp_file.read().decode("utf-8") == "test"
+
+        # Check that the METS file was not downloaded to another location within
+        # output_path either
+        files_in_output_path = sum(len(files) for _, _, files in os.walk(output_path))
+        assert files_in_output_path == 1
 
 
 def test_save_mets_sftp_operator(
