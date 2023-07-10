@@ -132,7 +132,6 @@ def test_save_mets_sftp_operator(
     """
 
     api = PMH_API(oai_pmh_api_url)
-    output_path = Path(sftp_server.root) / "tmp" / "sub" / "path"
     temp_path = Path(sftp_server.root) / "tmp" / "sub" / "path"
 
     with ssh_server.client("user") as ssh_client:
@@ -197,7 +196,6 @@ def test_failed_mets_request(
     """
 
     api = PMH_API(oai_pmh_api_url)
-    output_path = Path(sftp_server.root) / "some" / "sub" / "path"
     temp_path = Path(sftp_server.root) / "tmp" / "sub" / "path"
 
     with ssh_server.client("user") as ssh_client:
