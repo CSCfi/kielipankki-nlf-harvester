@@ -1,18 +1,19 @@
-import pytest
 import os
 from pathlib import Path
+
 from airflow import settings
 from airflow.models import Connection
+import pytest
 from requests.exceptions import RequestException
 
 from harvester import utils
 from harvester.mets import METSFileEmptyError
+from harvester.pmh_interface import PMH_API
 from pipeline.plugins.operators.custom_operators import (
     CreateConnectionOperator,
     SaveMetsSFTPOperator,
     SaveAltosSFTPOperator,
 )
-from harvester.pmh_interface import PMH_API
 
 
 def test_create_connection_operator():
