@@ -75,6 +75,51 @@ def test_existing_mets_not_downloaded_again(
         assert files_in_output_path == 1
 
 
+def test_existing_tempfile_does_not_prevent_download(
+    oai_pmh_api_url,
+    mets_dc_identifier,
+    sftp_server,
+    ssh_server,
+    expected_mets_response,
+):
+    """
+    Ensure that pre-existing temporary file does not prevent proper download.
+
+    This is checked by manually creating the temporary file for the operator before
+    executing it, and checking that the proper file has been created afterwards.
+    """
+    api = PMH_API(oai_pmh_api_url)
+    temp_path = Path(sftp_server.root) / "tmp"
+    mets_dir = temp_path / "mets"
+
+    with ssh_server.client("user") as ssh_client:
+        sftp = ssh_client.open_sftp()
+
+        utils.make_intermediate_dirs(
+            sftp_client=sftp,
+            remote_directory=mets_dir,
+        )
+
+        sftp_mets_operator = SaveMetsSFTPOperator(
+            task_id="test_save_mets_remote",
+            api=api,
+            sftp_client=sftp,
+            ssh_client=ssh_client,
+            tmpdir=temp_path,
+            dc_identifier=mets_dc_identifier,
+            file_dir="mets",
+        )
+
+        tmpfile_path = sftp_mets_operator.tempfile_path(sftp_mets_operator.output_file)
+        with sftp.file(str(tmpfile_path), "w") as pre_existing_tmpfile:
+            pre_existing_tmpfile.write("this should not prevent proper download")
+
+        sftp_mets_operator.execute(context={})
+
+        with sftp.file(str(sftp_mets_operator.output_file), "r") as file:
+            assert file.read().decode("utf-8") == expected_mets_response
+
+
 def test_save_mets_sftp_operator(
     oai_pmh_api_url,
     mets_dc_identifier,
