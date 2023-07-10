@@ -28,12 +28,12 @@ def test_create_connection_operator():
     assert "nlf_http_conn" in conn_ids
 
 
+@pytest.mark.usefixtures("expected_mets_response")
 def test_existing_mets_not_downloaded_again(
     oai_pmh_api_url,
     mets_dc_identifier,
     sftp_server,
     ssh_server,
-    expected_mets_response,
 ):
     """
     Test that existing METS files are not redownloaded.
@@ -153,10 +153,10 @@ def test_save_mets_sftp_operator(
             assert file.read().decode("utf-8") == expected_mets_response
 
 
+@pytest.mark.usefixtures("empty_mets_response")
 def test_empty_mets(
     oai_pmh_api_url,
     empty_mets_dc_identifier,
-    empty_mets_response,
     sftp_server,
     ssh_server,
 ):
@@ -184,10 +184,10 @@ def test_empty_mets(
             sftp_mets_operator.execute(context={})
 
 
+@pytest.mark.usefixtures("failed_mets_response")
 def test_failed_mets_request(
     oai_pmh_api_url,
     failed_mets_dc_identifier,
-    failed_mets_response,
     sftp_server,
     ssh_server,
 ):
@@ -264,11 +264,11 @@ def test_save_altos_sftp_operator(
                 assert alto.read().decode("utf-8") == mock_alto_download_for_test_mets
 
 
+@pytest.mark.usefixtures("mock_alto_download_for_test_mets")
 def test_existing_altos_not_downloaded_again(
     mets_dc_identifier,
     sftp_server,
     ssh_server,
-    mock_alto_download_for_test_mets,
     simple_mets_path,
 ):
     """
