@@ -72,13 +72,40 @@ class SaveFilesSFTPOperator(BaseOperator):
         self.file_dir = file_dir
         self.tmpdir = tmpdir
 
-    def ensure_tmp_output_location(self):
+    def ensure_output_location(self):
         """
-        Make sure that all intermediate directories exist for temporary storage
+        Make sure that the output directory exists
+
+        Creates all intermediate directories too, if necessary.
         """
         utils.make_intermediate_dirs(
             sftp_client=self.sftp_client, remote_directory=self.tmpdir / self.file_dir
         )
+
+    def tempfile_path(self, output_file):
+        """
+        Return the path to a temporary file corresponding to output_file.
+
+        The temporary path is formed by appending ``.tmp`` to the final output path.
+
+        :output_file: Path representing the final output location
+        :type output_file: :class:`pathlib.Path`
+        :return: Path representing the corresponding temporary file
+        :rtype: :class:`pathlib.Path`
+        """
+        return output_file.with_suffix(output_file.suffix + ".tmp")
+
+    def move_file_to_final_location(self, temp_output_file, output_file):
+        """
+        Move file from temporary to final location.
+
+        :return: Exit status from bash command
+        """
+        _, stdout, _ = self.ssh_client.exec_command(
+            f"mv {temp_output_file} {output_file}"
+        )
+
+        return stdout.channel.recv_exit_status()
 
     def execute(self, context):
         raise NotImplementedError(
@@ -111,23 +138,22 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
     def __init__(self, api, **kwargs):
         super().__init__(**kwargs)
         self.api = api
-
-    def execute(self, context):
-        self.ensure_tmp_output_location()
-
-        temp_output_file = str(
-            utils.mets_download_location(
-                dc_identifier=self.dc_identifier,
-                base_path=self.tmpdir,
-                file_dir=self.file_dir,
-                filename=f"{utils.binding_id_from_dc(self.dc_identifier)}_METS.xml",
-            )
+        self.output_file = utils.mets_download_location(
+            dc_identifier=self.dc_identifier,
+            base_path=self.tmpdir,
+            file_dir=self.file_dir,
         )
 
-        if self.file_exists(temp_output_file):
+    def execute(self, context):
+
+        if self.file_exists(self.output_file):
             return
 
-        with self.sftp_client.file(temp_output_file, "w") as file:
+        temp_output_file = self.tempfile_path(self.output_file)
+
+        self.ensure_output_location()
+
+        with self.sftp_client.file(str(temp_output_file), "w") as file:
             try:
                 self.api.download_mets(
                     dc_identifier=self.dc_identifier, output_mets_file=file
@@ -142,8 +168,17 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
                     f"number {e.errno}"
                 )
 
-        if self.sftp_client.stat(temp_output_file).st_size == 0:
+        if not self.file_exists(temp_output_file):
             raise METSFileEmptyError(f"METS file {self.dc_identifier} is empty.")
+
+        exit_status = self.move_file_to_final_location(
+            temp_output_file, self.output_file
+        )
+
+        if exit_status != 0:
+            raise OSError(
+                f"Moving METS file {self.dc_identifier} from temp to destination failed"
+            )
 
 
 class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
@@ -165,19 +200,21 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
         mets = METS(self.dc_identifier, self.sftp_client.file(path, "r"))
         alto_files = mets.files_of_type(ALTOFile)
 
-        self.ensure_tmp_output_location()
+        self.ensure_output_location()
 
         for alto_file in alto_files:
-            temp_output_file = str(
-                utils.file_download_location(
-                    file=alto_file, base_path=self.tmpdir, file_dir=self.file_dir
-                )
+            output_file = utils.file_download_location(
+                file=alto_file,
+                base_path=self.tmpdir,
+                file_dir=self.file_dir,
             )
 
-            if self.file_exists(temp_output_file):
+            if self.file_exists(output_file):
                 continue
 
-            with self.sftp_client.file(temp_output_file, "wb") as file:
+            temp_output_file = self.tempfile_path(output_file)
+
+            with self.sftp_client.file(str(temp_output_file), "wb") as file:
                 try:
                     alto_file.download(
                         output_file=file,
@@ -191,6 +228,16 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
                     )
                     continue
 
+            exit_status = self.move_file_to_final_location(
+                temp_output_file, output_file
+            )
+
+            if exit_status != 0:
+                self.log.error(
+                    "Moving ALTO file %s from temp to destination failed",
+                    alto_file.download_url,
+                )
+
 
 class DownloadBindingBatchOperator(BaseOperator):
     """
@@ -198,6 +245,7 @@ class DownloadBindingBatchOperator(BaseOperator):
 
     :param batch: a list of DC identifiers
     :param ssh_conn_id: SSH connection id
+    :param base_path: Base path for images
     :param image_base_name: Name for disk image
     :param tmpdir: Absolute path for a temporary directory on the remote server
     :param api: OAI-PMH api
@@ -207,6 +255,7 @@ class DownloadBindingBatchOperator(BaseOperator):
         self,
         batch,
         ssh_conn_id,
+        base_path,
         image_base_name,
         tmpdir,
         api,
@@ -278,8 +327,9 @@ class PrepareDownloadLocationOperator(BaseOperator):
 
     def extract_image(self, ssh_client, sftp_client, image_dir_path, tmp_image_path):
         """
-        Extract contents of a disk image in given path to temporary storage.
+        Extract contents of a disk image in given path.
         """
+        sftp_client.chdir(str(self.base_path))
         ssh_client.exec_command(f"unsquashfs -d {tmp_image_path} {image_dir_path}.sqfs")
 
     def create_image_folder(self, sftp_client, image_dir_path):
@@ -299,13 +349,15 @@ class PrepareDownloadLocationOperator(BaseOperator):
         with ssh_hook.get_conn() as ssh_client:
             sftp_client = ssh_client.open_sftp()
 
-            if f"{self.image_base_name}.sqfs" in sftp_client.listdir(self.base_path):
+            if f"{self.image_base_name}.sqfs" in sftp_client.listdir(
+                str(self.base_path)
+            ):
                 self.extract_image(
                     ssh_client, sftp_client, image_dir_path, tmp_image_path
                 )
 
             else:
-                self.create_image_folder(sftp_client, tmp_image_path)
+                self.create_image_folder(sftp_client, image_dir_path)
 
 
 class CreateImageOperator(BaseOperator):
@@ -346,6 +398,7 @@ class CreateImageOperator(BaseOperator):
             )
             if stdout.channel.recv_exit_status() != 0:
                 raise Exception(
-                    f"Creation of image {final_image_location}.sqfs failed: {stderr.read().decode('utf-8')}"
+                    f"Creation of image {final_image_location}.sqfs failed: "
+                    f"{stderr.read().decode('utf-8')}"
                 )
             ssh_client.exec_command(f"rm -r {tmp_image_path}")
