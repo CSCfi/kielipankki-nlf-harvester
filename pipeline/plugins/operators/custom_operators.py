@@ -437,8 +437,15 @@ class CreateImageOperator(BaseOperator):
                     f"mksquashfs {tmp_image_data_source} {temporary_image_location}",
                 )
 
-                self.log.info("Deleting old image %s on Puhti", final_image_location)
-                sftp_client.remove(str(final_image_location))
+                self.log.info(
+                    "Attempting deletion of old image %s on Puhti", final_image_location
+                )
+                try:
+                    sftp_client.remove(str(final_image_location))
+                except FileNotFoundError:
+                    self.log.info("Old image not present, no removal needed")
+                else:
+                    self.log.info("Old image removed")
 
                 self.log.info(
                     "Moving temporary image %s to final location %s on Puhti",
