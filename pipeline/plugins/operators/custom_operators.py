@@ -389,6 +389,8 @@ class CreateImageOperator(BaseOperator):
         """
         _, stdout, stderr = ssh_client.exec_command(command)
 
+        self.log.debug(stdout)
+
         exit_code = stdout.channel.recv_exit_status()
         if exit_code != 0:
             raise ImageCreationError(
