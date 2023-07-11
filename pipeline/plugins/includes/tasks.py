@@ -14,7 +14,7 @@ from operators.custom_operators import (
 
 
 @task.branch(task_id="check_if_download_should_begin")
-def check_if_download_should_begin(set_id, binding_base_path, http_conn_id):
+def check_if_download_should_begin(set_id, binding_list_dir, http_conn_id):
     """
     Check if API is responding and if there are new bindings to download.
     If not, cancel pipeline.
@@ -35,7 +35,7 @@ def check_if_download_should_begin(set_id, binding_base_path, http_conn_id):
     except RequestException:
         api_ok = False
 
-    bindings = utils.read_bindings(binding_base_path, set_id)
+    bindings = utils.read_bindings(binding_list_dir, set_id)
 
     if not bindings:
         print("No new bindings after previous download.")
@@ -61,12 +61,12 @@ def download_set(
     ssh_conn_id,
     initial_download,
     image_split_dir,
-    binding_base_path,
-    base_path,
-    tmpdir,
+    binding_list_dir,
+    output_dir,
+    tmpdir_root,
 ):
 
-    bindings = utils.read_bindings(binding_base_path, set_id)
+    bindings = utils.read_bindings(binding_list_dir, set_id)
 
     if initial_download:
         image_split = utils.assign_bindings_to_images(bindings, image_size)
@@ -94,8 +94,8 @@ def download_set(
                     task_id=f"prepare_download_location_{image_base_name}",
                     trigger_rule="none_skipped",
                     ssh_conn_id=ssh_conn_id,
-                    tmp_path=tmpdir,
-                    base_path=base_path,
+                    tmp_path=tmpdir_root,
+                    output_dir=output_dir,
                     image_base_name=image_base_name,
                 )
 
@@ -103,8 +103,8 @@ def download_set(
                     task_id=f"create_image_{image_base_name}",
                     trigger_rule="none_skipped",
                     ssh_conn_id=ssh_conn_id,
-                    tmp_path=tmpdir,
-                    base_path=base_path,
+                    tmp_path=tmpdir_root,
+                    output_dir=output_dir,
                     image_base_name=image_base_name,
                 )
 
@@ -115,7 +115,7 @@ def download_set(
                         trigger_rule="none_skipped",
                         ssh_conn_id=ssh_conn_id,
                         image_base_name=image_base_name,
-                        tmpdir=tmpdir,
+                        tmpdir_root=tmpdir_root,
                         api=api,
                     ).expand(
                         batch=utils.split_into_download_batches(image_split[image])
@@ -130,7 +130,7 @@ def download_set(
 
 
 @task(task_id="clear_temporary_directory", trigger_rule="all_done")
-def clear_temporary_directory(ssh_conn_id, tmpdir):
+def clear_temporary_directory(ssh_conn_id, tmpdir_root):
     ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
     with ssh_hook.get_conn() as ssh_client:
-        ssh_client.exec_command(f"rm -r {tmpdir}/*")
+        ssh_client.exec_command(f"rm -r {tmpdir_root}/*")

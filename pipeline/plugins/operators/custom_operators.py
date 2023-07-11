@@ -51,7 +51,7 @@ class SaveFilesSFTPOperator(BaseOperator):
 
     :param sftp_client: SFTPClient
     :param ssh_client: SSHClient
-    :param tmpdir: Absolute path for a temporary directory on the remote server
+    :param tmpdir_root: Absolute path for a temporary directory on the remote server
     :param dc_identifier: DC identifier of binding
     :param file_dir: Directory where file will be saved
     """
@@ -60,7 +60,7 @@ class SaveFilesSFTPOperator(BaseOperator):
         self,
         sftp_client,
         ssh_client,
-        tmpdir,
+        tmpdir_root,
         dc_identifier,
         file_dir,
         **kwargs,
@@ -70,7 +70,7 @@ class SaveFilesSFTPOperator(BaseOperator):
         self.ssh_client = ssh_client
         self.dc_identifier = dc_identifier
         self.file_dir = file_dir
-        self.tmpdir = tmpdir
+        self.tmpdir_root = tmpdir_root
 
     def ensure_output_location(self):
         """
@@ -79,7 +79,8 @@ class SaveFilesSFTPOperator(BaseOperator):
         Creates all intermediate directories too, if necessary.
         """
         utils.make_intermediate_dirs(
-            sftp_client=self.sftp_client, remote_directory=self.tmpdir / self.file_dir
+            sftp_client=self.sftp_client,
+            remote_directory=self.tmpdir_root / self.file_dir,
         )
 
     def tmp_path(self, output_file):
@@ -140,7 +141,7 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
         self.api = api
         self.output_file = utils.mets_download_location(
             dc_identifier=self.dc_identifier,
-            base_path=self.tmpdir,
+            base_path=self.tmpdir_root,
             file_dir=self.file_dir,
         )
 
@@ -205,7 +206,7 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
         for alto_file in alto_files:
             output_file = utils.file_download_location(
                 file=alto_file,
-                base_path=self.tmpdir,
+                base_path=self.tmpdir_root,
                 file_dir=self.file_dir,
             )
 
@@ -244,7 +245,7 @@ class DownloadBindingBatchOperator(BaseOperator):
     :param batch: a list of DC identifiers
     :param ssh_conn_id: SSH connection id
     :param image_base_name: Name for disk image
-    :param tmpdir: Absolute path for a temporary directory on the remote server
+    :param tmpdir_root: Absolute path for a temporary directory on the remote server
     :param api: OAI-PMH api
     """
 
@@ -253,7 +254,7 @@ class DownloadBindingBatchOperator(BaseOperator):
         batch,
         ssh_conn_id,
         image_base_name,
-        tmpdir,
+        tmpdir_root,
         api,
         **kwargs,
     ):
@@ -261,7 +262,7 @@ class DownloadBindingBatchOperator(BaseOperator):
         self.batch = batch
         self.ssh_conn_id = ssh_conn_id
         self.image_base_name = image_base_name
-        self.tmpdir = tmpdir
+        self.tmpdir_root = tmpdir_root
         self.api = api
 
     def execute(self, context):
@@ -272,7 +273,7 @@ class DownloadBindingBatchOperator(BaseOperator):
             for dc_identifier in self.batch:
                 binding_id = utils.binding_id_from_dc(dc_identifier)
                 tmp_binding_path = (
-                    self.tmpdir
+                    self.tmpdir_root
                     / self.image_base_name
                     / utils.binding_download_location(binding_id)
                 )
@@ -282,7 +283,7 @@ class DownloadBindingBatchOperator(BaseOperator):
                     api=self.api,
                     sftp_client=sftp_client,
                     ssh_client=ssh_client,
-                    tmpdir=tmp_binding_path,
+                    tmpdir_root=tmp_binding_path,
                     dc_identifier=dc_identifier,
                     file_dir="mets",
                 ).execute(context={})
@@ -292,7 +293,7 @@ class DownloadBindingBatchOperator(BaseOperator):
                     mets_path=tmp_binding_path / "mets",
                     sftp_client=sftp_client,
                     ssh_client=ssh_client,
-                    tmpdir=tmp_binding_path,
+                    tmpdir_root=tmp_binding_path,
                     dc_identifier=dc_identifier,
                     file_dir="alto",
                 ).execute(context={})
@@ -303,21 +304,21 @@ class PrepareDownloadLocationOperator(BaseOperator):
     Prepare download location for a disk image.
 
     :param ssh_conn_id: SSH connection id
-    :param base_path: Base path for images
+    :param output_dir: ``pathlib.Path`` representing the output directory
     :param image_base_name: Name for disk image
     """
 
     def __init__(
         self,
         ssh_conn_id,
-        base_path,
+        output_dir,
         tmp_path,
         image_base_name,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.ssh_conn_id = ssh_conn_id
-        self.base_path = base_path
+        self.output_dir = output_dir
         self.image_base_name = image_base_name
         self.tmp_path = tmp_path
 
@@ -325,7 +326,7 @@ class PrepareDownloadLocationOperator(BaseOperator):
         """
         Extract contents of a disk image in given path.
         """
-        sftp_client.chdir(str(self.base_path))
+        sftp_client.chdir(str(self.output_dir))
         ssh_client.exec_command(f"unsquashfs -d {tmp_image_path} {image_dir_path}.sqfs")
 
     def create_image_folder(self, sftp_client, image_dir_path):
@@ -339,14 +340,14 @@ class PrepareDownloadLocationOperator(BaseOperator):
 
     def execute(self, context):
         tmp_image_path = self.tmp_path / self.image_base_name
-        image_dir_path = self.base_path
+        image_dir_path = self.output_dir
 
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
             sftp_client = ssh_client.open_sftp()
 
             if f"{self.image_base_name}.sqfs" in sftp_client.listdir(
-                str(self.base_path)
+                str(self.output_dir)
             ):
                 self.extract_image(
                     ssh_client, sftp_client, image_dir_path, tmp_image_path
@@ -361,7 +362,7 @@ class CreateImageOperator(BaseOperator):
     Prepare download location for a disk image.
 
     :param ssh_conn_id: SSH connection id
-    :param base_path: Base path for images
+    :param output_dir: ``pathlib.Path`` representing the output directory
     :param image_base_name: Name for disk image
     """
 
@@ -369,13 +370,13 @@ class CreateImageOperator(BaseOperator):
         self,
         ssh_conn_id,
         tmp_path,
-        base_path,
+        output_dir,
         image_base_name,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.ssh_conn_id = ssh_conn_id
-        self.base_path = base_path
+        self.output_dir = output_dir
         self.image_base_name = image_base_name
         self.tmp_path = tmp_path
 
@@ -414,7 +415,7 @@ class CreateImageOperator(BaseOperator):
 
     def execute(self, context):
         tmp_image_data_source = self.tmp_path / self.image_base_name
-        final_image_location = self.base_path / (self.image_base_name + ".sqfs")
+        final_image_location = self.output_dir / (self.image_base_name + ".sqfs")
         temporary_image_location = final_image_location.with_suffix(".sqfs.tmp")
 
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)

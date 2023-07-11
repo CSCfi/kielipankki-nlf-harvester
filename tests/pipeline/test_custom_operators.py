@@ -65,7 +65,7 @@ def test_existing_mets_not_downloaded_again(
             api=api,
             sftp_client=sftp,
             ssh_client=ssh_client,
-            tmpdir=tmp_path,
+            tmpdir_root=tmp_path,
             dc_identifier=mets_dc_identifier,
             file_dir="mets",
         )
@@ -112,7 +112,7 @@ def test_existing_tmp_file_does_not_prevent_download(
             api=api,
             sftp_client=sftp,
             ssh_client=ssh_client,
-            tmpdir=tmp_path,
+            tmpdir_root=tmp_path,
             dc_identifier=mets_dc_identifier,
             file_dir="mets",
         )
@@ -149,7 +149,7 @@ def test_save_mets_sftp_operator(
             api=api,
             sftp_client=sftp,
             ssh_client=ssh_client,
-            tmpdir=tmp_path,
+            tmpdir_root=tmp_path,
             dc_identifier=mets_dc_identifier,
             file_dir="file_dir",
         )
@@ -182,7 +182,7 @@ def test_empty_mets(
             api=api,
             sftp_client=sftp,
             ssh_client=ssh_client,
-            tmpdir=tmp_path,
+            tmpdir_root=tmp_path,
             dc_identifier=empty_mets_dc_identifier,
             file_dir="file_dir",
         )
@@ -213,7 +213,7 @@ def test_failed_mets_request(
             api=api,
             sftp_client=sftp,
             ssh_client=ssh_client,
-            tmpdir=tmp_path,
+            tmpdir_root=tmp_path,
             dc_identifier=failed_mets_dc_identifier,
             file_dir="file_dir",
         )
@@ -254,7 +254,7 @@ def test_save_altos_sftp_operator(
             task_id="test_save_altos_remote",
             sftp_client=sftp,
             ssh_client=ssh_client,
-            tmpdir=tmp_path,
+            tmpdir_root=tmp_path,
             file_dir=alto_dir,
             mets_path=mets_dir,
             dc_identifier=mets_dc_identifier,
@@ -317,7 +317,7 @@ def test_existing_altos_not_downloaded_again(
             task_id="test_save_altos_remote",
             sftp_client=sftp,
             ssh_client=ssh_client,
-            tmpdir=tmp_path,
+            tmpdir_root=tmp_path,
             file_dir=alto_dir,
             mets_path=mets_dir,
             dc_identifier=mets_dc_identifier,

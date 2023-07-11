@@ -178,19 +178,19 @@ def assign_update_bindings_to_images(bindings, image_split_file):
     return image_split
 
 
-def read_bindings(binding_base_path, set_id):
+def read_bindings(binding_list_dir, set_id):
     """
     Read and return a list of bindings from the latest binding ID file.
     """
     try:
         binding_id_files = [
             datetime.strptime(fname.split("_")[-1], "%Y-%m-%d").date()
-            for fname in os.listdir(binding_base_path / set_id)
+            for fname in os.listdir(binding_list_dir / set_id)
         ]
     except FileNotFoundError:
         raise FileNotFoundError(f"No binding ID file found for set {set_id}")
     latest = max(binding_id_files)
-    with open(binding_base_path / set_id / f"binding_ids_{str(latest)}", "r") as f:
+    with open(binding_list_dir / set_id / f"binding_ids_{str(latest)}", "r") as f:
         bindings = f.read().splitlines()
     return bindings
 
