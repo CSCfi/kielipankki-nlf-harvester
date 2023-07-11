@@ -385,20 +385,32 @@ class CreateImageOperator(BaseOperator):
 
     def execute(self, context):
         tmp_image_path = self.tmp_path / self.image_base_name
-        final_image_location = self.base_path / self.image_base_name
+        final_image_location = self.base_path / (self.image_base_name + ".sqfs")
+        temporary_image_location = final_image_location.with_suffix(".sqfs.tmp")
 
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
-            self.log.info(f"Deleting old image {final_image_location}.sqfs")
-            ssh_client.exec_command(f"rm {final_image_location}.sqfs")
-
-            self.log.info(f"Creating image {self.image_base_name} on Puhti")
+            self.log.info(
+                "Creating temporary image in %s on Puhti", temporary_image_location
+            )
             _, stdout, stderr = ssh_client.exec_command(
-                f"mksquashfs {tmp_image_path} {final_image_location}.sqfs"
+                f"mksquashfs {tmp_image_path} {temporary_image_location}"
+            )
+
+            self.log.info("Deleting old image %s on Puhti", final_image_location)
+            ssh_client.exec_command(f"rm {final_image_location}")
+
+            self.log.info(
+                "Moving temporary image %s to final location %s on Puhti",
+                temporary_image_location,
+                final_image_location,
+            )
+            _, stdout, stderr = ssh_client.exec_command(
+                f"mv {temporary_image_location} {final_image_location}"
             )
             if stdout.channel.recv_exit_status() != 0:
                 raise Exception(
-                    f"Creation of image {final_image_location}.sqfs failed: "
+                    f"Creation of image {final_image_location} failed: "
                     f"{stderr.read().decode('utf-8')}"
                 )
             ssh_client.exec_command(f"rm -r {tmp_image_path}")
