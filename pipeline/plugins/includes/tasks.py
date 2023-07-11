@@ -1,5 +1,3 @@
-from urllib.error import HTTPError
-
 from airflow.decorators import task, task_group
 from airflow.providers.http.sensors.http import HttpSensor
 from airflow.providers.ssh.hooks.ssh import SSHHook
