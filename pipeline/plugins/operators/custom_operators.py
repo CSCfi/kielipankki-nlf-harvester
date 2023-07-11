@@ -245,7 +245,6 @@ class DownloadBindingBatchOperator(BaseOperator):
 
     :param batch: a list of DC identifiers
     :param ssh_conn_id: SSH connection id
-    :param base_path: Base path for images
     :param image_base_name: Name for disk image
     :param tmpdir: Absolute path for a temporary directory on the remote server
     :param api: OAI-PMH api
@@ -255,7 +254,6 @@ class DownloadBindingBatchOperator(BaseOperator):
         self,
         batch,
         ssh_conn_id,
-        base_path,
         image_base_name,
         tmpdir,
         api,
