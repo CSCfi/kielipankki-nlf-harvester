@@ -390,27 +390,39 @@ class CreateImageOperator(BaseOperator):
 
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
-            self.log.info(
-                "Creating temporary image in %s on Puhti", temporary_image_location
-            )
-            _, stdout, stderr = ssh_client.exec_command(
-                f"mksquashfs {tmp_image_data_source} {temporary_image_location}"
-            )
-
-            self.log.info("Deleting old image %s on Puhti", final_image_location)
-            ssh_client.exec_command(f"rm {final_image_location}")
-
-            self.log.info(
-                "Moving temporary image %s to final location %s on Puhti",
-                temporary_image_location,
-                final_image_location,
-            )
-            _, stdout, stderr = ssh_client.exec_command(
-                f"mv {temporary_image_location} {final_image_location}"
-            )
-            if stdout.channel.recv_exit_status() != 0:
-                raise Exception(
-                    f"Creation of image {final_image_location} failed: "
-                    f"{stderr.read().decode('utf-8')}"
+            with ssh_client.open_sftp() as sftp_client:
+                self.log.info(
+                    "Creating temporary image in %s on Puhti", temporary_image_location
                 )
-            ssh_client.exec_command(f"rm -r {tmp_image_data_source}")
+                _, stdout, stderr = ssh_client.exec_command(
+                    f"mksquashfs {tmp_image_data_source} {temporary_image_location}"
+                )
+                if stdout.channel.recv_exit_status() != 0:
+                    raise Exception(
+                        f"Creation of image {final_image_location} failed: "
+                        f"{stderr.read().decode('utf-8')}"
+                    )
+
+                self.log.info("Deleting old image %s on Puhti", final_image_location)
+                sftp_client.remove(str(final_image_location))
+
+                self.log.info(
+                    "Moving temporary image %s to final location %s on Puhti",
+                    temporary_image_location,
+                    final_image_location,
+                )
+                sftp_client.posix_rename(
+                    str(temporary_image_location), str(final_image_location)
+                )
+
+                self.log.info(
+                    "Removing the temporary source directory tree %s",
+                    tmp_image_data_source,
+                )
+                self.ssh_execute_and_raise(ssh_client, f"rm -r {tmp_image_data_source}")
+
+
+class ImageCreationError(Exception):
+    """
+    Error raised when an error occurs during the disk image creation/overwrite process
+    """
