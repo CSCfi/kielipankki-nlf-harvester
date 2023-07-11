@@ -384,7 +384,7 @@ class CreateImageOperator(BaseOperator):
         self.tmp_path = tmp_path
 
     def execute(self, context):
-        tmp_image_path = self.tmp_path / self.image_base_name
+        tmp_image_data_source = self.tmp_path / self.image_base_name
         final_image_location = self.base_path / (self.image_base_name + ".sqfs")
         temporary_image_location = final_image_location.with_suffix(".sqfs.tmp")
 
@@ -394,7 +394,7 @@ class CreateImageOperator(BaseOperator):
                 "Creating temporary image in %s on Puhti", temporary_image_location
             )
             _, stdout, stderr = ssh_client.exec_command(
-                f"mksquashfs {tmp_image_path} {temporary_image_location}"
+                f"mksquashfs {tmp_image_data_source} {temporary_image_location}"
             )
 
             self.log.info("Deleting old image %s on Puhti", final_image_location)
@@ -413,4 +413,4 @@ class CreateImageOperator(BaseOperator):
                     f"Creation of image {final_image_location} failed: "
                     f"{stderr.read().decode('utf-8')}"
                 )
-            ssh_client.exec_command(f"rm -r {tmp_image_path}")
+            ssh_client.exec_command(f"rm -r {tmp_image_data_source}")
