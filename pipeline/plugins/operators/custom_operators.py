@@ -398,6 +398,24 @@ class CreateImageOperator(BaseOperator):
                 f"{stderr}"
             )
 
+    def temporary_files_present(self, sftp_client, directory):
+        """
+        Report whether temporary files are present in the given directory.
+
+        Files with suffix ".tmp" are considered to be temporary. Files in subdirectories
+        of arbitrary depth are also inspected.
+
+        NB: this operation requires listing all files within the directory, so it is not
+        suitable for use on Lustre with large directories or directory trees.
+
+        :returns: True if temporary file(s) were found, otherwise False
+        """
+        for item in sftp_client.listdir(str(directory)):
+            if item.endswith(".tmp"):
+                return True
+
+        return False
+
     def execute(self, context):
         tmp_image_data_source = self.tmp_path / self.image_base_name
         final_image_location = self.base_path / (self.image_base_name + ".sqfs")
@@ -406,6 +424,13 @@ class CreateImageOperator(BaseOperator):
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
             with ssh_client.open_sftp() as sftp_client:
+
+                if self.temporary_files_present(sftp_client, tmp_image_data_source):
+                    raise ImageCreationError(
+                        "Temporary files found in image data source directory, "
+                        "halting image creation"
+                    )
+
                 self.log.info(
                     "Creating temporary image in %s on Puhti", temporary_image_location
                 )
