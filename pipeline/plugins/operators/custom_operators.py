@@ -383,6 +383,19 @@ class CreateImageOperator(BaseOperator):
         self.image_base_name = image_base_name
         self.tmp_path = tmp_path
 
+    def ssh_execute_and_raise(self, ssh_client, command):
+        """
+        Run the given command and raisie ImageCreationError on non-zero return value.
+        """
+        _, stdout, stderr = ssh_client.exec_command(command)
+
+        exit_code = stdout.channel.recv_exit_status()
+        if exit_code != 0:
+            raise ImageCreationError(
+                f"Command {command} failed (exit code {exit_code}). Stderr output:\n"
+                f"{stderr}"
+            )
+
     def execute(self, context):
         tmp_image_data_source = self.tmp_path / self.image_base_name
         final_image_location = self.base_path / (self.image_base_name + ".sqfs")
@@ -394,14 +407,10 @@ class CreateImageOperator(BaseOperator):
                 self.log.info(
                     "Creating temporary image in %s on Puhti", temporary_image_location
                 )
-                _, stdout, stderr = ssh_client.exec_command(
-                    f"mksquashfs {tmp_image_data_source} {temporary_image_location}"
+                self.ssh_execute_and_raise(
+                    ssh_client,
+                    f"mksquashfs {tmp_image_data_source} {temporary_image_location}",
                 )
-                if stdout.channel.recv_exit_status() != 0:
-                    raise Exception(
-                        f"Creation of image {final_image_location} failed: "
-                        f"{stderr.read().decode('utf-8')}"
-                    )
 
                 self.log.info("Deleting old image %s on Puhti", final_image_location)
                 sftp_client.remove(str(final_image_location))
