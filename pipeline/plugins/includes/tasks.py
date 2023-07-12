@@ -94,9 +94,8 @@ def download_set(
                     task_id=f"prepare_download_location_{image_base_name}",
                     trigger_rule="none_skipped",
                     ssh_conn_id=ssh_conn_id,
-                    tmp_path=tmpdir_root,
-                    output_dir=output_dir,
-                    image_base_name=image_base_name,
+                    file_download_dir=tmpdir_root / image_base_name,
+                    old_image_path=output_dir / (image_base_name + ".sqfs"),
                 )
 
                 create_image = CreateImageOperator(
