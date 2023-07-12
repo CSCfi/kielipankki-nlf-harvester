@@ -22,8 +22,11 @@ def check_if_download_should_begin(set_id, binding_base_path, http_conn_id):
 
     def newest_dag_run():
         dag_runs = DagRun.find(dag_id=f"image_download_{set_id}", state="running")
-        dag_runs.sort(key=lambda x: x.execution_date, reverse=True)
-        return dag_runs[0]
+        newest = dag_runs[0]
+        for dag_run in dag_runs[1:]:
+            if dag_run.execution_date > newest.execution_date:
+                newest = dag_run
+        return newest
 
     try:
         api_ok = HttpSensor(
