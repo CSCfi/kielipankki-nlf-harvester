@@ -341,7 +341,7 @@ class PrepareDownloadLocationOperator(BaseOperator):
 
     def execute(self, context):
         tmp_image_path = self.tmp_path / self.image_base_name
-        image_dir_path = self.base_path / self.image_base_name
+        image_dir_path = self.base_path
 
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
