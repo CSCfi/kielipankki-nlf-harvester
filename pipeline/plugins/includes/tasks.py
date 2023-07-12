@@ -19,6 +19,12 @@ def check_if_download_should_begin(set_id, binding_base_path, http_conn_id):
     Check if API is responding and if there are new bindings to download.
     If not, cancel pipeline.
     """
+
+    def newest_dag_run():
+        dag_runs = DagRun.find(dag_id=f"image_download_{set_id}", state="running")
+        dag_runs.sort(key=lambda x: x.execution_date, reverse=True)
+        return dag_runs[0]
+
     try:
         api_ok = HttpSensor(
             task_id="http_sensor", http_conn_id=http_conn_id, endpoint="/"
@@ -32,9 +38,7 @@ def check_if_download_should_begin(set_id, binding_base_path, http_conn_id):
         print("No new bindings after previous download.")
         return "cancel_pipeline"
     if not api_ok:
-        dag_runs = DagRun.find(dag_id=f"image_download_{set_id}", state="running")
-        dag_runs.sort(key=lambda x: x.execution_date, reverse=True)
-        dag_instance = dag_runs[0]
+        dag_instance = newest_dag_run()
         task_instance = dag_instance.get_task_instance("check_if_download_should_begin")
         if task_instance.try_number < task_instance.max_tries:
             raise RequestException("NLF API is not responding.")
