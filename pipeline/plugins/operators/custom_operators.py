@@ -11,6 +11,22 @@ from harvester.file import ALTOFile
 from harvester import utils
 
 
+def file_exists(sftp_client, path):
+    """
+    Check if a non-empty file already exists in the given path.
+
+    :return: True if a non-empty file exists, otherwise False
+    """
+    try:
+        file_size = sftp_client.stat(str(path)).st_size
+    except OSError:
+        return False
+    else:
+        if file_size > 0:
+            return True
+    return False
+
+
 class CreateConnectionOperator(BaseOperator):
     """
     Create any type of Airflow connection.
@@ -113,21 +129,6 @@ class SaveFilesSFTPOperator(BaseOperator):
             "execute() must be defined separately for each file type."
         )
 
-    def file_exists(self, path):
-        """
-        Check if a non-empty file already exists in the given path.
-
-        :return: True if a non-empty file exists, otherwise False
-        """
-        try:
-            file_size = self.sftp_client.stat(str(path)).st_size
-        except OSError:
-            return False
-        else:
-            if file_size > 0:
-                return True
-        return False
-
 
 class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
     """
@@ -147,7 +148,7 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
 
     def execute(self, context):
 
-        if self.file_exists(self.output_file):
+        if file_exists(self.sftp_client, self.output_file):
             return
 
         tmp_output_file = self.tmp_path(self.output_file)
@@ -169,7 +170,7 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
                     f"number {e.errno}"
                 )
 
-        if not self.file_exists(tmp_output_file):
+        if not file_exists(self.sftp_client, tmp_output_file):
             raise METSFileEmptyError(f"METS file {self.dc_identifier} is empty.")
 
         exit_status = self.move_file_to_final_location(
@@ -210,7 +211,7 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
                 file_dir=self.file_dir,
             )
 
-            if self.file_exists(output_file):
+            if file_exists(self.sftp_client, output_file):
                 continue
 
             tmp_output_file = self.tmp_path(output_file)
@@ -301,33 +302,40 @@ class DownloadBindingBatchOperator(BaseOperator):
 
 class PrepareDownloadLocationOperator(BaseOperator):
     """
-    Prepare download location for a disk image.
+    Prepare download location for data that goes into one disk image.
+
+    This consists of:
+    - creating the destination directory if it does not exist
+    - extracting the contents of the previous corresponding image if one
+      is found in the given ``image_output_dir``
 
     :param ssh_conn_id: SSH connection id
-    :param output_dir: ``pathlib.Path`` representing the output directory
-    :param image_base_name: Name for disk image
+    :param file_download_dir: Path of the output directory
+    :type file_download_dir: :class:`pathlib.Path`
+    :param old_image_path: Path of the corresponding image created
+                           during the previous download.
+    :type old_image_path: :class:`pathlib.Path`
     """
 
     def __init__(
         self,
         ssh_conn_id,
-        output_dir,
-        tmp_path,
-        image_base_name,
+        file_download_dir,
+        old_image_path,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.ssh_conn_id = ssh_conn_id
-        self.output_dir = output_dir
-        self.image_base_name = image_base_name
-        self.tmp_path = tmp_path
+        self.old_image_path = old_image_path
+        self.file_download_dir = file_download_dir
 
-    def extract_image(self, ssh_client, sftp_client, image_dir_path, tmp_image_path):
+    def extract_image(self, ssh_client):
         """
         Extract contents of a disk image in given path.
         """
-        sftp_client.chdir(str(self.output_dir))
-        ssh_client.exec_command(f"unsquashfs -d {tmp_image_path} {image_dir_path}.sqfs")
+        ssh_client.exec_command(
+            f"unsquashfs -d {self.file_download_dir} {self.old_image_path}"
+        )
 
     def create_image_folder(self, sftp_client, image_dir_path):
         """
@@ -339,22 +347,17 @@ class PrepareDownloadLocationOperator(BaseOperator):
         )
 
     def execute(self, context):
-        tmp_image_path = self.tmp_path / self.image_base_name
-        image_dir_path = self.output_dir
-
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
             sftp_client = ssh_client.open_sftp()
 
-            if f"{self.image_base_name}.sqfs" in sftp_client.listdir(
-                str(self.output_dir)
-            ):
+            if file_exists(sftp_client, self.old_image_path):
                 self.extract_image(
-                    ssh_client, sftp_client, image_dir_path, tmp_image_path
+                    ssh_client,
                 )
 
             else:
-                self.create_image_folder(sftp_client, image_dir_path)
+                self.create_image_folder(sftp_client, self.file_download_dir)
 
 
 class CreateImageOperator(BaseOperator):
