@@ -362,26 +362,36 @@ class PrepareDownloadLocationOperator(BaseOperator):
 
 class CreateImageOperator(BaseOperator):
     """
-    Prepare download location for a disk image.
+    Create a disk image of the given source data.
+
+    Before a new image is created, the source data is checked for temporary files (i.e.
+    ones with extension ".tmp"). If temporary files are found, the source data is deemed
+    erroneous and an exception is raised.
+
+    The image creation is a three-step process:
+    1. Create a temporary image
+    2. Remove the old image from the intended final location (if present)
+    3. Move the newly-created image to the final location
 
     :param ssh_conn_id: SSH connection id
-    :param output_dir: ``pathlib.Path`` representing the output directory
-    :param image_base_name: Name for disk image
+    :param data_source: Path to the directory that contains the data that is to be
+                        stored in the newly-created image.
+    :type data_source: :class:`pathlib.Path`
+    :param image_path: Path to which the newly-created image is written.
+    :type image_path: :class:`pathlib.Path`
     """
 
     def __init__(
         self,
         ssh_conn_id,
-        tmp_path,
-        output_dir,
-        image_base_name,
+        data_source,
+        image_path,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.ssh_conn_id = ssh_conn_id
-        self.output_dir = output_dir
-        self.image_base_name = image_base_name
-        self.tmp_path = tmp_path
+        self.data_source = data_source
+        self.image_path = image_path
 
     def ssh_execute_and_raise(self, ssh_client, command):
         """
@@ -417,33 +427,29 @@ class CreateImageOperator(BaseOperator):
         return False
 
     def execute(self, context):
-        tmp_image_data_source = self.tmp_path / self.image_base_name
-        final_image_location = self.output_dir / (self.image_base_name + ".sqfs")
-        temporary_image_location = final_image_location.with_suffix(".sqfs.tmp")
+        tmp_image_path = self.image_path.with_suffix(".sqfs.tmp")
 
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
             with ssh_client.open_sftp() as sftp_client:
 
-                if self.temporary_files_present(sftp_client, tmp_image_data_source):
+                if self.temporary_files_present(sftp_client, self.data_source):
                     raise ImageCreationError(
                         "Temporary files found in image data source directory, "
                         "halting image creation"
                     )
 
-                self.log.info(
-                    "Creating temporary image in %s on Puhti", temporary_image_location
-                )
+                self.log.info("Creating temporary image in %s on Puhti", tmp_image_path)
                 self.ssh_execute_and_raise(
                     ssh_client,
-                    f"mksquashfs {tmp_image_data_source} {temporary_image_location}",
+                    f"mksquashfs {self.data_source} {tmp_image_path}",
                 )
 
                 self.log.info(
-                    "Attempting deletion of old image %s on Puhti", final_image_location
+                    "Attempting deletion of old image %s on Puhti", self.image_path
                 )
                 try:
-                    sftp_client.remove(str(final_image_location))
+                    sftp_client.remove(str(self.image_path))
                 except FileNotFoundError:
                     self.log.info("Old image not present, no removal needed")
                 else:
@@ -451,18 +457,16 @@ class CreateImageOperator(BaseOperator):
 
                 self.log.info(
                     "Moving temporary image %s to final location %s on Puhti",
-                    temporary_image_location,
-                    final_image_location,
+                    tmp_image_path,
+                    self.image_path,
                 )
-                sftp_client.posix_rename(
-                    str(temporary_image_location), str(final_image_location)
-                )
+                sftp_client.posix_rename(str(tmp_image_path), str(self.image_path))
 
                 self.log.info(
                     "Removing the temporary source directory tree %s",
-                    tmp_image_data_source,
+                    self.data_source,
                 )
-                self.ssh_execute_and_raise(ssh_client, f"rm -r {tmp_image_data_source}")
+                self.ssh_execute_and_raise(ssh_client, f"rm -r {self.data_source}")
 
 
 class ImageCreationError(Exception):

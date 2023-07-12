@@ -90,21 +90,23 @@ def download_set(
                 else:
                     image_base_name = set_id
 
+                file_download_dir = tmpdir_root / image_base_name
+                image_path = output_dir / (image_base_name + ".sqfs")
+
                 prepare_download_location = PrepareDownloadLocationOperator(
                     task_id=f"prepare_download_location_{image_base_name}",
                     trigger_rule="none_skipped",
                     ssh_conn_id=ssh_conn_id,
-                    file_download_dir=tmpdir_root / image_base_name,
-                    old_image_path=output_dir / (image_base_name + ".sqfs"),
+                    file_download_dir=file_download_dir,
+                    old_image_path=image_path,
                 )
 
                 create_image = CreateImageOperator(
                     task_id=f"create_image_{image_base_name}",
                     trigger_rule="none_skipped",
                     ssh_conn_id=ssh_conn_id,
-                    tmp_path=tmpdir_root,
-                    output_dir=output_dir,
-                    image_base_name=image_base_name,
+                    data_source=file_download_dir,
+                    image_path=image_path,
                 )
 
                 (
