@@ -82,7 +82,7 @@ class SaveFilesSFTPOperator(BaseOperator):
             sftp_client=self.sftp_client, remote_directory=self.tmpdir / self.file_dir
         )
 
-    def tempfile_path(self, output_file):
+    def tmp_path(self, output_file):
         """
         Return the path to a temporary file corresponding to output_file.
 
@@ -95,14 +95,14 @@ class SaveFilesSFTPOperator(BaseOperator):
         """
         return output_file.with_suffix(output_file.suffix + ".tmp")
 
-    def move_file_to_final_location(self, temp_output_file, output_file):
+    def move_file_to_final_location(self, tmp_output_file, output_file):
         """
         Move file from temporary to final location.
 
         :return: Exit status from bash command
         """
         _, stdout, _ = self.ssh_client.exec_command(
-            f"mv {temp_output_file} {output_file}"
+            f"mv {tmp_output_file} {output_file}"
         )
 
         return stdout.channel.recv_exit_status()
@@ -149,11 +149,11 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
         if self.file_exists(self.output_file):
             return
 
-        temp_output_file = self.tempfile_path(self.output_file)
+        tmp_output_file = self.tmp_path(self.output_file)
 
         self.ensure_output_location()
 
-        with self.sftp_client.file(str(temp_output_file), "w") as file:
+        with self.sftp_client.file(str(tmp_output_file), "w") as file:
             try:
                 self.api.download_mets(
                     dc_identifier=self.dc_identifier, output_mets_file=file
@@ -168,16 +168,16 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
                     f"number {e.errno}"
                 )
 
-        if not self.file_exists(temp_output_file):
+        if not self.file_exists(tmp_output_file):
             raise METSFileEmptyError(f"METS file {self.dc_identifier} is empty.")
 
         exit_status = self.move_file_to_final_location(
-            temp_output_file, self.output_file
+            tmp_output_file, self.output_file
         )
 
         if exit_status != 0:
             raise OSError(
-                f"Moving METS file {self.dc_identifier} from temp to destination failed"
+                f"Moving METS file {self.dc_identifier} from tmp to destination failed"
             )
 
 
@@ -212,9 +212,9 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
             if self.file_exists(output_file):
                 continue
 
-            temp_output_file = self.tempfile_path(output_file)
+            tmp_output_file = self.tmp_path(output_file)
 
-            with self.sftp_client.file(str(temp_output_file), "wb") as file:
+            with self.sftp_client.file(str(tmp_output_file), "wb") as file:
                 try:
                     alto_file.download(
                         output_file=file,
@@ -228,13 +228,11 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
                     )
                     continue
 
-            exit_status = self.move_file_to_final_location(
-                temp_output_file, output_file
-            )
+            exit_status = self.move_file_to_final_location(tmp_output_file, output_file)
 
             if exit_status != 0:
                 self.log.error(
-                    "Moving ALTO file %s from temp to destination failed",
+                    "Moving ALTO file %s from tmp to destination failed",
                     alto_file.download_url,
                 )
 

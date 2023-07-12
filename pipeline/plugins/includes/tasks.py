@@ -129,8 +129,8 @@ def download_set(
             image_downloads.append(image_download_tg)
 
 
-@task(task_id="clear_temp_directory", trigger_rule="all_done")
-def clear_temp_dir(ssh_conn_id, tmpdir):
+@task(task_id="clear_temporary_directory", trigger_rule="all_done")
+def clear_temporary_directory(ssh_conn_id, tmpdir):
     ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
     with ssh_hook.get_conn() as ssh_client:
         ssh_client.exec_command(f"rm -r {tmpdir}/*")

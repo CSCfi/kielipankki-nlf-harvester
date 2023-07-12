@@ -10,13 +10,17 @@ from airflow.operators.empty import EmptyOperator
 from airflow.hooks.base import BaseHook
 from airflow.decorators import dag
 
-from includes.tasks import check_if_download_should_begin, download_set, clear_temp_dir
+from includes.tasks import (
+    check_if_download_should_begin,
+    download_set,
+    clear_temporary_directory,
+)
 from harvester.pmh_interface import PMH_API
 
 INITIAL_DOWNLOAD = True
 
 BASE_PATH = Path("/scratch/project_2006633/nlf-harvester/images")
-TMPDIR = Path("/local_scratch/robot_2006633_puhti/harvester-temp")
+TMPDIR = Path("/local_scratch/robot_2006633_puhti/harvester")
 IMAGE_SPLIT_DIR = Path("/home/ubuntu/image_split/")
 BINDING_BASE_PATH = Path("/home/ubuntu/binding_ids_all")
 SSH_CONN_ID = "puhti_conn"
@@ -77,7 +81,7 @@ for col in COLLECTIONS:
                 base_path=BASE_PATH,
                 tmpdir=TMPDIR,
             )
-            >> clear_temp_dir(SSH_CONN_ID, TMPDIR)
+            >> clear_temporary_directory(SSH_CONN_ID, TMPDIR)
         )
 
     download_dag()
