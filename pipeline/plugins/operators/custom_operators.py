@@ -341,13 +341,12 @@ class PrepareDownloadLocationOperator(BaseOperator):
         with ssh_hook.get_conn() as ssh_client:
             sftp_client = ssh_client.open_sftp()
 
+            self.create_image_folder(sftp_client, self.file_download_dir)
+
             if file_exists(sftp_client, self.old_image_path):
                 self.extract_image(
                     ssh_client,
                 )
-
-            else:
-                self.create_image_folder(sftp_client, self.file_download_dir)
 
 
 class CreateImageOperator(BaseOperator):
