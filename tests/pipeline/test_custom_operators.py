@@ -46,8 +46,7 @@ def test_existing_mets_not_downloaded_again(
     Test that existing METS files are not redownloaded.
     """
     api = PMH_API(oai_pmh_api_url)
-    tmp_path = Path(sftp_server.root) / "tmp"
-    mets_dir = tmp_path / "mets"
+    mets_dir = Path(sftp_server.root) / "tmp" / "mets"
 
     with ssh_server.client("user") as ssh_client:
         sftp = ssh_client.open_sftp()
@@ -65,9 +64,8 @@ def test_existing_mets_not_downloaded_again(
             api=api,
             sftp_client=sftp,
             ssh_client=ssh_client,
-            tmpdir_root=tmp_path,
             dc_identifier=mets_dc_identifier,
-            file_dir="mets",
+            output_directory=mets_dir,
         )
 
         sftp_mets_operator.execute(context={})
@@ -78,7 +76,7 @@ def test_existing_mets_not_downloaded_again(
 
         # Check that the METS file was not downloaded to another location within
         # output_path either
-        files_in_output_path = sum(len(files) for _, _, files in os.walk(tmp_path))
+        files_in_output_path = sum(len(files) for _, _, files in os.walk(mets_dir))
         assert files_in_output_path == 1
 
 
@@ -96,8 +94,7 @@ def test_existing_tmp_file_does_not_prevent_download(
     executing it, and checking that the proper file has been created afterwards.
     """
     api = PMH_API(oai_pmh_api_url)
-    tmp_path = Path(sftp_server.root) / "tmp"
-    mets_dir = tmp_path / "mets"
+    mets_dir = Path(sftp_server.root) / "tmp" / "mets"
 
     with ssh_server.client("user") as ssh_client:
         sftp = ssh_client.open_sftp()
@@ -112,9 +109,8 @@ def test_existing_tmp_file_does_not_prevent_download(
             api=api,
             sftp_client=sftp,
             ssh_client=ssh_client,
-            tmpdir_root=tmp_path,
             dc_identifier=mets_dc_identifier,
-            file_dir="mets",
+            output_directory=mets_dir,
         )
 
         tmpfile_path = sftp_mets_operator.tmp_path(sftp_mets_operator.output_file)
@@ -139,7 +135,7 @@ def test_save_mets_sftp_operator(
     """
 
     api = PMH_API(oai_pmh_api_url)
-    tmp_path = Path(sftp_server.root) / "tmp" / "sub" / "path"
+    mets_dir = Path(sftp_server.root) / "tmp" / "sub" / "path"
 
     with ssh_server.client("user") as ssh_client:
         sftp = ssh_client.open_sftp()
@@ -149,14 +145,13 @@ def test_save_mets_sftp_operator(
             api=api,
             sftp_client=sftp,
             ssh_client=ssh_client,
-            tmpdir_root=tmp_path,
             dc_identifier=mets_dc_identifier,
-            file_dir="file_dir",
+            output_directory=mets_dir,
         )
 
         sftp_mets_operator.execute(context={})
 
-        with sftp.file(str(tmp_path / "file_dir" / "379973_METS.xml"), "r") as file:
+        with sftp.file(str(mets_dir / "379973_METS.xml"), "r") as file:
             assert file.read().decode("utf-8") == expected_mets_response
 
 
@@ -172,7 +167,7 @@ def test_empty_mets(
     """
 
     api = PMH_API(oai_pmh_api_url)
-    tmp_path = Path(sftp_server.root) / "tmp" / "sub" / "path"
+    mets_dir = Path(sftp_server.root) / "tmp" / "sub" / "path"
 
     with ssh_server.client("user") as ssh_client:
         sftp = ssh_client.open_sftp()
@@ -182,9 +177,8 @@ def test_empty_mets(
             api=api,
             sftp_client=sftp,
             ssh_client=ssh_client,
-            tmpdir_root=tmp_path,
             dc_identifier=empty_mets_dc_identifier,
-            file_dir="file_dir",
+            output_directory=mets_dir,
         )
 
         with pytest.raises(METSFileEmptyError):
@@ -203,7 +197,7 @@ def test_failed_mets_request(
     """
 
     api = PMH_API(oai_pmh_api_url)
-    tmp_path = Path(sftp_server.root) / "tmp" / "sub" / "path"
+    mets_dir = Path(sftp_server.root) / "tmp" / "sub" / "path"
 
     with ssh_server.client("user") as ssh_client:
         sftp = ssh_client.open_sftp()
@@ -213,9 +207,8 @@ def test_failed_mets_request(
             api=api,
             sftp_client=sftp,
             ssh_client=ssh_client,
-            tmpdir_root=tmp_path,
             dc_identifier=failed_mets_dc_identifier,
-            file_dir="file_dir",
+            output_directory=mets_dir,
         )
 
         with pytest.raises(RequestException):
@@ -254,10 +247,9 @@ def test_save_altos_sftp_operator(
             task_id="test_save_altos_remote",
             sftp_client=sftp,
             ssh_client=ssh_client,
-            tmpdir_root=tmp_path,
-            file_dir=alto_dir,
-            mets_path=mets_dir,
+            mets_directory=mets_dir,
             dc_identifier=mets_dc_identifier,
+            output_directory=alto_dir,
         )
 
         operator.execute(context={})
@@ -285,7 +277,6 @@ def test_existing_altos_not_downloaded_again(
     mets_dir = output_path / "sub_dir" / "mets"
     alto_dir = output_path / "sub_dir" / "alto"
     mets_file = mets_dir / "379973_METS.xml"
-    tmp_path = Path(sftp_server.root) / "tmp"
 
     with ssh_server.client("user") as ssh_client:
         sftp = ssh_client.open_sftp()
@@ -317,10 +308,9 @@ def test_existing_altos_not_downloaded_again(
             task_id="test_save_altos_remote",
             sftp_client=sftp,
             ssh_client=ssh_client,
-            tmpdir_root=tmp_path,
-            file_dir=alto_dir,
-            mets_path=mets_dir,
+            mets_directory=mets_dir,
             dc_identifier=mets_dc_identifier,
+            output_directory=alto_dir,
         )
 
         operator.execute(context={})

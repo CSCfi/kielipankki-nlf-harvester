@@ -34,44 +34,17 @@ def test_binding_ids_from_two_page_response(oai_pmh_api_url, two_page_pmh_respon
     _check_result(ids, two_page_pmh_response)
 
 
-def test_fetch_mets_with_custom_path(
-    oai_pmh_api_url, mets_dc_identifier, expected_mets_response, tmp_path, mocker
+def test_fetch_mets(
+    oai_pmh_api_url, mets_dc_identifier, expected_mets_response, tmp_path
 ):
     """
-    Ensure that a valid METS file is fetched and written to disk without filename.
+    Ensure that a valid METS file is fetched and written to disk.
     """
     api = PMH_API(oai_pmh_api_url)
-    output_file = utils.mets_download_location(
-        dc_identifier=mets_dc_identifier,
-        base_path=tmp_path,
-        file_dir="mets",
-        filename="test.xml",
-    )
-    mocker.patch("builtins.open")
+    output_file = tmp_path / "test_mets.xml"
     with open(output_file, "wb") as mets_file:
         response = api.download_mets(mets_dc_identifier, mets_file)
 
-    builtins.open.assert_called_once_with(tmp_path / "mets" / "test.xml", "wb")
-    assert response.decode("utf-8") == expected_mets_response
-
-
-def test_fetch_mets_with_default_path(
-    oai_pmh_api_url, mets_dc_identifier, expected_mets_response, mocker, cwd_in_tmp
-):
-    """
-    Ensure that a valid METS file is fetched and written to disk with default path.
-    """
-    api = PMH_API(oai_pmh_api_url)
-    binding_id = utils.binding_id_from_dc(mets_dc_identifier)
-    output_file = utils.mets_download_location(dc_identifier=mets_dc_identifier)
-    mocker.patch("builtins.open")
-    with open(output_file, "wb") as mets_file:
-        response = api.download_mets(mets_dc_identifier, mets_file)
-
-    builtins.open.assert_called_once_with(
-        cwd_in_tmp / "downloads" / binding_id / "mets" / f"{binding_id}_METS.xml",
-        "wb",
-    )
     assert response.decode("utf-8") == expected_mets_response
 
 
