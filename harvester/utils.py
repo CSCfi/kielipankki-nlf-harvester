@@ -189,3 +189,23 @@ def save_image_split(image_split, image_split_dir, set_id):
     with open(image_split_dir / f"{set_id}_images.json", "w") as json_file:
         image_split = {k: [] for k in image_split}
         json.dump(image_split, json_file)
+
+
+def remote_file_exists(sftp_client, path):
+    """
+    Check if a non-empty file already exists in the given remote path.
+
+    :param sftp_client: Client for accessing the remote machine via SFTP
+    :type sftp_client: :class:`paramiko.sftp_client.SFTPClient`
+    :param path: Path whose existence is to be checked
+    :type path: :class:`pathlib.Path`
+    :return: True if a non-empty file exists, otherwise False
+    """
+    try:
+        file_size = sftp_client.stat(str(path)).st_size
+    except OSError:
+        return False
+    else:
+        if file_size > 0:
+            return True
+    return False
