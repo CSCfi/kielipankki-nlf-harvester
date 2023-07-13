@@ -11,22 +11,6 @@ from harvester.file import ALTOFile
 from harvester import utils
 
 
-def file_exists(sftp_client, path):
-    """
-    Check if a non-empty file already exists in the given path.
-
-    :return: True if a non-empty file exists, otherwise False
-    """
-    try:
-        file_size = sftp_client.stat(str(path)).st_size
-    except OSError:
-        return False
-    else:
-        if file_size > 0:
-            return True
-    return False
-
-
 class CreateConnectionOperator(BaseOperator):
     """
     Create any type of Airflow connection.
@@ -150,7 +134,7 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
 
     def execute(self, context):
 
-        if file_exists(self.sftp_client, self.output_file):
+        if utils.remote_file_exists(self.sftp_client, self.output_file):
             return
 
         tmp_output_file = self.tmp_path(self.output_file)
@@ -172,7 +156,7 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
                     f"number {e.errno}"
                 )
 
-        if not file_exists(self.sftp_client, tmp_output_file):
+        if not utils.remote_file_exists(self.sftp_client, tmp_output_file):
             raise METSFileEmptyError(f"METS file {self.dc_identifier} is empty.")
 
         exit_status = self.move_file_to_final_location(
@@ -205,7 +189,7 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
         for alto_file in alto_files:
             output_file = self.output_directory / alto_file.filename
 
-            if file_exists(self.sftp_client, output_file):
+            if utils.remote_file_exists(self.sftp_client, output_file):
                 continue
 
             tmp_output_file = self.tmp_path(output_file)
@@ -343,7 +327,7 @@ class PrepareDownloadLocationOperator(BaseOperator):
 
             self.create_image_folder(sftp_client, self.file_download_dir)
 
-            if file_exists(sftp_client, self.old_image_path):
+            if utils.remote_file_exists(sftp_client, self.old_image_path):
                 self.extract_image(
                     ssh_client,
                 )
