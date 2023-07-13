@@ -227,16 +227,15 @@ def test_save_altos_sftp_operator(
     to a remote server.
     """
     tmp_path = Path(sftp_server.root) / "tmp"
-    mets_dir = tmp_path / "sub_dir" / "mets"
     alto_dir = tmp_path / "sub_dir" / "alto"
-    mets_file = mets_dir / "379973_METS.xml"
+    mets_file = tmp_path / "mets_dir" / "379973_METS.xml"
 
     with ssh_server.client("user") as ssh_client:
         sftp = ssh_client.open_sftp()
 
         utils.make_intermediate_dirs(
             sftp_client=sftp,
-            remote_directory=mets_dir,
+            remote_directory=mets_file.parent,
         )
 
         with sftp.file(str(mets_file), "w") as sftp_file:
@@ -247,7 +246,7 @@ def test_save_altos_sftp_operator(
             task_id="test_save_altos_remote",
             sftp_client=sftp,
             ssh_client=ssh_client,
-            mets_directory=mets_dir,
+            mets_path=mets_file,
             dc_identifier=mets_dc_identifier,
             output_directory=alto_dir,
         )
@@ -274,16 +273,15 @@ def test_existing_altos_not_downloaded_again(
     Test that existing ALTO files are not redownloaded.
     """
     output_path = Path(sftp_server.root) / "dir"
-    mets_dir = output_path / "sub_dir" / "mets"
     alto_dir = output_path / "sub_dir" / "alto"
-    mets_file = mets_dir / "379973_METS.xml"
+    mets_file = output_path / "mets_dir" / "379973_METS.xml"
 
     with ssh_server.client("user") as ssh_client:
         sftp = ssh_client.open_sftp()
 
         utils.make_intermediate_dirs(
             sftp_client=sftp,
-            remote_directory=mets_dir,
+            remote_directory=mets_file.parent,
         )
 
         with sftp.file(str(mets_file), "w") as sftp_file:
@@ -308,7 +306,7 @@ def test_existing_altos_not_downloaded_again(
             task_id="test_save_altos_remote",
             sftp_client=sftp,
             ssh_client=ssh_client,
-            mets_directory=mets_dir,
+            mets_path=mets_file,
             dc_identifier=mets_dc_identifier,
             output_directory=alto_dir,
         )

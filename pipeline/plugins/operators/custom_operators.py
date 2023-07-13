@@ -137,9 +137,16 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
     def __init__(self, api, **kwargs):
         super().__init__(**kwargs)
         self.api = api
-        self.output_file = self.output_directory / utils.mets_file_name(
-            self.dc_identifier
-        )
+
+    @property
+    def output_file(self):
+        """
+        Absolute path of the downloaded METS file
+
+        :return: Absolute path of the downloaded METS
+        :rtype: :class:`pathlib.Path`
+        """
+        return self.output_directory / utils.mets_file_name(self.dc_identifier)
 
     def execute(self, context):
 
@@ -182,16 +189,15 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
     """
     Save ALTO files for one binding on remote filesystem using SSH connection.
 
-    :param mets_directory: Path to the directory containing METS file of the binding
+    :param mets_path: Path to the METS file of the binding
     """
 
-    def __init__(self, mets_directory, **kwargs):
+    def __init__(self, mets_path, **kwargs):
         super().__init__(**kwargs)
-        self.mets_directory = mets_directory
+        self.mets_path = mets_path
 
     def execute(self, context):
-        mets_file_path = self.mets_directory / utils.mets_file_name(self.dc_identifier)
-        mets = METS(self.dc_identifier, self.sftp_client.file(str(mets_file_path), "r"))
+        mets = METS(self.dc_identifier, self.sftp_client.file(str(self.mets_path), "r"))
         alto_files = mets.files_of_type(ALTOFile)
 
         self.ensure_output_location()
@@ -263,18 +269,20 @@ class DownloadBindingBatchOperator(BaseOperator):
                 )
                 mets_directory = tmp_binding_path / "mets"
 
-                SaveMetsSFTPOperator(
+                mets_operator = SaveMetsSFTPOperator(
                     task_id=f"save_mets_{binding_id}",
                     api=self.api,
                     sftp_client=sftp_client,
                     ssh_client=ssh_client,
                     dc_identifier=dc_identifier,
                     output_directory=mets_directory,
-                ).execute(context={})
+                )
+
+                mets_operator.execute(context={})
 
                 SaveAltosSFTPOperator(
                     task_id=f"save_altos_{binding_id}",
-                    mets_directory=mets_directory,
+                    mets_path=mets_operator.output_file,
                     sftp_client=sftp_client,
                     ssh_client=ssh_client,
                     dc_identifier=dc_identifier,
