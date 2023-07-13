@@ -4,7 +4,6 @@ General utility functions for working with the OAI-PMH API, metadata and files.
 
 import os
 import json
-import re
 from pathlib import Path
 from datetime import datetime
 
