@@ -376,9 +376,10 @@ class CreateImageOperator(BaseOperator):
 
         exit_code = stdout.channel.recv_exit_status()
         if exit_code != 0:
+            error_message = "\n".join(stderr.readlines())
             raise ImageCreationError(
                 f"Command {command} failed (exit code {exit_code}). Stderr output:\n"
-                f"{stderr}"
+                f"{error_message}"
             )
 
     def temporary_files_present(self, sftp_client, directory):
