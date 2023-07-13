@@ -67,26 +67,23 @@ class SaveFilesSFTPOperator(BaseOperator):
 
     :param sftp_client: SFTPClient
     :param ssh_client: SSHClient
-    :param tmpdir_root: Absolute path for a temporary directory on the remote server
     :param dc_identifier: DC identifier of binding
-    :param file_dir: Directory where file will be saved
+    :param output_directory: Directory in which the files are saved
     """
 
     def __init__(
         self,
         sftp_client,
         ssh_client,
-        tmpdir_root,
         dc_identifier,
-        file_dir,
+        output_directory,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.sftp_client = sftp_client
         self.ssh_client = ssh_client
         self.dc_identifier = dc_identifier
-        self.file_dir = file_dir
-        self.tmpdir_root = tmpdir_root
+        self.output_directory = output_directory
 
     def ensure_output_location(self):
         """
@@ -96,7 +93,7 @@ class SaveFilesSFTPOperator(BaseOperator):
         """
         utils.make_intermediate_dirs(
             sftp_client=self.sftp_client,
-            remote_directory=self.tmpdir_root / self.file_dir,
+            remote_directory=self.output_directory,
         )
 
     def tmp_path(self, output_file):
@@ -140,10 +137,8 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
     def __init__(self, api, **kwargs):
         super().__init__(**kwargs)
         self.api = api
-        self.output_file = utils.mets_download_location(
-            dc_identifier=self.dc_identifier,
-            base_path=self.tmpdir_root,
-            file_dir=self.file_dir,
+        self.output_file = self.output_directory / utils.mets_file_name(
+            self.dc_identifier
         )
 
     def execute(self, context):
@@ -187,29 +182,22 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
     """
     Save ALTO files for one binding on remote filesystem using SSH connection.
 
-    :param mets_path: Path to where the METS file of the binding is stored
+    :param mets_directory: Path to the directory containing METS file of the binding
     """
 
-    def __init__(self, mets_path, **kwargs):
+    def __init__(self, mets_directory, **kwargs):
         super().__init__(**kwargs)
-        self.mets_path = mets_path
+        self.mets_directory = mets_directory
 
     def execute(self, context):
-        path = os.path.join(
-            self.mets_path, f"{utils.binding_id_from_dc(self.dc_identifier)}_METS.xml"
-        )
-
-        mets = METS(self.dc_identifier, self.sftp_client.file(path, "r"))
+        mets_file_path = self.mets_directory / utils.mets_file_name(self.dc_identifier)
+        mets = METS(self.dc_identifier, self.sftp_client.file(str(mets_file_path), "r"))
         alto_files = mets.files_of_type(ALTOFile)
 
         self.ensure_output_location()
 
         for alto_file in alto_files:
-            output_file = utils.file_download_location(
-                file=alto_file,
-                base_path=self.tmpdir_root,
-                file_dir=self.file_dir,
-            )
+            output_file = self.output_directory / alto_file.filename
 
             if file_exists(self.sftp_client, output_file):
                 continue
@@ -245,8 +233,7 @@ class DownloadBindingBatchOperator(BaseOperator):
 
     :param batch: a list of DC identifiers
     :param ssh_conn_id: SSH connection id
-    :param image_base_name: Name for disk image
-    :param tmpdir_root: Absolute path for a temporary directory on the remote server
+    :param image_directory: Directory to which the images will be created
     :param api: OAI-PMH api
     """
 
@@ -254,16 +241,14 @@ class DownloadBindingBatchOperator(BaseOperator):
         self,
         batch,
         ssh_conn_id,
-        image_base_name,
-        tmpdir_root,
+        image_directory,
         api,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.batch = batch
         self.ssh_conn_id = ssh_conn_id
-        self.image_base_name = image_base_name
-        self.tmpdir_root = tmpdir_root
+        self.image_directory = image_directory
         self.api = api
 
     def execute(self, context):
@@ -274,29 +259,26 @@ class DownloadBindingBatchOperator(BaseOperator):
             for dc_identifier in self.batch:
                 binding_id = utils.binding_id_from_dc(dc_identifier)
                 tmp_binding_path = (
-                    self.tmpdir_root
-                    / self.image_base_name
-                    / utils.binding_download_location(binding_id)
+                    self.image_directory / utils.binding_download_location(binding_id)
                 )
+                mets_directory = tmp_binding_path / "mets"
 
                 SaveMetsSFTPOperator(
                     task_id=f"save_mets_{binding_id}",
                     api=self.api,
                     sftp_client=sftp_client,
                     ssh_client=ssh_client,
-                    tmpdir_root=tmp_binding_path,
                     dc_identifier=dc_identifier,
-                    file_dir="mets",
+                    output_directory=mets_directory,
                 ).execute(context={})
 
                 SaveAltosSFTPOperator(
                     task_id=f"save_altos_{binding_id}",
-                    mets_path=tmp_binding_path / "mets",
+                    mets_directory=mets_directory,
                     sftp_client=sftp_client,
                     ssh_client=ssh_client,
-                    tmpdir_root=tmp_binding_path,
                     dc_identifier=dc_identifier,
-                    file_dir="alto",
+                    output_directory=tmp_binding_path / "alto",
                 ).execute(context={})
 
 
