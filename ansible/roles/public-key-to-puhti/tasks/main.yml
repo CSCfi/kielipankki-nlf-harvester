@@ -1,0 +1,6 @@
+---
+
+- name: Add public SSH key to puhti for the robot account
+  ansible.posix.authorized_key:
+    user: "{{ puhti_robot_user }}"
+    key: "{{ lookup('passwordstore', 'lb_passwords/airflow/public-key-robot_2006633_puhti') }}"

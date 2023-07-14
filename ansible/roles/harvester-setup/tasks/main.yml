@@ -60,6 +60,12 @@
     - never
     - dag-update
 
+- name: Add private key for connecting to Puhti
+  ansible.builtin.copy:
+    dest: "{{ puhti_robot_ssh_key_path }}"
+    mode: "0600"
+    content: "{{ lookup('passwordstore', 'lb_passwords/airflow/private-key-robot_2006633_puhti') | replace('\\n', '\n') }}"
+
 # The or-operator ("||") means that the latter part of the command (new
 # connection creation) is only executed if the former (grepping for puhti_conn
 # in pre-existing connections) fails (i.e. puhti_conn not found).
@@ -68,10 +74,7 @@
     airflow connections list | grep 'puhti_conn'
     ||
     airflow connections add 'puhti_conn'
-    --conn-type 'ssh'
-    --conn-host 'puhti-login12.csc.fi'
-    --conn-login 'robot_2006633_puhti'
-    --conn-password {{ puhti_robot_password }}
+    --conn-json '{{ puhti_conn_conf | to_json }}'
 
 - name: Create HTTP connection to NLF if not already present
   ansible.builtin.shell: >

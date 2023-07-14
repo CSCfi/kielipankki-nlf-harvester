@@ -10,3 +10,7 @@ all:
         86.50.229.214:
           ansible_user: ubuntu
           navbar_color: "#ff5800"
+    puhti:
+      hosts:
+        puhti.csc.fi:
+          ansible_user: "{{ puhti_robot_user }}"
