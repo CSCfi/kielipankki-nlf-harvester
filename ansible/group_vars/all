@@ -20,7 +20,17 @@ airflow_firstname: "Kielipankki"
 airflow_lastname: "User"
 airflow_email: "ling-admin@listat.csc.fi"
 
+puhti_robot_user: "robot_2006633_puhti"
 puhti_robot_password: "{{ lookup('passwordstore', 'lb_passwords/airflow/robot_2006633_puhti') }}"
+puhti_robot_ssh_key_path: "/home/{{ ansible_user }}/.ssh/id_ed25519_robot_2006633_puhti"
+
+puhti_conn_conf:
+  conn_type: "ssh"
+  host: "puhti-login12.csc.fi"
+  login: "{{ puhti_robot_user }}"
+  password: "{{ lookup('passwordstore', 'lb_passwords/airflow/private-key-password-robot_2006633_puhti') }}"
+  extra:
+    key_file: "{{ puhti_robot_ssh_key_path }}"
 
 authorized_users:
   - ktegel

@@ -25,6 +25,11 @@
           - "193.166.84.0/24" #CSC VPN
           - "193.166.85.0/24" #CSC VPN
 
+- name: Setup Puhti access for Airflow
+  hosts: puhti
+  roles:
+    - public-key-to-puhti
+
 - name: Install requirements for Airflow
   hosts: airflow
   roles:
