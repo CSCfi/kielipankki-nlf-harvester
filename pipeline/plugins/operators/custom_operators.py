@@ -305,7 +305,7 @@ class PrepareDownloadLocationOperator(BaseOperator):
 
     def extract_image(self, ssh_client):
         """
-        Extract contents of a disk image in given path.
+        Extract contents of a disk image to the download directory.
 
         Potentially pre-existing content is overwritten, but there
         should be none as the directory should have been just created
