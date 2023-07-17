@@ -28,8 +28,8 @@ HTTP_CONN_ID = "nlf_http_conn"
 COLLECTIONS = [
     {"id": "col-361", "image_size": 150},
     {"id": "col-501", "image_size": 5000},
-    {"id": "col-82", "image_size": 150000},
-    {"id": "col-24", "image_size": 100000},
+    {"id": "col-82", "image_size": 70000},
+    {"id": "col-24", "image_size": 70000},
 ]
 
 default_args = {
