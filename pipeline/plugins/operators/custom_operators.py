@@ -306,9 +306,13 @@ class PrepareDownloadLocationOperator(BaseOperator):
     def extract_image(self, ssh_client):
         """
         Extract contents of a disk image in given path.
+
+        Potentially pre-existing content is overwritten, but there
+        should be none as the directory should have been just created
+        for the new image.
         """
         ssh_client.exec_command(
-            f"unsquashfs -d {self.file_download_dir} {self.old_image_path}"
+            f"unsquashfs -f -d {self.file_download_dir} {self.old_image_path}"
         )
 
     def create_image_folder(self, sftp_client, image_dir_path):
