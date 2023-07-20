@@ -187,7 +187,7 @@ def save_image_split(image_split, image_split_dir, set_id):
     if not os.path.exists(image_split_dir):
         os.makedirs(image_split_dir)
     with open(image_split_dir / f"{set_id}_images.json", "w") as json_file:
-        image_split = {k: [] for k in image_split}
+        # image_split = {k: [] for k in image_split}
         json.dump(image_split, json_file)
 
 
