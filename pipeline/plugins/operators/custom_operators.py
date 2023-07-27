@@ -239,7 +239,7 @@ class DownloadBindingBatchOperator(BaseOperator):
 
     :param batch: a list of DC identifiers
     :param ssh_conn_id: SSH connection id
-    :param image_directory: Directory to which the images will be created
+    :param target_directory: Root for the image directory hierarchy
     :param api: OAI-PMH api
     """
 
@@ -247,14 +247,14 @@ class DownloadBindingBatchOperator(BaseOperator):
         self,
         batch,
         ssh_conn_id,
-        image_directory,
+        target_directory,
         api,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.batch = batch
         self.ssh_conn_id = ssh_conn_id
-        self.image_directory = image_directory
+        self.target_directory = target_directory
         self.api = api
 
     def execute(self, context):
@@ -265,7 +265,7 @@ class DownloadBindingBatchOperator(BaseOperator):
             for dc_identifier in self.batch:
                 binding_id = utils.binding_id_from_dc(dc_identifier)
                 tmp_binding_path = (
-                    self.image_directory / utils.binding_download_location(binding_id)
+                    self.target_directory / utils.binding_download_location(binding_id)
                 )
                 mets_directory = tmp_binding_path / "mets"
 
