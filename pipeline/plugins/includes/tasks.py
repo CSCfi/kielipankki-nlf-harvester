@@ -115,7 +115,7 @@ def download_set(
                         task_id="download_binding_batch",
                         trigger_rule="none_skipped",
                         ssh_conn_id=ssh_conn_id,
-                        image_directory=tmpdir_root / image_base_name,
+                        target_directory=tmpdir_root / image_base_name,
                         api=api,
                     ).expand(
                         batch=utils.split_into_download_batches(image_split[image])
