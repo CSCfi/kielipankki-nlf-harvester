@@ -289,6 +289,113 @@ class DownloadBindingBatchOperator(BaseOperator):
                     output_directory=tmp_binding_path / "alto",
                 ).execute(context={})
 
+class StowBindingBatchOperator(BaseOperator):
+    """
+    Download a batch of bindings, typically to a faster smaller drive, make a
+    .tar file typically in a slower bigger drive, and delete the downloaded
+    files.
+
+    :param batch_with_index: tuple of (list of DC identifiers, batch index)
+    :param ssh_conn_id: SSH connection id
+    :param tmp_download_directory: Root of the fast temporary directory (containing batch directories)
+    :param tar_directory: Root of the directory for tar files
+    :param api: OAI-PMH api
+    """
+
+    def __init__(
+        self,
+        batch_with_index,
+        ssh_conn_id,
+        tmp_download_directory,
+        tar_directory,
+        api,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.batch_with_index = batch_with_index
+        self.ssh_conn_id = ssh_conn_id
+        self.tmp_download_directory = tmp_download_directory
+        self.tar_directory = tar_directory
+        self.api = api
+
+    def create_tar_archive(self, target_file, source_dir):
+        """
+        Create tar file target_file out of contents of source_dir.
+
+        :return: Exit status from tar
+        """
+        _, stdout, _ = self.ssh_client.exec_command(
+            f"tar --create --file {target_file} --directory={source_dir} ."
+        )
+
+        return stdout.channel.recv_exit_status()
+
+    def rmtree(self, dir_path):
+        """
+        Recursively delete directory.
+
+        :return: Exit status from tar
+        """
+        _, stdout, _ = self.ssh_client.exec_command(
+            f"rm -rf {dir_path}"
+        )
+
+        return stdout.channel.recv_exit_status()
+
+    def get_ignore_files_set(self, sftp_client):
+        """
+        Return a set of paths that we don't need to download.
+        """
+        retval = set()
+        ignore_files_filename = self.tmp_download_dir/"existing_files.txt"
+        if utils.remote_file_exists(sftp_client,
+                                    ignore_files_filename):
+            with sftp_client.open(ignore_files_filename) as ignore_files_fobj:
+                ignore_files_contents = str(ignore_files_fobj.read(), encoding='utf-8')
+                retval = set(ignore_files_contents.split('\n'))
+        return retval
+
+    def execute(self, context):
+        ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
+        with ssh_hook.get_conn() as ssh_client:
+            sftp_client = ssh_client.open_sftp()
+            ignore_files_set = self.get_ignore_files_set(sftp_client)
+            batch, batch_num = batch_with_index
+            for dc_identifier in batch:
+                binding_id = utils.binding_id_from_dc(dc_identifier)
+                tmp_binding_path = (
+                    self.tmp_download_directory / f"batch_{batch_num}" / utils.binding_download_location(binding_id)
+                )
+
+                SaveMetsSFTPOperator(
+                    task_id=f"save_mets_{binding_id}",
+                    api=self.api,
+                    sftp_client=sftp_client,
+                    ssh_client=ssh_client,
+                    dc_identifier=dc_identifier,
+                    output_directory=tmp_binding_path / "mets",
+                    ignore_files_set=ignore_files_set,
+                ).execute(context={})
+
+                SaveAltosSFTPOperator(
+                    task_id=f"save_altos_{binding_id}",
+                    mets_path=mets_operator.output_file,
+                    sftp_client=sftp_client,
+                    ssh_client=ssh_client,
+                    dc_identifier=dc_identifier,
+                    output_directory=tmp_binding_path / "alto",
+                    ignore_files_set=ignore_files_set,
+                ).execute(context={})
+
+                if create_tar_archive(
+                        f"{tar_directory}/{batch_num}.tar",
+                        f"{tmp_binding_path}") != 0:
+                    self.log.error(
+                        f"Failed to create tar file for batch {batch_num} from tmp to destination failed")
+
+                if rmtree(f"{tmp_binding_path}") != 0:
+                    self.log.error(
+                        f"Failed to clean up downloads for {batch_num}")
 
 class PrepareDownloadLocationOperator(BaseOperator):
     """
