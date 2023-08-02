@@ -243,7 +243,7 @@ class DownloadBindingBatchOperator(BaseOperator):
     """
     Download a batch of bindings.
 
-    :param batch: a list of DC identifiers
+    :param batch_with_index: tuple of (list of DC identifiers, batch index)
     :param ssh_conn_id: SSH connection id
     :param target_directory: Root of the image directory hierarchy (containing batches)
     :param api: OAI-PMH api
@@ -251,14 +251,14 @@ class DownloadBindingBatchOperator(BaseOperator):
 
     def __init__(
         self,
-        batch,
+        batch_with_index,
         ssh_conn_id,
         target_directory,
         api,
         **kwargs,
     ):
         super().__init__(**kwargs)
-        self.batch = batch
+        self.batch_with_index = batch_with_index
         self.ssh_conn_id = ssh_conn_id
         self.target_directory = target_directory
         self.api = api
@@ -267,11 +267,11 @@ class DownloadBindingBatchOperator(BaseOperator):
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
             sftp_client = ssh_client.open_sftp()
-
-            for dc_identifier in self.batch:
+            batch, batch_num = batch_with_index
+            for dc_identifier in batch:
                 binding_id = utils.binding_id_from_dc(dc_identifier)
                 tmp_binding_path = (
-                    self.target_directory / utils.binding_download_location(binding_id)
+                    self.target_directory / f"batch_{batch_num}" / utils.binding_download_location(binding_id)
                 )
                 mets_directory = tmp_binding_path / "mets"
 
