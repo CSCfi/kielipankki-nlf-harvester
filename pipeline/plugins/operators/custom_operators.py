@@ -442,7 +442,9 @@ class PrepareDownloadLocationOperator(BaseOperator):
         Extract contents of a disk image in given path.
         """
         ssh_client.exec_command(
-            f"unsquashfs -d {self.file_download_dir} {self.old_image_path}"
+            f"unsquashfs -d {self.file_download_dir} {self.old_image_path}",
+            environment = self.env_dict,
+        )
 
     def create_file_listing_from_image(self, ssh_client):
         """
@@ -450,7 +452,7 @@ class PrepareDownloadLocationOperator(BaseOperator):
         """
         ssh_client.exec_command(
             f'unsquashfs -d "" -lc {self.old_image_path} > {self.file_download_dir}/existing_files.txt',
-            environment = self.env_dict
+            environment = self.env_dict,
         )
 
     def create_image_folder(self, sftp_client, image_dir_path):
@@ -494,6 +496,8 @@ class CreateImageOperator(BaseOperator):
     :type data_source: :class:`pathlib.Path`
     :param image_path: Path to which the newly-created image is written.
     :type image_path: :class:`pathlib.Path`
+    :param env_dict: Environment variable dictionary, in particular
+                     for $PATH, to pass to exec_command().
     """
 
     def __init__(
@@ -501,18 +505,20 @@ class CreateImageOperator(BaseOperator):
         ssh_conn_id,
         data_source,
         image_path,
+        env_dict = {},
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.ssh_conn_id = ssh_conn_id
         self.data_source = data_source
         self.image_path = image_path
+        self.env_dict = env_dict
 
     def ssh_execute_and_raise(self, ssh_client, command):
         """
         Run the given command and raisie ImageCreationError on non-zero return value.
         """
-        _, stdout, stderr = ssh_client.exec_command(command)
+        _, stdout, stderr = ssh_client.exec_command(command, environment = env_dict)
 
         self.log.debug(stdout)
 
