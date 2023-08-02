@@ -1,4 +1,5 @@
 import os
+import re
 from requests.exceptions import RequestException
 
 from airflow.models import BaseOperator
@@ -53,6 +54,7 @@ class SaveFilesSFTPOperator(BaseOperator):
     :param ssh_client: SSHClient
     :param dc_identifier: DC identifier of binding
     :param output_directory: Directory in which the files are saved
+    :param ignore_files_set: Set of paths not to download
     """
 
     def __init__(
@@ -61,6 +63,7 @@ class SaveFilesSFTPOperator(BaseOperator):
         ssh_client,
         dc_identifier,
         output_directory,
+        ignore_files_set = set(),
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -68,6 +71,7 @@ class SaveFilesSFTPOperator(BaseOperator):
         self.ssh_client = ssh_client
         self.dc_identifier = dc_identifier
         self.output_directory = output_directory
+        self.ignore_files_set = ignore_files_set,
 
     def ensure_output_location(self):
         """
@@ -148,7 +152,8 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
 
     def execute(self, context):
 
-        if utils.remote_file_exists(self.sftp_client, self.output_file):
+        file_name_in_image = re.sub('^.+batch_[^/]', '/', str(self.output_file))
+        if file_name_in_image in self.ignore_files:
             return
 
         tmp_output_file = self.tmp_path(self.output_file)
@@ -204,7 +209,8 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
         for alto_file in alto_files:
             output_file = self.output_directory / alto_file.filename
 
-            if utils.remote_file_exists(self.sftp_client, output_file):
+            file_name_in_image = re.sub('^.+batch_[^/]', '/', str(self.output_file))
+            if file_name_in_image in self.ignore_files:
                 continue
 
             tmp_output_file = self.tmp_path(output_file)
