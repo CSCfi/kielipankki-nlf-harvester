@@ -412,6 +412,9 @@ class PrepareDownloadLocationOperator(BaseOperator):
     :param old_image_path: Path of the corresponding image created
                            during the previous download.
     :type old_image_path: :class:`pathlib.Path`
+    :param env_dict: Environment variable dictionary, in particular
+                     for $PATH, to pass to exec_command().
+
     """
 
     def __init__(
@@ -419,12 +422,14 @@ class PrepareDownloadLocationOperator(BaseOperator):
         ssh_conn_id,
         file_download_dir,
         old_image_path,
+        env_dict = {}
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.ssh_conn_id = ssh_conn_id
         self.old_image_path = old_image_path
         self.file_download_dir = file_download_dir
+        self.env_dict = {}
 
     def extract_image(self, ssh_client):
         """
@@ -432,6 +437,14 @@ class PrepareDownloadLocationOperator(BaseOperator):
         """
         ssh_client.exec_command(
             f"unsquashfs -d {self.file_download_dir} {self.old_image_path}"
+
+    def create_file_listing_from_image(self, ssh_client):
+        """
+        Extract file listing of a disk image in given path to file_download_dir.
+        """
+        ssh_client.exec_command(
+            f'unsquashfs -d "" -lc {self.old_image_path} > {self.file_download_dir}/existing_files.txt',
+            environment = self.env_dict
         )
 
     def create_image_folder(self, sftp_client, image_dir_path):
