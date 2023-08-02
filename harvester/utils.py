@@ -105,11 +105,12 @@ def calculate_batch_size(col_size):
 def split_into_download_batches(bindings):
     """
     Split a collection into download batches.
+    Return a list of tuples, containing the batch itself and the batch index.
     """
     col_size = len(bindings)
     batch_size = calculate_batch_size(col_size)
     batches = [bindings[i : i + batch_size] for i in range(0, col_size, batch_size)]
-    return batches
+    return list(zip(batches, range(len(batches))))
 
 
 def bindings_with_prefix(bindings, prefix):
