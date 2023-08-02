@@ -271,7 +271,7 @@ class DownloadBindingBatchOperator(BaseOperator):
             for dc_identifier in batch:
                 binding_id = utils.binding_id_from_dc(dc_identifier)
                 tmp_binding_path = (
-                    self.target_directory / f"batch_{batch_num}" / utils.binding_download_location(binding_id)
+                    self.target_directory / utils.binding_download_location(binding_id)
                 )
                 mets_directory = tmp_binding_path / "mets"
 
