@@ -245,7 +245,7 @@ class DownloadBindingBatchOperator(BaseOperator):
 
     :param batch: a list of DC identifiers
     :param ssh_conn_id: SSH connection id
-    :param target_directory: Root for the image directory hierarchy
+    :param target_directory: Root of the image directory hierarchy (containing batches)
     :param api: OAI-PMH api
     """
 
