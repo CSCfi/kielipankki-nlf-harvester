@@ -409,8 +409,8 @@ class PrepareDownloadLocationOperator(BaseOperator):
 
     This consists of:
     - creating the destination directory if it does not exist
-    - extracting the contents of the previous corresponding image if one
-      is found in the given ``image_output_dir``
+    - listing the contents of the previous corresponding image into a text
+      file if one is found in the given ``image_output_dir``
 
     :param ssh_conn_id: SSH connection id
     :param file_download_dir: Path of the output directory
@@ -470,7 +470,7 @@ class PrepareDownloadLocationOperator(BaseOperator):
             self.create_image_folder(sftp_client, self.file_download_dir)
 
             if utils.remote_file_exists(sftp_client, self.old_image_path):
-                self.extract_image(
+                self.create_file_listing_from_image(
                     ssh_client,
                 )
 
