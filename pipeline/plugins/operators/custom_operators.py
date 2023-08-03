@@ -450,7 +450,7 @@ class PrepareDownloadLocationOperator(BaseOperator):
         ssh_conn_id,
         file_download_dir,
         old_image_path,
-        env_dict = {}
+        env_dict = {},
         **kwargs,
     ):
         super().__init__(**kwargs)
