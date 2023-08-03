@@ -503,18 +503,12 @@ class CreateImageOperator(BaseOperator):
     """
     Create a disk image of the given source data.
 
-    Before a new image is created, the source data is checked for temporary files (i.e.
-    ones with extension ".tmp"). If temporary files are found, the source data is deemed
-    erroneous and an exception is raised.
-
-    The image creation is a three-step process:
-    1. Create a temporary image
-    2. Remove the old image from the intended final location (if present)
-    3. Move the newly-created image to the final location
+    The image is first created as a temporary file with the suffix .tmp, and
+    if the creation is successful, it is moved into the final location,
+    overwriting what was possibly already there.
 
     :param ssh_conn_id: SSH connection id
-    :param data_source: Path to the directory that contains the data that is to be
-                        stored in the newly-created image.
+    :param data_source: Path to the directory that contains the .tar files
     :type data_source: :class:`pathlib.Path`
     :param image_path: Path to which the newly-created image is written.
     :type image_path: :class:`pathlib.Path`
@@ -558,22 +552,15 @@ class CreateImageOperator(BaseOperator):
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
             with ssh_client.open_sftp() as sftp_client:
-
+                old_image_to_tar_cmd = ":" # no-op
+                if utils.remote_file_exists(self.sftp_client, self.image_path):
+                    old_image_to_tar = f"sqfs2tar {self.image_path}"
+                    self.log.info("Will use old image %s as a tar source for new image on Puhti", self.image_path)
                 self.log.info("Creating temporary image in %s on Puhti", tmp_image_path)
                 self.ssh_execute_and_raise(
                     ssh_client,
-                    f"mksquashfs {self.data_source} {tmp_image_path} -mem 2G",
+                    f"{old_image_to_tar_cmd} | cat - {data_source}/*.tar | mksquashfs -tar -ignore-zeros {tmp_image_path} -mem 2G",
                 )
-
-                self.log.info(
-                    "Attempting deletion of old image %s on Puhti", self.image_path
-                )
-                try:
-                    sftp_client.remove(str(self.image_path))
-                except FileNotFoundError:
-                    self.log.info("Old image not present, no removal needed")
-                else:
-                    self.log.info("Old image removed")
 
                 self.log.info(
                     "Moving temporary image %s to final location %s on Puhti",
@@ -583,7 +570,7 @@ class CreateImageOperator(BaseOperator):
                 sftp_client.posix_rename(str(tmp_image_path), str(self.image_path))
 
                 self.log.info(
-                    "Removing the temporary source directory tree %s",
+                    "Removing the source .tar tree %s",
                     self.data_source,
                 )
                 self.ssh_execute_and_raise(ssh_client, f"rm -r {self.data_source}")
