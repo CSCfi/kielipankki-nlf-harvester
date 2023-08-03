@@ -361,6 +361,22 @@ class StowBindingBatchOperator(BaseOperator):
                 retval = set(ignore_files_contents.split('\n'))
         return retval
 
+    def temporary_files_present(self, sftp_client, directory):
+        """
+        Report whether temporary files are present in the given directory.
+
+        Files with suffix ".tmp" are considered to be temporary. Files in subdirectories
+        of arbitrary depth are also inspected.
+
+        NB: this operation requires listing all files within the directory, so it is not
+        suitable for use on Lustre with large directories or directory trees.
+
+        :returns: True if temporary file(s) were found, otherwise False
+        """
+        for item in sftp_client.listdir(str(directory)):
+            if item.endswith(".tmp"):
+                return True
+
     def execute(self, context):
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
@@ -392,6 +408,12 @@ class StowBindingBatchOperator(BaseOperator):
                     output_directory=tmp_binding_path / "alto",
                     ignore_files_set=ignore_files_set,
                 ).execute(context={})
+
+                if self.temporary_files_present(sftp_client, tmp_binding_path):
+                    raise DownloadBatchError(
+                        "Temporary files found in download batch, "
+                        "halting archive creation"
+                    )
 
                 if create_tar_archive(
                         f"{tar_directory}/{batch_num}.tar",
@@ -530,34 +552,12 @@ class CreateImageOperator(BaseOperator):
                 f"{error_message}"
             )
 
-    def temporary_files_present(self, ssh_client, directory):
-        """
-        Report whether temporary files are present in the given directory.
-
-        Files with suffix ".tmp" are considered to be temporary. Files in subdirectories
-        of arbitrary depth are also inspected.
-
-        NB: this operation requires listing all files within the directory, so it is not
-        suitable for use on Lustre with large directories or directory trees.
-
-        :returns: True if temporary file(s) were found, otherwise False
-        """
-        _, stdout, _ = ssh_client.exec_command(f'find {directory} -name "*.tmp" | grep .')
-        # grep will have exit code 0 only if it found some matches
-        return stdout.channel.recv_exit_status() == 0
-
     def execute(self, context):
         tmp_image_path = self.image_path.with_suffix(".sqfs.tmp")
 
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
             with ssh_client.open_sftp() as sftp_client:
-
-                if self.temporary_files_present(ssh_client, self.data_source):
-                    raise ImageCreationError(
-                        "Temporary files found in image data source directory, "
-                        "halting image creation"
-                    )
 
                 self.log.info("Creating temporary image in %s on Puhti", tmp_image_path)
                 self.ssh_execute_and_raise(
