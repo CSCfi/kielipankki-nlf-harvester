@@ -153,7 +153,7 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
     def execute(self, context):
 
         file_name_in_image = re.sub('^.+batch_[^/]', '/', str(self.output_file))
-        if file_name_in_image in self.ignore_files:
+        if file_name_in_image in self.ignore_files_set:
             return
 
         tmp_output_file = self.tmp_path(self.output_file)
@@ -209,8 +209,8 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
         for alto_file in alto_files:
             output_file = self.output_directory / alto_file.filename
 
-            file_name_in_image = re.sub('^.+batch_[^/]', '/', str(self.output_file))
-            if file_name_in_image in self.ignore_files:
+            file_name_in_image = re.sub('^.+batch_[^/]', '/', str(output_file))
+            if file_name_in_image in self.ignore_files_set:
                 continue
 
             tmp_output_file = self.tmp_path(output_file)
