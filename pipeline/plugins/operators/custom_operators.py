@@ -580,3 +580,8 @@ class ImageCreationError(Exception):
     """
     Error raised when an error occurs during the disk image creation/overwrite process
     """
+
+class DownloadBatchError(Exception):
+    """
+    Error raised when an error occurs during the downloading and storing of a download batch
+    """
