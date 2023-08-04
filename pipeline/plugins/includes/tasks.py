@@ -60,21 +60,18 @@ def download_set(
     api,
     ssh_conn_id,
     initial_download,
-    image_split_dir,
-    binding_list_dir,
-    output_dir,
-    tmpdir_root,
+    pathdict,
 ):
 
-    bindings = utils.read_bindings(binding_list_dir, set_id)
+    bindings = utils.read_bindings(pathdict["BINDING_LIST_DIR"], set_id)
 
     if initial_download:
         image_split = utils.assign_bindings_to_images(bindings, image_size)
-        utils.save_image_split(image_split, image_split_dir, set_id)
+        utils.save_image_split(image_split, pathdict["IMAGE_SPLIT_DIR"], set_id)
 
     else:
         image_split = utils.assign_update_bindings_to_images(
-            bindings, image_split_dir / f"{set_id}_images.json"
+            bindings, pathdict["IMAGE_SPLIT_DIR"] / f"{set_id}_images.json"
         )
 
     image_downloads = []
@@ -90,8 +87,8 @@ def download_set(
                 else:
                     image_base_name = set_id
 
-                file_download_dir = tmpdir_root / image_base_name
-                image_path = output_dir / (image_base_name + ".sqfs")
+                file_download_dir = pathdict["TMPDIR_ROOT"] / image_base_name
+                image_path = pathdict["OUTPUT_DIR"] / (image_base_name + ".sqfs")
 
                 prepare_download_location = PrepareDownloadLocationOperator(
                     task_id=f"prepare_download_location_{image_base_name}",
@@ -99,6 +96,7 @@ def download_set(
                     ssh_conn_id=ssh_conn_id,
                     file_download_dir=file_download_dir,
                     old_image_path=image_path,
+                    extra_bin_dir=pathdict["EXTRA_BIN_DIR"],
                 )
 
                 create_image = CreateImageOperator(
@@ -107,6 +105,7 @@ def download_set(
                     ssh_conn_id=ssh_conn_id,
                     data_source=file_download_dir,
                     image_path=image_path,
+                    extra_bin_dir=pathdict["EXTRA_BIN_DIR"],
                 )
 
                 (
@@ -115,8 +114,8 @@ def download_set(
                         task_id="download_binding_batch",
                         trigger_rule="none_skipped",
                         ssh_conn_id=ssh_conn_id,
-                        tmp_download_directory=tmpdir_root / image_base_name,
-                        tar_directory=output_dir/image_base_name,
+                        tmp_download_directory=pathdict["TMPDIR_ROOT"] / image_base_name,
+                        tar_directory=pathdict["OUTPUT_DIR"]/image_base_name,
                         api=api,
                     ).expand(
                         batch=utils.split_into_download_batches(image_split[image])
