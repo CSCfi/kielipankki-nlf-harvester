@@ -9,7 +9,7 @@ from harvester import utils
 from operators.custom_operators import (
     PrepareDownloadLocationOperator,
     CreateImageOperator,
-    DownloadBindingBatchOperator,
+    StowBindingBatchOperator,
 )
 
 
