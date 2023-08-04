@@ -440,8 +440,8 @@ class PrepareDownloadLocationOperator(BaseOperator):
     :param old_image_path: Path of the corresponding image created
                            during the previous download.
     :type old_image_path: :class:`pathlib.Path`
-    :param env_dict: Environment variable dictionary, in particular
-                     for $PATH, to pass to exec_command().
+    :param extra_bin_dir: Path for binaries on remote machine
+    :type extra_bin_dir: :class:`pathlib.Path`
 
     """
 
@@ -450,22 +450,21 @@ class PrepareDownloadLocationOperator(BaseOperator):
         ssh_conn_id,
         file_download_dir,
         old_image_path,
-        env_dict = {},
+        extra_bin_dir,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.ssh_conn_id = ssh_conn_id
         self.old_image_path = old_image_path
         self.file_download_dir = file_download_dir
-        self.env_dict = {}
+        self.extra_bin_dir = extra_bin_dir
 
     def extract_image(self, ssh_client):
         """
         Extract contents of a disk image in given path.
         """
         ssh_client.exec_command(
-            f"unsquashfs -d {self.file_download_dir} {self.old_image_path}",
-            environment = self.env_dict,
+            f"{self.extra_bin_dir}/unsquashfs -d {self.file_download_dir} {self.old_image_path}"
         )
 
     def create_file_listing_from_image(self, ssh_client):
@@ -473,8 +472,7 @@ class PrepareDownloadLocationOperator(BaseOperator):
         Extract file listing of a disk image in given path to file_download_dir.
         """
         ssh_client.exec_command(
-            f'unsquashfs -d "" -lc {self.old_image_path} > {self.file_download_dir}/existing_files.txt',
-            environment = self.env_dict,
+            f'{self.extra_bin_dir}/unsquashfs -d "" -lc {self.old_image_path} > {self.file_download_dir}/existing_files.txt'
         )
 
     def create_image_folder(self, sftp_client, image_dir_path):
@@ -512,8 +510,8 @@ class CreateImageOperator(BaseOperator):
     :type data_source: :class:`pathlib.Path`
     :param image_path: Path to which the newly-created image is written.
     :type image_path: :class:`pathlib.Path`
-    :param env_dict: Environment variable dictionary, in particular
-                     for $PATH, to pass to exec_command().
+    :param image_path: Path for binaries on remote machine
+    :type image_path: :class:`pathlib.Path`
     """
 
     def __init__(
@@ -521,7 +519,7 @@ class CreateImageOperator(BaseOperator):
         ssh_conn_id,
         data_source,
         image_path,
-        env_dict = {},
+        extra_bin_dir,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -529,6 +527,7 @@ class CreateImageOperator(BaseOperator):
         self.data_source = data_source
         self.image_path = image_path
         self.env_dict = env_dict
+        self.extra_bin_dir = extra_bin_dir
 
     def ssh_execute_and_raise(self, ssh_client, command):
         """
@@ -554,12 +553,13 @@ class CreateImageOperator(BaseOperator):
             with ssh_client.open_sftp() as sftp_client:
                 old_image_to_tar_cmd = ":" # no-op
                 if utils.remote_file_exists(self.sftp_client, self.image_path):
-                    old_image_to_tar = f"sqfs2tar {self.image_path}"
+                    old_image_to_tar = f"{self.extra_bin_dir}/sqfs2tar {self.image_path}"
                     self.log.info("Will use old image %s as a tar source for new image on Puhti", self.image_path)
+                mksquashfs_cmd = f"{self.extra_bin_dir}/mksquashfs -tar -ignore-zeros {tmp_image_path} -mem 2G"
                 self.log.info("Creating temporary image in %s on Puhti", tmp_image_path)
                 self.ssh_execute_and_raise(
                     ssh_client,
-                    f"{old_image_to_tar_cmd} | cat - {data_source}/*.tar | mksquashfs -tar -ignore-zeros {tmp_image_path} -mem 2G",
+                    f"{old_image_to_tar_cmd} | cat - {data_source}/*.tar | {mksquashfs_cmd}",
                 )
 
                 self.log.info(
