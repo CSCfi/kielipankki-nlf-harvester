@@ -19,11 +19,14 @@ from harvester.pmh_interface import PMH_API
 
 INITIAL_DOWNLOAD = True
 
-OUTPUT_DIR = Path("/scratch/project_2006633/nlf-harvester/images")
-TMPDIR_ROOT = Path("/local_scratch/robot_2006633_puhti/harvester")
-IMAGE_SPLIT_DIR = Path("/home/ubuntu/image_split/")
-BINDING_LIST_DIR = Path("/home/ubuntu/binding_ids_all")
-SSH_CONN_ID = "puhti_conn"
+pathdict = {
+    "OUTPUT_DIR": Path("/scratch/project_2006633/nlf-harvester/images"),
+    "TMPDIR_ROOT": Path("/local_scratch/robot_2006633_puhti/harvester"),
+    "EXTRA_BIN_DIR": Path("/projappl/project_2006633/local/bin"),
+    "IMAGE_SPLIT_DIR": Path("/home/ubuntu/image_split/"),
+    "BINDING_LIST_DIR": Path("/home/ubuntu/binding_ids_all"),
+}
+SSH_CONN_ID = puhti_conn
 HTTP_CONN_ID = "nlf_http_conn"
 COLLECTIONS = [
     {"id": "col-361", "image_size": 150},
@@ -61,7 +64,7 @@ for col in COLLECTIONS:
 
         check_if_download_should_begin(
             set_id=col["id"],
-            binding_list_dir=BINDING_LIST_DIR,
+            binding_list_dir=pathdict["BINDING_LIST_DIR"],
             http_conn_id=HTTP_CONN_ID,
         ) >> [
             begin_download,
@@ -76,12 +79,9 @@ for col in COLLECTIONS:
                 api=api,
                 ssh_conn_id=SSH_CONN_ID,
                 initial_download=INITIAL_DOWNLOAD,
-                image_split_dir=IMAGE_SPLIT_DIR,
-                binding_list_dir=BINDING_LIST_DIR,
-                output_dir=OUTPUT_DIR,
-                tmpdir_root=TMPDIR_ROOT,
+                pathdict=pathdict,
             )
-            >> clear_temporary_directory(SSH_CONN_ID, TMPDIR_ROOT)
+            >> clear_temporary_directory(SSH_CONN_ID, pathdict["TMPDIR_ROOT"])
         )
 
     download_dag()
