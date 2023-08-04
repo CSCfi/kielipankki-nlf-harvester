@@ -71,7 +71,7 @@ class SaveFilesSFTPOperator(BaseOperator):
         self.ssh_client = ssh_client
         self.dc_identifier = dc_identifier
         self.output_directory = output_directory
-        self.ignore_files_set = ignore_files_set,
+        self.ignore_files_set = ignore_files_set
 
     def ensure_output_location(self):
         """
