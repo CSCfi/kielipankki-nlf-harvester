@@ -26,7 +26,7 @@ pathdict = {
     "IMAGE_SPLIT_DIR": Path("/home/ubuntu/image_split/"),
     "BINDING_LIST_DIR": Path("/home/ubuntu/binding_ids_all"),
 }
-SSH_CONN_ID = puhti_conn
+SSH_CONN_ID = "puhti_conn"
 HTTP_CONN_ID = "nlf_http_conn"
 COLLECTIONS = [
     {"id": "col-361", "image_size": 150},
