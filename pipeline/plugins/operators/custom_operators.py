@@ -526,7 +526,6 @@ class CreateImageOperator(BaseOperator):
         self.ssh_conn_id = ssh_conn_id
         self.data_source = data_source
         self.image_path = image_path
-        self.env_dict = env_dict
         self.extra_bin_dir = extra_bin_dir
 
     def ssh_execute_and_raise(self, ssh_client, command):
