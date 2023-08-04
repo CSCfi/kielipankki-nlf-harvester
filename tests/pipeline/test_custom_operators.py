@@ -46,7 +46,7 @@ def test_existing_mets_not_downloaded_again(
     Test that existing METS files are not redownloaded.
     """
     api = PMH_API(oai_pmh_api_url)
-    mets_dir = Path(sftp_server.root) / "tmp" / "mets"
+    mets_dir = Path(sftp_server.root) / "tmp" / "batch_4" / "mets"
 
     with ssh_server.client("user") as ssh_client:
         sftp = ssh_client.open_sftp()
@@ -66,6 +66,7 @@ def test_existing_mets_not_downloaded_again(
             ssh_client=ssh_client,
             dc_identifier=mets_dc_identifier,
             output_directory=mets_dir,
+            ignore_files_set={"/mets/379973_METS.xml"},
         )
 
         sftp_mets_operator.execute(context={})
@@ -273,8 +274,9 @@ def test_existing_altos_not_downloaded_again(
     Test that existing ALTO files are not redownloaded.
     """
     output_path = Path(sftp_server.root) / "dir"
-    alto_dir = output_path / "sub_dir" / "alto"
-    mets_file = output_path / "mets_dir" / "379973_METS.xml"
+    alto_dir = output_path / "batch_4" / "alto"
+    alto_filenames = ["00001.xml", "00002.xml", "00003.xml", "00004.xml"]
+    mets_file = output_path / "batch_4" / "mets_dir" / "379973_METS.xml"
 
     with ssh_server.client("user") as ssh_client:
         sftp = ssh_client.open_sftp()
@@ -290,7 +292,7 @@ def test_existing_altos_not_downloaded_again(
 
         alto_locations = [
             alto_dir / filename
-            for filename in ["00001.xml", "00002.xml", "00003.xml", "00004.xml"]
+            for filename in alto_filenames
         ]
 
         utils.make_intermediate_dirs(
@@ -309,6 +311,8 @@ def test_existing_altos_not_downloaded_again(
             mets_path=mets_file,
             dc_identifier=mets_dc_identifier,
             output_directory=alto_dir,
+            ignore_files_set = set([f"/alto/{filename}"
+                                    for filename in alto_filenames])
         )
 
         operator.execute(context={})
