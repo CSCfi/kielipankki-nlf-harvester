@@ -416,7 +416,7 @@ class StowBindingBatchOperator(BaseOperator):
                     )
 
                 if create_tar_archive(
-                        f"{tar_directory}/{batch_num}.tar",
+                        f"{self.tar_directory}/{batch_num}.tar",
                         f"{tmp_binding_path}") != 0:
                     self.log.error(
                         f"Failed to create tar file for batch {batch_num} from tmp to destination failed")
@@ -450,13 +450,15 @@ class PrepareDownloadLocationOperator(BaseOperator):
         ssh_conn_id,
         file_download_dir,
         old_image_path,
+        tar_dir,
         extra_bin_dir,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.ssh_conn_id = ssh_conn_id
-        self.old_image_path = old_image_path
         self.file_download_dir = file_download_dir
+        self.old_image_path = old_image_path
+        self.tar_dir = tar_dir
         self.extra_bin_dir = extra_bin_dir
 
     def extract_image(self, ssh_client):
@@ -490,6 +492,7 @@ class PrepareDownloadLocationOperator(BaseOperator):
             sftp_client = ssh_client.open_sftp()
 
             self.create_image_folder(sftp_client, self.file_download_dir)
+            ssh_client.exec_command(f'mkdir -p {self.tar_dir}')
 
             if utils.remote_file_exists(sftp_client, self.old_image_path):
                 self.create_file_listing_from_image(

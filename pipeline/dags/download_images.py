@@ -20,7 +20,7 @@ from harvester.pmh_interface import PMH_API
 INITIAL_DOWNLOAD = True
 
 pathdict = {
-    "OUTPUT_DIR": Path("/scratch/project_2006633/nlf-harvester/images"),
+    "OUTPUT_DIR": Path("/scratch/project_2006633/nlf-harvester"),
     "TMPDIR_ROOT": Path("/local_scratch/robot_2006633_puhti/harvester"),
     "EXTRA_BIN_DIR": Path("/projappl/project_2006633/local/bin"),
     "IMAGE_SPLIT_DIR": Path("/home/ubuntu/image_split/"),
