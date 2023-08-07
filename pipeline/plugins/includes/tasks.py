@@ -118,7 +118,7 @@ def download_set(
                         tar_directory=pathdict["OUTPUT_DIR"]/image_base_name,
                         api=api,
                     ).expand(
-                        batch=utils.split_into_download_batches(image_split[image])
+                        batch_with_index=utils.split_into_download_batches(image_split[image])
                     )
                     >> create_image
                 )
