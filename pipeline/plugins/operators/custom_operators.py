@@ -361,7 +361,7 @@ class StowBindingBatchOperator(BaseOperator):
                 retval = set(ignore_files_contents.split('\n'))
         return retval
 
-    def temporary_files_present(self, sftp_client, directory):
+    def temporary_files_present(self, ssh_client, directory):
         """
         Report whether temporary files are present in the given directory.
 
@@ -373,9 +373,9 @@ class StowBindingBatchOperator(BaseOperator):
 
         :returns: True if temporary file(s) were found, otherwise False
         """
-        for item in sftp_client.listdir(str(directory)):
-            if item.endswith(".tmp"):
-                return True
+        _, stdout, _ = ssh_client.exec_command(f'find {directory} -name "*.tmp" | grep .')
+        # grep will have exit code 0 only if it found some matches
+        return stdout.channel.recv_exit_status() == 0
 
     def execute(self, context):
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
