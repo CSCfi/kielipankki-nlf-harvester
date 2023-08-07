@@ -398,7 +398,7 @@ class CreateImageOperator(BaseOperator):
                 f"{error_message}"
             )
 
-    def temporary_files_present(self, sftp_client, directory):
+    def temporary_files_present(self, ssh_client, directory):
         """
         Report whether temporary files are present in the given directory.
 
@@ -410,11 +410,9 @@ class CreateImageOperator(BaseOperator):
 
         :returns: True if temporary file(s) were found, otherwise False
         """
-        for item in sftp_client.listdir(str(directory)):
-            if item.endswith(".tmp"):
-                return True
-
-        return False
+        _, stdout, _ = ssh_client.exec_command(f'find {directory} -name "*.tmp" | grep .')
+        # grep will have exit code 0 only if it found some matches
+        return stdout.channel.recv_exit_status() == 0
 
     def execute(self, context):
         tmp_image_path = self.image_path.with_suffix(".sqfs.tmp")
@@ -423,7 +421,7 @@ class CreateImageOperator(BaseOperator):
         with ssh_hook.get_conn() as ssh_client:
             with ssh_client.open_sftp() as sftp_client:
 
-                if self.temporary_files_present(sftp_client, self.data_source):
+                if self.temporary_files_present(ssh_client, self.data_source):
                     raise ImageCreationError(
                         "Temporary files found in image data source directory, "
                         "halting image creation"
