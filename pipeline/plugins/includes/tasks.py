@@ -88,7 +88,7 @@ def download_set(
                     image_base_name = set_id
 
                 file_download_dir = pathdict["TMPDIR_ROOT"] / image_base_name
-                image_path = pathdict["OUTPUT_DIR"] / "images" / (image_base_name ".sqfs")
+                image_path = pathdict["OUTPUT_DIR"] / "images" / (image_base_name + ".sqfs")
                 tar_directory = pathdict["OUTPUT_DIR"] / "tar" / image_base_name
 
                 prepare_download_location = PrepareDownloadLocationOperator(
