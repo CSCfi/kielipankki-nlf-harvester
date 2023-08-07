@@ -105,6 +105,20 @@ class SaveFilesSFTPOperator(BaseOperator):
 
         return stdout.channel.recv_exit_status()
 
+    def delete_temporary_file(self, tmp_file):
+        """
+        Delete file if its name ends with ".tmp", else do nothing.
+
+        :return: Exit status from bash command, or 0 if did nothing
+        """
+        if not str(tmp_file).endswith(".tmp"):
+            return 0
+        _, stdout, _ = self.ssh_client.exec_command(
+            f"rm -f {tmp_file}"
+        )
+
+        return stdout.channel.recv_exit_status()
+
     def execute(self, context):
         raise NotImplementedError(
             "execute() must be defined separately for each file type."
@@ -147,6 +161,7 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
                     dc_identifier=self.dc_identifier, output_mets_file=file
                 )
             except RequestException as e:
+                self.delete_temporary_file(tmp_output_file)
                 raise RequestException(
                     f"METS download {self.dc_identifier} failed: {e.response}"
                 )
@@ -201,6 +216,7 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
                         chunk_size=10 * 1024 * 1024,
                     )
                 except RequestException as e:
+                    self.delete_temporary_file(tmp_output_file)
                     self.log.error(
                         "ALTO download with URL %s failed: %s",
                         alto_file.download_url,
