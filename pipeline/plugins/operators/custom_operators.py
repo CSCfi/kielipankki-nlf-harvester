@@ -324,25 +324,25 @@ class StowBindingBatchOperator(BaseOperator):
         self.tar_directory = tar_directory
         self.api = api
 
-    def create_tar_archive(self, target_file, source_dir):
+    def create_tar_archive(self, ssh_client, target_file, source_dir):
         """
         Create tar file target_file out of contents of source_dir.
 
         :return: Exit status from tar
         """
-        _, stdout, _ = self.ssh_client.exec_command(
+        _, stdout, _ = ssh_client.exec_command(
             f"tar --create --file {target_file} --directory={source_dir} ."
         )
 
         return stdout.channel.recv_exit_status()
 
-    def rmtree(self, dir_path):
+    def rmtree(self, ssh_client, dir_path):
         """
         Recursively delete directory.
 
         :return: Exit status from tar
         """
-        _, stdout, _ = self.ssh_client.exec_command(
+        _, stdout, _ = ssh_client.exec_command(
             f"rm -rf {dir_path}"
         )
 
@@ -416,12 +416,13 @@ class StowBindingBatchOperator(BaseOperator):
                     )
 
                 if create_tar_archive(
+                        ssh_client,
                         f"{self.tar_directory}/{batch_num}.tar",
                         f"{tmp_binding_path}") != 0:
                     self.log.error(
                         f"Failed to create tar file for batch {batch_num} from tmp to destination failed")
 
-                if rmtree(f"{tmp_binding_path}") != 0:
+                if rmtree(ssh_client, f"{tmp_binding_path}") != 0:
                     self.log.error(
                         f"Failed to clean up downloads for {batch_num}")
 
