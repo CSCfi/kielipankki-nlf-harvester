@@ -88,7 +88,8 @@ def download_set(
                     image_base_name = set_id
 
                 file_download_dir = pathdict["TMPDIR_ROOT"] / image_base_name
-                image_path = pathdict["OUTPUT_DIR"] / (image_base_name + ".sqfs")
+                image_path = pathdict["OUTPUT_DIR"] / "images" / (image_base_name ".sqfs")
+                tar_directory = pathdict["OUTPUT_DIR"] / "tar" / image_base_name
 
                 prepare_download_location = PrepareDownloadLocationOperator(
                     task_id=f"prepare_download_location_{image_base_name}",
@@ -96,6 +97,7 @@ def download_set(
                     ssh_conn_id=ssh_conn_id,
                     file_download_dir=file_download_dir,
                     old_image_path=image_path,
+                    tar_dir = tar_directory,
                     extra_bin_dir=pathdict["EXTRA_BIN_DIR"],
                 )
 
@@ -103,7 +105,7 @@ def download_set(
                     task_id=f"create_image_{image_base_name}",
                     trigger_rule="none_skipped",
                     ssh_conn_id=ssh_conn_id,
-                    data_source=file_download_dir,
+                    data_source=tar_directory,
                     image_path=image_path,
                     extra_bin_dir=pathdict["EXTRA_BIN_DIR"],
                 )
@@ -115,7 +117,7 @@ def download_set(
                         trigger_rule="none_skipped",
                         ssh_conn_id=ssh_conn_id,
                         tmp_download_directory=pathdict["TMPDIR_ROOT"] / image_base_name,
-                        tar_directory=pathdict["OUTPUT_DIR"]/image_base_name,
+                        tar_directory=tar_directory,
                         api=api,
                     ).expand(
                         batch_with_index=utils.split_into_download_batches(image_split[image])
