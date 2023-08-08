@@ -555,7 +555,7 @@ class CreateImageOperator(BaseOperator):
         with ssh_hook.get_conn() as ssh_client:
             with ssh_client.open_sftp() as sftp_client:
                 old_image_to_tar_cmd = ":" # no-op
-                if utils.remote_file_exists(self.sftp_client, self.image_path):
+                if utils.remote_file_exists(sftp_client, self.image_path):
                     old_image_to_tar = f"{self.extra_bin_dir}/sqfs2tar {self.image_path}"
                     self.log.info("Will use old image %s as a tar source for new image on Puhti", self.image_path)
                 mksquashfs_cmd = f"{self.extra_bin_dir}/mksquashfs -tar -ignore-zeros {tmp_image_path} -mem 2G"
