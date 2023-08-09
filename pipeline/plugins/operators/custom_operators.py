@@ -353,7 +353,7 @@ class StowBindingBatchOperator(BaseOperator):
         Return a set of paths that we don't need to download.
         """
         retval = set()
-        ignore_files_filename = self.tmp_download_dir/"existing_files.txt"
+        ignore_files_filename = self.tmp_download_directory/"existing_files.txt"
         if utils.remote_file_exists(sftp_client,
                                     ignore_files_filename):
             with sftp_client.open(ignore_files_filename) as ignore_files_fobj:
