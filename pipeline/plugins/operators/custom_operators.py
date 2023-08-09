@@ -267,7 +267,7 @@ class DownloadBindingBatchOperator(BaseOperator):
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
             sftp_client = ssh_client.open_sftp()
-            batch, batch_num = batch_with_index
+            batch, batch_num = self.batch_with_index
             for dc_identifier in batch:
                 binding_id = utils.binding_id_from_dc(dc_identifier)
                 tmp_binding_path = (
