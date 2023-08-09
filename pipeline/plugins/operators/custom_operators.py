@@ -389,7 +389,7 @@ class StowBindingBatchOperator(BaseOperator):
                     self.tmp_download_directory / f"batch_{batch_num}" / utils.binding_download_location(binding_id)
                 )
 
-                SaveMetsSFTPOperator(
+                mets_operator = SaveMetsSFTPOperator(
                     task_id=f"save_mets_{binding_id}",
                     api=self.api,
                     sftp_client=sftp_client,
@@ -397,7 +397,8 @@ class StowBindingBatchOperator(BaseOperator):
                     dc_identifier=dc_identifier,
                     output_directory=tmp_binding_path / "mets",
                     ignore_files_set=ignore_files_set,
-                ).execute(context={})
+                )
+                mets_operator.execute(context={})
 
                 SaveAltosSFTPOperator(
                     task_id=f"save_altos_{binding_id}",
