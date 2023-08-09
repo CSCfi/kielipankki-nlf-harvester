@@ -537,7 +537,7 @@ class CreateImageOperator(BaseOperator):
         """
         Run the given command and raisie ImageCreationError on non-zero return value.
         """
-        _, stdout, stderr = ssh_client.exec_command(command, environment = env_dict)
+        _, stdout, stderr = ssh_client.exec_command(command)
 
         self.log.debug(stdout)
 
