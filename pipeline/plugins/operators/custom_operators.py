@@ -563,7 +563,7 @@ class CreateImageOperator(BaseOperator):
                 self.log.info("Creating temporary image in %s on Puhti", tmp_image_path)
                 self.ssh_execute_and_raise(
                     ssh_client,
-                    f"{old_image_to_tar_cmd} | cat - {data_source}/*.tar | {mksquashfs_cmd}",
+                    f"{old_image_to_tar_cmd} | cat - {self.data_source}/*.tar | {mksquashfs_cmd}",
                 )
 
                 self.log.info(
