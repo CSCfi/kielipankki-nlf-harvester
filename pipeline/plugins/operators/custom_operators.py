@@ -356,7 +356,7 @@ class StowBindingBatchOperator(BaseOperator):
         ignore_files_filename = self.tmp_download_directory/"existing_files.txt"
         if utils.remote_file_exists(sftp_client,
                                     ignore_files_filename):
-            with sftp_client.open(ignore_files_filename) as ignore_files_fobj:
+            with sftp_client.open(str(ignore_files_filename)) as ignore_files_fobj:
                 ignore_files_contents = str(ignore_files_fobj.read(), encoding='utf-8')
                 retval = set(ignore_files_contents.split('\n'))
         return retval
