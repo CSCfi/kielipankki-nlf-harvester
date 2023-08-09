@@ -410,7 +410,7 @@ class StowBindingBatchOperator(BaseOperator):
                     ignore_files_set=ignore_files_set,
                 ).execute(context={})
 
-                if self.temporary_files_present(sftp_client, tmp_binding_path):
+                if self.temporary_files_present(ssh_client, tmp_binding_path):
                     raise DownloadBatchError(
                         "Temporary files found in download batch, "
                         "halting archive creation"
