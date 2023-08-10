@@ -438,16 +438,16 @@ class StowBindingBatchOperator(BaseOperator):
                         "halting archive creation"
                     )
 
-                if self.create_tar_archive(
-                        ssh_client,
-                        f"{self.tar_directory}/{batch_num}.tar",
-                        f"{tmp_binding_path}") != 0:
-                    self.log.error(
-                        f"Failed to create tar file for batch {batch_num} from tmp to destination failed")
+            if self.create_tar_archive(
+                    ssh_client,
+                    f"{self.tar_directory}/{batch_num}.tar",
+                    f"{tmp_binding_path}") != 0:
+                self.log.error(
+                    f"Failed to create tar file for batch {batch_num} from tmp to destination failed")
 
-                if self.rmtree(ssh_client, f"{tmp_binding_path}") != 0:
-                    self.log.error(
-                        f"Failed to clean up downloads for {batch_num}")
+            if self.rmtree(ssh_client, f"{tmp_binding_path}") != 0:
+                self.log.error(
+                    f"Failed to clean up downloads for {batch_num}")
 
 class PrepareDownloadLocationOperator(BaseOperator):
     """
