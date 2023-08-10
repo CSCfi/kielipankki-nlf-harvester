@@ -217,7 +217,7 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
                 self.log.info(f"Skipping {file_name_in_image} due to ignore list")
                 continue
 
-            if utils.remote_file_exists(sftp_client, output_file):
+            if utils.remote_file_exists(self.sftp_client, output_file):
                 self.log.info(f"Skipping {file_name_in_image} because it's already downloaded")
                 continue
 
