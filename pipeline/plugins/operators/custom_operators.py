@@ -260,63 +260,6 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
         if mark_failed:
             raise DownloadBatchError
 
-
-class DownloadBindingBatchOperator(BaseOperator):
-    """
-    Download a batch of bindings.
-
-    :param batch_with_index: tuple of (list of DC identifiers, batch index)
-    :param ssh_conn_id: SSH connection id
-    :param target_directory: Root of the image directory hierarchy (containing batches)
-    :param api: OAI-PMH api
-    """
-
-    def __init__(
-        self,
-        batch_with_index,
-        ssh_conn_id,
-        target_directory,
-        api,
-        **kwargs,
-    ):
-        super().__init__(**kwargs)
-        self.batch_with_index = batch_with_index
-        self.ssh_conn_id = ssh_conn_id
-        self.target_directory = target_directory
-        self.api = api
-
-    def execute(self, context):
-        ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
-        with ssh_hook.get_conn() as ssh_client:
-            sftp_client = ssh_client.open_sftp()
-            batch, batch_num = self.batch_with_index
-            for dc_identifier in batch:
-                binding_id = utils.binding_id_from_dc(dc_identifier)
-                tmp_binding_path = (
-                    self.target_directory / utils.binding_download_location(binding_id)
-                )
-                mets_directory = tmp_binding_path / "mets"
-
-                mets_operator = SaveMetsSFTPOperator(
-                    task_id=f"save_mets_{binding_id}",
-                    api=self.api,
-                    sftp_client=sftp_client,
-                    ssh_client=ssh_client,
-                    dc_identifier=dc_identifier,
-                    output_directory=mets_directory,
-                )
-
-                mets_operator.execute(context={})
-
-                SaveAltosSFTPOperator(
-                    task_id=f"save_altos_{binding_id}",
-                    mets_path=mets_operator.output_file,
-                    sftp_client=sftp_client,
-                    ssh_client=ssh_client,
-                    dc_identifier=dc_identifier,
-                    output_directory=tmp_binding_path / "alto",
-                ).execute(context={})
-
 class StowBindingBatchOperator(BaseOperator):
     """
     Download a batch of bindings, typically to a faster smaller drive, make a
