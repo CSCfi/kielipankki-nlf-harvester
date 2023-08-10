@@ -206,11 +206,19 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
 
         self.ensure_output_location()
 
+        failed_404_count = 0
+        failed_401_count = 0
+        mark_failed = False
         for alto_file in alto_files:
             output_file = self.output_directory / alto_file.filename
 
             file_name_in_image = re.sub('^.+batch_[^/]', '', str(output_file))
             if file_name_in_image in self.ignore_files_set:
+                self.log.info(f"Skipping {file_name_in_image} due to ignore list")
+                continue
+
+            if utils.remote_file_exists(sftp_client, output_file):
+                self.log.info(f"Skipping {file_name_in_image} because it's already downloaded")
                 continue
 
             tmp_output_file = self.tmp_path(output_file)
@@ -223,20 +231,34 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
                     )
                 except RequestException as e:
                     self.delete_temporary_file(tmp_output_file)
-                    self.log.error(
-                        "ALTO download with URL %s failed: %s",
-                        alto_file.download_url,
-                        e.response,
-                    )
+                    if e.status_code == 404:
+                        failed_404_count += 1
+                    elif e.status_code == 401:
+                        failed_401_code += 1
+                    else:
+                        mark_failed = True
+                        self.log.error(
+                            "ALTO download with URL %s failed: %s",
+                            alto_file.download_url,
+                            e.response,
+                        )
                     continue
 
-            exit_status = self.move_file_to_final_location(tmp_output_file, output_file)
-
-            if exit_status != 0:
+            if self.move_file_to_final_location(tmp_output_file, output_file) != 0:
                 self.log.error(
                     "Moving ALTO file %s from tmp to destination failed",
                     alto_file.download_url,
                 )
+        if failed_404_count > 0:
+            self.log.error(
+                f"When downloading ALTO files for binding {self.dc_identifier}, {failed_404_count}/{len(alto_files)} files failed with a 404"
+            )
+        if failed_401_count > 0:
+            self.log.error(
+                f"When downloading ALTO files for binding {self.dc_identifier}, {failed_404_count}/{len(alto_files)} files failed with a 401"
+            )
+        if mark_failed:
+            raise DownloadBatchError
 
 
 class DownloadBindingBatchOperator(BaseOperator):
