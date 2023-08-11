@@ -350,11 +350,10 @@ class StowBindingBatchOperator(BaseOperator):
             sftp_client = ssh_client.open_sftp()
             ignore_files_set = self.get_ignore_files_set(sftp_client)
             batch, batch_num = self.batch_with_index
+            batch_root = self.tmp_download_directory / f"batch_{batch_num}"
             for dc_identifier in batch:
                 binding_id = utils.binding_id_from_dc(dc_identifier)
-                tmp_binding_path = (
-                    self.tmp_download_directory / f"batch_{batch_num}" / utils.binding_download_location(binding_id)
-                )
+                tmp_binding_path = batch_root / utils.binding_download_location(binding_id)
 
                 mets_operator = SaveMetsSFTPOperator(
                     task_id=f"save_mets_{binding_id}",
@@ -386,7 +385,7 @@ class StowBindingBatchOperator(BaseOperator):
             if self.create_tar_archive(
                     ssh_client,
                     f"{self.tar_directory}/{batch_num}.tar",
-                    f"{tmp_binding_path}") != 0:
+                    f"{batch_root}") != 0:
                 self.log.error(
                     f"Failed to create tar file for batch {batch_num} from tmp to destination failed")
 
