@@ -92,6 +92,7 @@ def calculate_batch_size(col_size):
     """
     Return a suitable download batch size for a collection.
     """
+    return min(col_size, 2000)
     if col_size < 500:
         return min(col_size, 10)
     if col_size < 50000:
