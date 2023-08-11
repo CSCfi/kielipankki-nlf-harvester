@@ -257,7 +257,7 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
             )
         if failed_401_count > 0:
             self.log.error(
-                f"When downloading ALTO files for binding {self.dc_identifier}, {failed_404_count}/{total_alto_files} files failed with a 401"
+                f"When downloading ALTO files for binding {self.dc_identifier}, {failed_401_count}/{total_alto_files} files failed with a 401"
             )
         if mark_failed:
             raise DownloadBatchError
