@@ -126,10 +126,8 @@ def download_set(
                 )
 
             image_download_tg = download_image(prefix)
-            if image_downloads:
-                image_downloads[-1] >> image_download_tg
             image_downloads.append(image_download_tg)
-
+    return image_downloads
 
 @task(task_id="clear_temporary_directory", trigger_rule="all_done")
 def clear_temporary_directory(ssh_conn_id, tmpdir_root):
