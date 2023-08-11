@@ -234,7 +234,7 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
                     if e.status_code == 404:
                         failed_404_count += 1
                     elif e.status_code == 401:
-                        failed_401_code += 1
+                        failed_401_count += 1
                     else:
                         mark_failed = True
                         self.log.error(
