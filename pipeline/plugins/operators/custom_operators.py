@@ -231,9 +231,9 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
                     )
                 except RequestException as e:
                     self.delete_temporary_file(tmp_output_file)
-                    if e.status_code == 404:
+                    if e.response.status_code == 404:
                         failed_404_count += 1
-                    elif e.status_code == 401:
+                    elif e.response.status_code == 401:
                         failed_401_count += 1
                     else:
                         mark_failed = True
