@@ -206,10 +206,12 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
 
         self.ensure_output_location()
 
+        total_alto_files = 0
         failed_404_count = 0
         failed_401_count = 0
         mark_failed = False
         for alto_file in alto_files:
+            total_alto_files += 1
             output_file = self.output_directory / alto_file.filename
 
             file_name_in_image = re.sub('^.+batch_[^/]', '', str(output_file))
@@ -251,11 +253,11 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
                 )
         if failed_404_count > 0:
             self.log.error(
-                f"When downloading ALTO files for binding {self.dc_identifier}, {failed_404_count}/{len(alto_files)} files failed with a 404"
+                f"When downloading ALTO files for binding {self.dc_identifier}, {failed_404_count}/{total_alto_files} files failed with a 404"
             )
         if failed_401_count > 0:
             self.log.error(
-                f"When downloading ALTO files for binding {self.dc_identifier}, {failed_404_count}/{len(alto_files)} files failed with a 401"
+                f"When downloading ALTO files for binding {self.dc_identifier}, {failed_404_count}/{total_alto_files} files failed with a 401"
             )
         if mark_failed:
             raise DownloadBatchError
