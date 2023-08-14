@@ -366,7 +366,11 @@ class StowBindingBatchOperator(BaseOperator):
                         ignore_files_set=ignore_files_set,
                     )
                     mets_operator.execute(context={})
+                except RequestException:
+                    mark_failed = True
+                    continue
 
+                try:
                     SaveAltosSFTPOperator(
                         task_id=f"save_altos_{binding_id}",
                         mets_path=mets_operator.output_file,
@@ -376,9 +380,7 @@ class StowBindingBatchOperator(BaseOperator):
                         output_directory=tmp_binding_path / "alto",
                         ignore_files_set=ignore_files_set,
                     ).execute(context={})
-                except (DownloadBatchError, RequestException):
-                    # Downloading failed for some of these, but we'll go on
-                    # with the rest and ultimately fail only at the end.
+                except DownloadBatchError:
                     mark_failed = True
                     continue
 
