@@ -398,6 +398,11 @@ class StowBindingBatchOperator(BaseOperator):
                         "halting archive creation"
                     )
 
+            if mark_failed:
+                # Now, after all the downloads are done, we fail if necessary
+                # rather than continue with other stuff
+                raise DownloadBatchError
+
             if self.create_tar_archive(
                     ssh_client,
                     f"{self.tar_directory}/{batch_num}.tar",
@@ -408,8 +413,6 @@ class StowBindingBatchOperator(BaseOperator):
             if self.rmtree(ssh_client, f"{tmp_binding_path}") != 0:
                 self.log.error(
                     f"Failed to clean up downloads for {batch_num}")
-        if mark_failed:
-            raise DownloadBatchError
 
 class PrepareDownloadLocationOperator(BaseOperator):
     """
