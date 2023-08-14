@@ -167,9 +167,8 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
                 )
             except RequestException as e:
                 self.delete_temporary_file(tmp_output_file)
-                raise RequestException(
-                    f"METS download {self.dc_identifier} failed: {e.response}"
-                )
+                self.log.error(f"METS download {self.dc_identifier} failed with {e.response.status_code}, will retry and/or continue with others")
+                raise e
             except OSError as e:
                 raise OSError(
                     f"Writing METS {self.dc_identifier} to file failed with error "
@@ -351,30 +350,37 @@ class StowBindingBatchOperator(BaseOperator):
             ignore_files_set = self.get_ignore_files_set(sftp_client)
             batch, batch_num = self.batch_with_index
             batch_root = self.tmp_download_directory / f"batch_{batch_num}"
+            mark_failed = False
             for dc_identifier in batch:
                 binding_id = utils.binding_id_from_dc(dc_identifier)
                 tmp_binding_path = batch_root / utils.binding_download_location(binding_id)
 
-                mets_operator = SaveMetsSFTPOperator(
-                    task_id=f"save_mets_{binding_id}",
-                    api=self.api,
-                    sftp_client=sftp_client,
-                    ssh_client=ssh_client,
-                    dc_identifier=dc_identifier,
-                    output_directory=tmp_binding_path / "mets",
-                    ignore_files_set=ignore_files_set,
-                )
-                mets_operator.execute(context={})
+                try:
+                    mets_operator = SaveMetsSFTPOperator(
+                        task_id=f"save_mets_{binding_id}",
+                        api=self.api,
+                        sftp_client=sftp_client,
+                        ssh_client=ssh_client,
+                        dc_identifier=dc_identifier,
+                        output_directory=tmp_binding_path / "mets",
+                        ignore_files_set=ignore_files_set,
+                    )
+                    mets_operator.execute(context={})
 
-                SaveAltosSFTPOperator(
-                    task_id=f"save_altos_{binding_id}",
-                    mets_path=mets_operator.output_file,
-                    sftp_client=sftp_client,
-                    ssh_client=ssh_client,
-                    dc_identifier=dc_identifier,
-                    output_directory=tmp_binding_path / "alto",
-                    ignore_files_set=ignore_files_set,
-                ).execute(context={})
+                    SaveAltosSFTPOperator(
+                        task_id=f"save_altos_{binding_id}",
+                        mets_path=mets_operator.output_file,
+                        sftp_client=sftp_client,
+                        ssh_client=ssh_client,
+                        dc_identifier=dc_identifier,
+                        output_directory=tmp_binding_path / "alto",
+                        ignore_files_set=ignore_files_set,
+                    ).execute(context={})
+                except (DownloadBatchError, RequestException):
+                    # Downloading failed for some of these, but we'll go on
+                    # with the rest and ultimately fail only at the end.
+                    mark_failed = True
+                    continue
 
                 if self.temporary_files_present(ssh_client, tmp_binding_path):
                     raise DownloadBatchError(
@@ -392,6 +398,8 @@ class StowBindingBatchOperator(BaseOperator):
             if self.rmtree(ssh_client, f"{tmp_binding_path}") != 0:
                 self.log.error(
                     f"Failed to clean up downloads for {batch_num}")
+        if mark_failed:
+            raise DownloadBatchError
 
 class PrepareDownloadLocationOperator(BaseOperator):
     """
