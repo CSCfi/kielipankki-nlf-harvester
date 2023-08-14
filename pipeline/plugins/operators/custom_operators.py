@@ -306,7 +306,7 @@ class StowBindingBatchOperator(BaseOperator):
         """
         Recursively delete directory.
 
-        :return: Exit status from tar
+        :return: Exit status from rm
         """
         _, stdout, _ = ssh_client.exec_command(
             f"rm -rf {dir_path}"
