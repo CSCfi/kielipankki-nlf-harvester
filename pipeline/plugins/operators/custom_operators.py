@@ -232,17 +232,18 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
                     )
                 except RequestException as e:
                     self.delete_temporary_file(tmp_output_file)
+                    mark_failed = True
                     if e.response.status_code == 404:
                         failed_404_count += 1
                     elif e.response.status_code == 401:
                         failed_401_count += 1
                     else:
-                        mark_failed = True
                         self.log.error(
                             "ALTO download with URL %s failed: %s",
                             alto_file.download_url,
                             e.response,
                         )
+                        raise e
                     continue
 
             if self.move_file_to_final_location(tmp_output_file, output_file) != 0:
@@ -366,8 +367,9 @@ class StowBindingBatchOperator(BaseOperator):
                         ignore_files_set=ignore_files_set,
                     )
                     mets_operator.execute(context={})
-                except RequestException:
-                    mark_failed = True
+                except RequestException as e:
+                    if e.response.status_code not in (401, 404) or context['task_instance'].try_number < 3:
+                        mark_failed = True
                     continue
 
                 try:
@@ -381,6 +383,12 @@ class StowBindingBatchOperator(BaseOperator):
                         ignore_files_set=ignore_files_set,
                     ).execute(context={})
                 except DownloadBatchError:
+                    # 404 or 401
+                    if context['task_instance'].try_number < 3:
+                        mark_failed = True
+                    continue
+                except RequestException:
+                    # Something else went wrong
                     mark_failed = True
                     continue
 
