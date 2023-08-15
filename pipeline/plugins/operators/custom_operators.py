@@ -167,7 +167,8 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
                 )
             except RequestException as e:
                 self.delete_temporary_file(tmp_output_file)
-                self.log.error(f"METS download {self.dc_identifier} failed with {e.response.status_code}, will retry and/or continue with others")
+                if e.response is not None:
+                    self.log.error(f"METS download {self.dc_identifier} failed with {e.response.status_code}, will retry and/or continue with others")
                 raise e
             except OSError as e:
                 raise OSError(
@@ -233,6 +234,9 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
                 except RequestException as e:
                     self.delete_temporary_file(tmp_output_file)
                     mark_failed = True
+                    if e.response is None:
+                        # There is no response if e is eg. a ReadTimeout
+                        continue
                     if e.response.status_code == 404:
                         failed_404_count += 1
                     elif e.response.status_code == 401:
@@ -368,7 +372,13 @@ class StowBindingBatchOperator(BaseOperator):
                     )
                     mets_operator.execute(context={})
                 except RequestException as e:
-                    if e.response.status_code not in (401, 404) or context['task_instance'].try_number < 3:
+                    if e.response is None or \
+                       e.response.status_code not in (401, 404) or \
+                       context['task_instance'].try_number < 3:
+                        # response is None if it was eg. a ReadTimeout. That's a genuine failure.
+                        # 401 and 404 probably indicate "normal" operation, ie. it's just not there
+                        # and NLF hasn't communicated / sorted out things properly. In any case,
+                        # we try a few times before "successfully failing".
                         mark_failed = True
                     continue
 
