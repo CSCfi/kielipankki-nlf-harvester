@@ -376,7 +376,7 @@ class StowBindingBatchOperator(BaseOperator):
                     mets_operator.execute(context={})
                 except Exception as e:
                     if not issubclass(type(e), RequestException):
-                        self.log.error(f"Unexpected exception when downloading METS in {dc_identifier}, continuing anyway: {f}")
+                        self.log.error(f"Unexpected exception when downloading METS in {dc_identifier}, continuing anyway: {e}")
                     if context['task_instance'].try_number < 3:
                         # If we're not on our third try, we'll fail this batch before tar creation.
                         # If we *are* on our third task, create tar anyway, succeed in the task,
@@ -398,7 +398,7 @@ class StowBindingBatchOperator(BaseOperator):
                     ).execute(context={})
                 except Exception as e:
                     if not issubclass(type(e), RequestException):
-                        self.log.error(f"Unexpected exception when downloading ALTOs in {dc_identifier}, continuing anyway: {f}")
+                        self.log.error(f"Unexpected exception when downloading ALTOs in {dc_identifier}, continuing anyway: {e}")
                     if context['task_instance'].try_number < 3:
                         mark_failed = True
                     else:
