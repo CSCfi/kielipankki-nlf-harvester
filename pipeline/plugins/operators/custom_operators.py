@@ -374,15 +374,16 @@ class StowBindingBatchOperator(BaseOperator):
                         ignore_files_set=ignore_files_set,
                     )
                     mets_operator.execute(context={})
-                except RequestException as e:
-                    if e.response is None or \
-                       e.response.status_code not in (401, 404) or \
-                       context['task_instance'].try_number < 3:
-                        # response is None if it was eg. a ReadTimeout. That's a genuine failure.
-                        # 401 and 404 probably indicate "normal" operation, ie. it's just not there
-                        # and NLF hasn't communicated / sorted out things properly. In any case,
-                        # we try a few times before "successfully failing".
+                except Exception as e:
+                    if not issubclass(e, RequestException):
+                        self.log.error(f"Unexpected exception when downloading METS in {dc_identifier}, continuing anyway: {f}")
+                    if context['task_instance'].try_number < 3:
+                        # If we're not on our third try, we'll fail this batch before tar creation.
+                        # If we *are* on our third task, create tar anyway, succeed in the task,
+                        # and log failures.
                         mark_failed = True
+                    else:
+                        self.log.error(f"Downloading METS in {dc_identifier} still failing, moving on with image creation")
                     continue
 
                 try:
@@ -395,14 +396,13 @@ class StowBindingBatchOperator(BaseOperator):
                         output_directory=tmp_binding_path / "alto",
                         ignore_files_set=ignore_files_set,
                     ).execute(context={})
-                except DownloadBatchError:
-                    # 404 or 401
+                except Exception as e:
+                    if not issubclass(e, RequestException):
+                        self.log.error(f"Unexpected exception when downloading ALTOs in {dc_identifier}, continuing anyway: {f}")
                     if context['task_instance'].try_number < 3:
                         mark_failed = True
-                    continue
-                except RequestException:
-                    # Something else went wrong
-                    mark_failed = True
+                    else:
+                        self.log.error(f"Downloading ALTOs in {dc_identifier} still failing, moving on with image creation")
                     continue
 
                 if self.temporary_files_present(ssh_client, tmp_binding_path):
