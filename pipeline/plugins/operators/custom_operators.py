@@ -209,6 +209,8 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
         total_alto_files = 0
         failed_404_count = 0
         failed_401_count = 0
+        skipped_ignore = 0
+        skipped_already_done = 0
         mark_failed = False
         for alto_file in alto_files:
             total_alto_files += 1
@@ -216,11 +218,11 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
 
             file_name_in_image = re.sub('^.+batch_[^/]', '', str(output_file))
             if file_name_in_image in self.ignore_files_set:
-                self.log.info(f"Skipping {file_name_in_image} due to ignore list")
+                skipped_ignore += 1
                 continue
 
             if utils.remote_file_exists(self.sftp_client, output_file):
-                self.log.info(f"Skipping {file_name_in_image} because it's already downloaded")
+                skipped_already_done += 1
                 continue
 
             tmp_output_file = self.tmp_path(output_file)
@@ -256,13 +258,14 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
                     alto_file.download_url,
                 )
         if failed_404_count > 0:
-            self.log.error(
-                f"When downloading ALTO files for binding {self.dc_identifier}, {failed_404_count}/{total_alto_files} files failed with a 404"
-            )
+            self.log.error(f"When downloading ALTO files for binding {self.dc_identifier}, {failed_404_count}/{total_alto_files} files failed with a 404")
         if failed_401_count > 0:
-            self.log.error(
-                f"When downloading ALTO files for binding {self.dc_identifier}, {failed_401_count}/{total_alto_files} files failed with a 401"
-            )
+            self.log.error(f"When downloading ALTO files for binding {self.dc_identifier}, {failed_401_count}/{total_alto_files} files failed with a 401")
+        if skipped_ignore > 0:
+            self.log.info(f"When downloading ALTO files for binding {self.dc_identifier}, {skipped_ignore}/{total_alto_files} skipped due to ignore list")
+        if skipped_already_done > 0:
+            self.log.info(f"When downloading ALTO files for binding {self.dc_identifier}, {skipped_already_done}/{total_alto_files} skipped as already downloaded")
+
         if mark_failed:
             raise DownloadBatchError
 
