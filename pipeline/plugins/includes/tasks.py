@@ -136,3 +136,18 @@ def clear_temporary_directory(ssh_conn_id, tmpdir_root):
     ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
     with ssh_hook.get_conn() as ssh_client:
         ssh_client.exec_command(f"rm -r {tmpdir_root}/*")
+
+
+@task(task_id="restic_backup", trigger_rule="all_done")
+def restic_backup(ssh_conn_id, script_path, output_dir):
+    ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
+    with ssh_hook.get_conn() as ssh_client:
+        print("Creating snapshot of downloaded images")
+        _, stdout, stderr = ssh_client.exec_command(f"sh {script_path} {output_dir}", get_pty=True)
+
+        output = "\n".join(stdout.readlines())
+        print("STDOUT:", output)
+
+        if stdout.channel.recv_exit_status() != 0:
+            error_msg = "\n".join(stderr.readlines())
+            print(f"Creating snapshot failed with error:\n{error_msg}")

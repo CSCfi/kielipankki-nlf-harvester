@@ -14,14 +14,15 @@ from includes.tasks import (
     check_if_download_should_begin,
     download_set,
     clear_temporary_directory,
+    restic_backup
 )
 from harvester.pmh_interface import PMH_API
 
 INITIAL_DOWNLOAD = True
 
 pathdict = {
-    "OUTPUT_DIR": Path("/scratch/project_2006633/nlf-harvester"),
-    "TMPDIR_ROOT": Path("/local_scratch/robot_2006633_puhti/harvester"),
+    "OUTPUT_DIR": Path("/scratch/project_2006633/restic-dev/"),
+    "TMPDIR_ROOT": Path("/local_scratch/robot_2006633_puhti/restic-dev"),
     "EXTRA_BIN_DIR": Path("/projappl/project_2006633/local/bin"),
     "IMAGE_SPLIT_DIR": Path("/home/ubuntu/image_split/"),
     "BINDING_LIST_DIR": Path("/home/ubuntu/binding_ids_all"),
@@ -82,6 +83,9 @@ for col in COLLECTIONS:
                 pathdict=pathdict,
             )
             >> clear_temporary_directory(SSH_CONN_ID, pathdict["TMPDIR_ROOT"])
+            >> restic_backup(SSH_CONN_ID,
+                             "/users/robot_2006633_puhti/create_snapshot.sh",
+                             pathdict["OUTPUT_DIR"]/"images")
         )
 
     download_dag()
