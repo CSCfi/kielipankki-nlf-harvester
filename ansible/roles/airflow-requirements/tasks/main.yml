@@ -13,7 +13,7 @@
 - name: Install Airflow
   ansible.builtin.pip:
     name: apache-airflow[async,postgres,google]
-    extra_args: --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-latest/constraints-3.10.txt"
+    extra_args: --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-main/constraints-3.10.txt"
   become: yes
 
 - name: Create gunicorn log directory
