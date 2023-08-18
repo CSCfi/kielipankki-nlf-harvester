@@ -1,0 +1,4 @@
+AWS_SECRET_ACCESS_KEY: {{ lookup('passwordstore', 'lb_passwords/airflow/aws_secret_access_key') }}
+AWS_ACCESS_KEY_ID: {{ lookup('passwordstore', 'lb_passwords/airflow/aws_access_key_id') }}
+RESTIC_REPOSITORY: {{ restic_repository }}
+RESTIC_PASSWORD: {{ lookup('passwordstore', 'lb_passwords/airflow/restic_password') }}

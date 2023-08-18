@@ -20,6 +20,8 @@ airflow_firstname: "Kielipankki"
 airflow_lastname: "User"
 airflow_email: "ling-admin@listat.csc.fi"
 
+restic_repository: "s3:https://a3s.fi/nlf-harvester-backup"
+
 puhti_robot_user: "robot_2006633_puhti"
 puhti_robot_password: "{{ lookup('passwordstore', 'lb_passwords/airflow/robot_2006633_puhti') }}"
 puhti_robot_ssh_key_path: "/home/{{ ansible_user }}/.ssh/id_ed25519_robot_2006633_puhti"
