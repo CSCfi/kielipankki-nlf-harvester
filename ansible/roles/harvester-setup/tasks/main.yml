@@ -60,6 +60,11 @@
     - never
     - dag-update
 
+- name: Create a file for restic environment variables
+  template:
+    src: restic_env.yaml.j2
+    dest: /home/ubuntu/restic_env.yaml
+
 - name: Add private key for connecting to Puhti
   ansible.builtin.copy:
     dest: "{{ puhti_robot_ssh_key_path }}"
