@@ -14,3 +14,4 @@ all:
       hosts:
         puhti.csc.fi:
           ansible_user: "{{ puhti_robot_user }}"
+          ansible_password: "{{ puhti_robot_password }}"
