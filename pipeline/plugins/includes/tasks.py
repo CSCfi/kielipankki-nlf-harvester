@@ -153,8 +153,14 @@ def restic_backup(ssh_conn_id, script_path, output_dir):
                                                     get_pty=True)
 
         output = "\n".join(stdout.readlines())
-        print("STDOUT:", output)
+        print(output)
 
         if stdout.channel.recv_exit_status() != 0:
             error_msg = "\n".join(stderr.readlines())
-            print(f"Creating snapshot failed with error:\n{error_msg}")
+            raise CreateSnapshotError(f"Creating snapshot failed with error:\n{error_msg}")
+
+
+class CreateSnapshotError(Exception):
+    """
+    Error raised when an error occurs during the creation of a restic snapshot
+    """
