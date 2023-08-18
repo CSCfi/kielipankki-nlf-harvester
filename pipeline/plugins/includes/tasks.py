@@ -5,6 +5,8 @@ from airflow.models import DagRun
 
 from requests.exceptions import RequestException
 
+import yaml
+
 from harvester import utils
 from operators.custom_operators import (
     PrepareDownloadLocationOperator,
@@ -142,8 +144,13 @@ def clear_temporary_directory(ssh_conn_id, tmpdir_root):
 def restic_backup(ssh_conn_id, script_path, output_dir):
     ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
     with ssh_hook.get_conn() as ssh_client:
+        with open("/home/ubuntu/restic_env.yaml", "r") as fobj:
+            envs = yaml.load(fobj, Loader=yaml.FullLoader)
+        
+        envs_str = " ".join([f"export {key}={value};" for key, value in envs.items()])
         print("Creating snapshot of downloaded images")
-        _, stdout, stderr = ssh_client.exec_command(f"sh {script_path} {output_dir}", get_pty=True)
+        _, stdout, stderr = ssh_client.exec_command(f"{envs_str} sh {script_path} {output_dir}", 
+                                                    get_pty=True)
 
         output = "\n".join(stdout.readlines())
         print("STDOUT:", output)
