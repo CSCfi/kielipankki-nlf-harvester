@@ -14,7 +14,7 @@ from includes.tasks import (
     check_if_download_should_begin,
     download_set,
     clear_temporary_directory,
-    restic_backup
+    create_restic_snapshot
 )
 from harvester.pmh_interface import PMH_API
 
@@ -83,8 +83,8 @@ for col in COLLECTIONS:
                 pathdict=pathdict,
             )
             >> clear_temporary_directory(SSH_CONN_ID, pathdict["TMPDIR_ROOT"])
-            >> restic_backup(SSH_CONN_ID,
-                             "/users/robot_2006633_puhti/create_snapshot.sh",
+            >> create_restic_snapshot(SSH_CONN_ID,
+                             pathdict["EXTRA_BIN_DIR"]/"create_snapshot.sh",
                              pathdict["OUTPUT_DIR"]/"images")
         )
 
