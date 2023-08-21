@@ -140,8 +140,8 @@ def clear_temporary_directory(ssh_conn_id, tmpdir_root):
         ssh_client.exec_command(f"rm -r {tmpdir_root}/*")
 
 
-@task(task_id="restic_backup", trigger_rule="all_done")
-def restic_backup(ssh_conn_id, script_path, output_dir):
+@task(task_id="create_restic_snapshot", trigger_rule="all_done")
+def create_restic_snapshot(ssh_conn_id, script_path, output_dir):
     ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
     with ssh_hook.get_conn() as ssh_client:
         with open("/home/ubuntu/restic_env.yaml", "r") as fobj:
