@@ -63,7 +63,7 @@ class SaveFilesSFTPOperator(BaseOperator):
         ssh_client,
         dc_identifier,
         output_directory,
-        ignore_files_set = set(),
+        ignore_files_set=set(),
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -117,9 +117,7 @@ class SaveFilesSFTPOperator(BaseOperator):
         """
         if not str(tmp_file).endswith(".tmp"):
             return 0
-        _, stdout, _ = self.ssh_client.exec_command(
-            f"rm -f {tmp_file}"
-        )
+        _, stdout, _ = self.ssh_client.exec_command(f"rm -f {tmp_file}")
 
         return stdout.channel.recv_exit_status()
 
@@ -152,7 +150,7 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
 
     def execute(self, context):
 
-        file_name_in_image = re.sub('^.+batch_[^/]', '', str(self.output_file))
+        file_name_in_image = re.sub("^.+batch_[^/]", "", str(self.output_file))
         if file_name_in_image in self.ignore_files_set:
             return
 
@@ -168,7 +166,9 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
             except RequestException as e:
                 self.delete_temporary_file(tmp_output_file)
                 if e.response is not None:
-                    self.log.error(f"METS download {self.dc_identifier} failed with {e.response.status_code}, will retry and/or continue with others")
+                    self.log.error(
+                        f"METS download {self.dc_identifier} failed with {e.response.status_code}, will retry and/or continue with others"
+                    )
                 raise e
             except OSError as e:
                 raise OSError(
@@ -216,7 +216,7 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
             total_alto_files += 1
             output_file = self.output_directory / alto_file.filename
 
-            file_name_in_image = re.sub('^.+batch_[^/]', '', str(output_file))
+            file_name_in_image = re.sub("^.+batch_[^/]", "", str(output_file))
             if file_name_in_image in self.ignore_files_set:
                 skipped_ignore += 1
                 continue
@@ -258,16 +258,25 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
                     alto_file.download_url,
                 )
         if failed_404_count > 0:
-            self.log.error(f"When downloading ALTO files for binding {self.dc_identifier}, {failed_404_count}/{total_alto_files} files failed with a 404")
+            self.log.error(
+                f"When downloading ALTO files for binding {self.dc_identifier}, {failed_404_count}/{total_alto_files} files failed with a 404"
+            )
         if failed_401_count > 0:
-            self.log.error(f"When downloading ALTO files for binding {self.dc_identifier}, {failed_401_count}/{total_alto_files} files failed with a 401")
+            self.log.error(
+                f"When downloading ALTO files for binding {self.dc_identifier}, {failed_401_count}/{total_alto_files} files failed with a 401"
+            )
         if skipped_ignore > 0:
-            self.log.info(f"When downloading ALTO files for binding {self.dc_identifier}, {skipped_ignore}/{total_alto_files} skipped due to ignore list")
+            self.log.info(
+                f"When downloading ALTO files for binding {self.dc_identifier}, {skipped_ignore}/{total_alto_files} skipped due to ignore list"
+            )
         if skipped_already_done > 0:
-            self.log.info(f"When downloading ALTO files for binding {self.dc_identifier}, {skipped_already_done}/{total_alto_files} skipped as already downloaded")
+            self.log.info(
+                f"When downloading ALTO files for binding {self.dc_identifier}, {skipped_already_done}/{total_alto_files} skipped as already downloaded"
+            )
 
         if mark_failed:
             raise DownloadBatchError
+
 
 class StowBindingBatchOperator(BaseOperator):
     """
@@ -316,9 +325,7 @@ class StowBindingBatchOperator(BaseOperator):
 
         :return: Exit status from rm
         """
-        _, stdout, _ = ssh_client.exec_command(
-            f"rm -rf {dir_path}"
-        )
+        _, stdout, _ = ssh_client.exec_command(f"rm -rf {dir_path}")
 
         return stdout.channel.recv_exit_status()
 
@@ -327,12 +334,11 @@ class StowBindingBatchOperator(BaseOperator):
         Return a set of paths that we don't need to download.
         """
         retval = set()
-        ignore_files_filename = self.tmp_download_directory/"existing_files.txt"
-        if utils.remote_file_exists(sftp_client,
-                                    ignore_files_filename):
+        ignore_files_filename = self.tmp_download_directory / "existing_files.txt"
+        if utils.remote_file_exists(sftp_client, ignore_files_filename):
             with sftp_client.open(str(ignore_files_filename)) as ignore_files_fobj:
-                ignore_files_contents = str(ignore_files_fobj.read(), encoding='utf-8')
-                retval = set(ignore_files_contents.split('\n'))
+                ignore_files_contents = str(ignore_files_fobj.read(), encoding="utf-8")
+                retval = set(ignore_files_contents.split("\n"))
         return retval
 
     def temporary_files_present(self, ssh_client, directory):
@@ -347,7 +353,9 @@ class StowBindingBatchOperator(BaseOperator):
 
         :returns: True if temporary file(s) were found, otherwise False
         """
-        _, stdout, _ = ssh_client.exec_command(f'find {directory} -name "*.tmp" | grep .')
+        _, stdout, _ = ssh_client.exec_command(
+            f'find {directory} -name "*.tmp" | grep .'
+        )
         # grep will have exit code 0 only if it found some matches
         return stdout.channel.recv_exit_status() == 0
 
@@ -361,7 +369,9 @@ class StowBindingBatchOperator(BaseOperator):
             mark_failed = False
             for dc_identifier in batch:
                 binding_id = utils.binding_id_from_dc(dc_identifier)
-                tmp_binding_path = batch_root / utils.binding_download_location(binding_id)
+                tmp_binding_path = batch_root / utils.binding_download_location(
+                    binding_id
+                )
 
                 try:
                     mets_operator = SaveMetsSFTPOperator(
@@ -376,14 +386,18 @@ class StowBindingBatchOperator(BaseOperator):
                     mets_operator.execute(context={})
                 except Exception as e:
                     if not issubclass(type(e), RequestException):
-                        self.log.error(f"Unexpected exception when downloading METS in {dc_identifier}, continuing anyway: {e}")
-                    if context['task_instance'].try_number < 3:
+                        self.log.error(
+                            f"Unexpected exception when downloading METS in {dc_identifier}, continuing anyway: {e}"
+                        )
+                    if context["task_instance"].try_number < 3:
                         # If we're not on our third try, we'll fail this batch before tar creation.
                         # If we *are* on our third task, create tar anyway, succeed in the task,
                         # and log failures.
                         mark_failed = True
                     else:
-                        self.log.error(f"Downloading METS in {dc_identifier} still failing, moving on with image creation")
+                        self.log.error(
+                            f"Downloading METS in {dc_identifier} still failing, moving on with image creation"
+                        )
                     continue
 
                 try:
@@ -398,11 +412,15 @@ class StowBindingBatchOperator(BaseOperator):
                     ).execute(context={})
                 except Exception as e:
                     if not issubclass(type(e), RequestException):
-                        self.log.error(f"Unexpected exception when downloading ALTOs in {dc_identifier}, continuing anyway: {e}")
-                    if context['task_instance'].try_number < 3:
+                        self.log.error(
+                            f"Unexpected exception when downloading ALTOs in {dc_identifier}, continuing anyway: {e}"
+                        )
+                    if context["task_instance"].try_number < 3:
                         mark_failed = True
                     else:
-                        self.log.error(f"Downloading ALTOs in {dc_identifier} still failing, moving on with image creation")
+                        self.log.error(
+                            f"Downloading ALTOs in {dc_identifier} still failing, moving on with image creation"
+                        )
                     continue
 
                 if self.temporary_files_present(ssh_client, tmp_binding_path):
@@ -416,16 +434,19 @@ class StowBindingBatchOperator(BaseOperator):
                 # rather than continue with other stuff
                 raise DownloadBatchError
 
-            if self.create_tar_archive(
-                    ssh_client,
-                    f"{self.tar_directory}/{batch_num}.tar",
-                    f"{batch_root}") != 0:
+            if (
+                self.create_tar_archive(
+                    ssh_client, f"{self.tar_directory}/{batch_num}.tar", f"{batch_root}"
+                )
+                != 0
+            ):
                 self.log.error(
-                    f"Failed to create tar file for batch {batch_num} from tmp to destination failed")
+                    f"Failed to create tar file for batch {batch_num} from tmp to destination failed"
+                )
 
             if self.rmtree(ssh_client, f"{batch_root}") != 0:
-                self.log.error(
-                    f"Failed to clean up downloads for {batch_num}")
+                self.log.error(f"Failed to clean up downloads for {batch_num}")
+
 
 class PrepareDownloadLocationOperator(BaseOperator):
     """
@@ -494,7 +515,7 @@ class PrepareDownloadLocationOperator(BaseOperator):
             sftp_client = ssh_client.open_sftp()
 
             self.create_image_folder(sftp_client, self.file_download_dir)
-            ssh_client.exec_command(f'mkdir -p {self.tar_dir}')
+            ssh_client.exec_command(f"mkdir -p {self.tar_dir}")
 
             if utils.remote_file_exists(sftp_client, self.old_image_path):
                 self.create_file_listing_from_image(
@@ -555,10 +576,15 @@ class CreateImageOperator(BaseOperator):
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
             with ssh_client.open_sftp() as sftp_client:
-                old_image_to_tar_cmd = ":" # no-op
+                old_image_to_tar_cmd = ":"  # no-op
                 if utils.remote_file_exists(sftp_client, self.image_path):
-                    old_image_to_tar = f"{self.extra_bin_dir}/sqfs2tar {self.image_path}"
-                    self.log.info("Will use old image %s as a tar source for new image on Puhti", self.image_path)
+                    old_image_to_tar = (
+                        f"{self.extra_bin_dir}/sqfs2tar {self.image_path}"
+                    )
+                    self.log.info(
+                        "Will use old image %s as a tar source for new image on Puhti",
+                        self.image_path,
+                    )
                 mksquashfs_cmd = f"{self.extra_bin_dir}/sqfstar {tmp_image_path} -ignore-zeros -mem 2G"
                 self.log.info("Creating temporary image in %s on Puhti", tmp_image_path)
                 self.ssh_execute_and_raise(
@@ -584,6 +610,7 @@ class ImageCreationError(Exception):
     """
     Error raised when an error occurs during the disk image creation/overwrite process
     """
+
 
 class DownloadBatchError(Exception):
     """

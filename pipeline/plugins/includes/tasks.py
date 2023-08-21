@@ -90,7 +90,9 @@ def download_set(
                     image_base_name = set_id
 
                 file_download_dir = pathdict["TMPDIR_ROOT"] / image_base_name
-                image_path = pathdict["OUTPUT_DIR"] / "images" / (image_base_name + ".sqfs")
+                image_path = (
+                    pathdict["OUTPUT_DIR"] / "images" / (image_base_name + ".sqfs")
+                )
                 tar_directory = pathdict["OUTPUT_DIR"] / "tar" / image_base_name
 
                 prepare_download_location = PrepareDownloadLocationOperator(
@@ -99,7 +101,7 @@ def download_set(
                     ssh_conn_id=ssh_conn_id,
                     file_download_dir=file_download_dir,
                     old_image_path=image_path,
-                    tar_dir = tar_directory,
+                    tar_dir=tar_directory,
                     extra_bin_dir=pathdict["EXTRA_BIN_DIR"],
                 )
 
@@ -118,11 +120,14 @@ def download_set(
                         task_id="download_binding_batch",
                         trigger_rule="none_skipped",
                         ssh_conn_id=ssh_conn_id,
-                        tmp_download_directory=pathdict["TMPDIR_ROOT"] / image_base_name,
+                        tmp_download_directory=pathdict["TMPDIR_ROOT"]
+                        / image_base_name,
                         tar_directory=tar_directory,
                         api=api,
                     ).expand(
-                        batch_with_index=utils.split_into_download_batches(image_split[image])
+                        batch_with_index=utils.split_into_download_batches(
+                            image_split[image]
+                        )
                     )
                     >> create_image
                 )
@@ -146,18 +151,21 @@ def create_restic_snapshot(ssh_conn_id, script_path, output_dir):
     with ssh_hook.get_conn() as ssh_client:
         with open("/home/ubuntu/restic_env.yaml", "r") as fobj:
             envs = yaml.load(fobj, Loader=yaml.FullLoader)
-        
+
         envs_str = " ".join([f"export {key}={value};" for key, value in envs.items()])
         print("Creating snapshot of downloaded images")
-        _, stdout, stderr = ssh_client.exec_command(f"{envs_str} sh {script_path} {output_dir}", 
-                                                    get_pty=True)
+        _, stdout, stderr = ssh_client.exec_command(
+            f"{envs_str} sh {script_path} {output_dir}", get_pty=True
+        )
 
         output = "\n".join(stdout.readlines())
         print(output)
 
         if stdout.channel.recv_exit_status() != 0:
             error_msg = "\n".join(stderr.readlines())
-            raise CreateSnapshotError(f"Creating snapshot failed with error:\n{error_msg}")
+            raise CreateSnapshotError(
+                f"Creating snapshot failed with error:\n{error_msg}"
+            )
 
 
 class CreateSnapshotError(Exception):
