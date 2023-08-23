@@ -292,8 +292,8 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
         if skipped_already_done > 0:
             self.log.info(f"When downloading ALTO files for binding {self.dc_identifier}, {skipped_already_done}/{total_alto_files} skipped as already downloaded")
 
-        downloading_time_spent = download_start - time.time()
-        total_time_spent = execute_start - time.time()
+        downloading_time_spent = time.time() - download_start
+        total_time_spent = time.time() - execute_start
         OK_time_spent = sum([download_times[i] for i, result in enumerate(download_results) if result == "OK"])
         BAD_REQUEST_time_spent = sum([download_times[i] for i, result in enumerate(download_results) if result == "BAD_REQUEST"])
         ERR_time_spent = sum([download_times[i] for i, result in enumerate(download_results) if result == "ERR"])
