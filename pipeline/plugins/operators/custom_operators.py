@@ -1,6 +1,7 @@
 import os
 import re
 from requests.exceptions import RequestException
+import time
 
 from airflow.models import BaseOperator
 from airflow.providers.ssh.hooks.ssh import SSHHook
@@ -201,6 +202,7 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
         self.mets_path = mets_path
 
     def execute(self, context):
+        execute_start = time.time()
         mets = METS(self.dc_identifier, self.sftp_client.file(str(self.mets_path), "r"))
         alto_files = mets.files_of_type(ALTOFile)
 
@@ -211,17 +213,29 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
         failed_401_count = 0
         skipped_ignore = 0
         skipped_already_done = 0
+        ok_files = 0
         mark_failed = False
+        download_times = []
+        download_results = []
+        ok_bytes = 0
+        ok_request_time = 0
+        housekeeping_time_spent = time.time() - execute_start
+        download_start = time.time()
         for alto_file in alto_files:
+            this_download_start = time.time()
             total_alto_files += 1
             output_file = self.output_directory / alto_file.filename
 
             file_name_in_image = re.sub('^.+batch_[^/]', '', str(output_file))
             if file_name_in_image in self.ignore_files_set:
                 skipped_ignore += 1
+                download_times.append(time.time() - this_download_start)
+                download_results.append("IGNORE")
                 continue
 
             if utils.remote_file_exists(self.sftp_client, output_file):
+                download_times.append(time.time() - this_download_start)
+                download_results.append("DONE")
                 skipped_already_done += 1
                 continue
 
@@ -229,10 +243,13 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
 
             with self.sftp_client.file(str(tmp_output_file), "wb") as file:
                 try:
+                    this_request_start = time.time()
                     alto_file.download(
                         output_file=file,
                         chunk_size=10 * 1024 * 1024,
                     )
+                    this_request_time = time.time() - this_request_start
+                    ok_bytes += file.tell()
                 except RequestException as e:
                     self.delete_temporary_file(tmp_output_file)
                     mark_failed = True
@@ -250,6 +267,8 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
                             e.response,
                         )
                         raise e
+                    download_times.append(time.time() - this_download_start)
+                    download_results.append("BAD_REQUEST")
                     continue
 
             if self.move_file_to_final_location(tmp_output_file, output_file) != 0:
@@ -257,6 +276,13 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
                     "Moving ALTO file %s from tmp to destination failed",
                     alto_file.download_url,
                 )
+                download_times.append(time.time() - this_download_start)
+                download_results.append("ERR")
+            else:
+                download_times.append(time.time() - this_download_start)
+                download_results.append("OK")
+                ok_request_time += this_request_time
+                ok_files += 1
         if failed_404_count > 0:
             self.log.error(f"When downloading ALTO files for binding {self.dc_identifier}, {failed_404_count}/{total_alto_files} files failed with a 404")
         if failed_401_count > 0:
@@ -265,6 +291,30 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
             self.log.info(f"When downloading ALTO files for binding {self.dc_identifier}, {skipped_ignore}/{total_alto_files} skipped due to ignore list")
         if skipped_already_done > 0:
             self.log.info(f"When downloading ALTO files for binding {self.dc_identifier}, {skipped_already_done}/{total_alto_files} skipped as already downloaded")
+
+        downloading_time_spent = download_start - time.time()
+        total_time_spent = execute_start - time.time()
+        OK_time_spent = sum([download_times[i] for i, result in enumerate(download_results) if result == "OK"])
+        BAD_REQUEST_time_spent = sum([download_times[i] for i, result in enumerate(download_results) if result == "BAD_REQUEST"])
+        ERR_time_spent = sum([download_times[i] for i, result in enumerate(download_results) if result == "ERR"])
+        DONE_time_spent = sum([download_times[i] for i, result in enumerate(download_results) if result == "DONE"])
+        IGNORE_time_spent = sum([download_times[i] for i, result in enumerate(download_results) if result == "IGNORE"])
+        unexplained = total_time_spent - OK_time_spent - BAD_REQUEST_time_spent - ERR_time_spent - DONE_time_spent - IGNORE_time_spent
+
+        prefix = f"PROFILING SaveAltosSFTPOperator for {self.dc_identifier}"
+        print(f"{prefix}: TOTAL: {total_time_spent:.2f}")
+        print(f"{prefix}: HOUSEKEEPING: {housekeeping_time_spent:.2f}")
+        print(f"{prefix}: DOWNLOADING: {downloading_time_spent:.2f}")
+        print(f"{prefix}: SUCCESSFUL DOWNLOADS: {OK_time_spent:.2f}")
+        print(f"{prefix}: BAD REQUESTS: {BAD_REQUEST_time_spent:.2f}")
+        print(f"{prefix}: ERRORS: {ERR_time_spent:.2f}")
+        print(f"{prefix}: ALREADY DOWNLOADED: {DONE_time_spent:.2f}")
+        print(f"{prefix}: IGNORED: {IGNORE_time_spent:.2f}")
+        print(f"{prefix}: UNEXPLAINED: {unexplained:.2f}")
+        if ok_request_time > 0:
+            print(f"{prefix}: ACTUAL time spent in ultimately good requests {ok_request_time:.2f}, files xferred {ok_files}, bytes xferred {ok_bytes}, kBps {ok_bytes/(1000*ok_request_time):.1f}")
+        else:
+            print(f"{prefix}: ACTUAL time spent in ultimately good requests was ZERO")
 
         if mark_failed:
             raise DownloadBatchError
@@ -352,6 +402,10 @@ class StowBindingBatchOperator(BaseOperator):
         return stdout.channel.recv_exit_status() == 0
 
     def execute(self, context):
+        execute_start = time.time()
+        mets_time = 0
+        altos_time = 0
+
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
             sftp_client = ssh_client.open_sftp()
@@ -359,10 +413,11 @@ class StowBindingBatchOperator(BaseOperator):
             batch, batch_num = self.batch_with_index
             batch_root = self.tmp_download_directory / f"batch_{batch_num}"
             mark_failed = False
+            housekeeping_time = time.time() - execute_start
             for dc_identifier in batch:
                 binding_id = utils.binding_id_from_dc(dc_identifier)
                 tmp_binding_path = batch_root / utils.binding_download_location(binding_id)
-
+                download_start = time.time()
                 try:
                     mets_operator = SaveMetsSFTPOperator(
                         task_id=f"save_mets_{binding_id}",
@@ -385,6 +440,8 @@ class StowBindingBatchOperator(BaseOperator):
                     else:
                         self.log.error(f"Downloading METS in {dc_identifier} still failing, moving on with image creation")
                     continue
+                mets_time += time.time() - download_start
+                download_start = time.time()
 
                 try:
                     SaveAltosSFTPOperator(
@@ -405,11 +462,18 @@ class StowBindingBatchOperator(BaseOperator):
                         self.log.error(f"Downloading ALTOs in {dc_identifier} still failing, moving on with image creation")
                     continue
 
+                altos_time += time.time() - download_start
+
                 if self.temporary_files_present(ssh_client, tmp_binding_path):
                     raise DownloadBatchError(
                         "Temporary files found in download batch, "
                         "halting archive creation"
                     )
+
+            prefix = f"PROFILING StowBindingBatchOperator with {len(batch)} bindings:"
+            print(f'{prefix} housekeeping time was {housekeeping_time:.2f}')
+            print(f'{prefix} METS time was {mets_time:.2f}')
+            print(f'{prefix} ALTOS time was {altos_time:.2f}')
 
             if mark_failed:
                 # Now, after all the downloads are done, we fail if necessary
