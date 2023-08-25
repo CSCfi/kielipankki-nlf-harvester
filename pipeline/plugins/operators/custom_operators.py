@@ -581,7 +581,7 @@ class CreateImageOperator(BaseOperator):
                         "Will use old image %s as a tar source for new image on Puhti",
                         self.image_path,
                     )
-                mksquashfs_cmd = f"{self.extra_bin_dir}/sqfstar {tmp_image_path} -ignore-zeros -mem 2G"
+                mksquashfs_cmd = f"{self.extra_bin_dir}/sqfstar -ignore-zeros -mem 2G {tmp_image_path}"
                 self.log.info("Creating temporary image in %s on Puhti", tmp_image_path)
                 self.ssh_execute_and_raise(
                     ssh_client,

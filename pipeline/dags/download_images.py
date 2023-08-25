@@ -34,6 +34,7 @@ COLLECTIONS = [
     {"id": "col-501", "image_size": 5000},
     {"id": "col-82", "image_size": 150000},
     {"id": "col-24", "image_size": 100000},
+    {"id": "col-861", "image_size": 100000},
 ]
 
 default_args = {
