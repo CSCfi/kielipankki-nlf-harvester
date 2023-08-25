@@ -209,7 +209,6 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
         total_alto_files = 0
         failed_404_count = 0
         failed_401_count = 0
-        skipped_ignore = 0
         skipped_already_done = 0
         mark_failed = False
         for alto_file in alto_files:
@@ -217,9 +216,6 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
             output_file = self.output_directory / alto_file.filename
 
             file_name_in_image = re.sub("^.+batch_[^/]", "", str(output_file))
-            if file_name_in_image in self.ignore_files_set:
-                skipped_ignore += 1
-                continue
 
             if utils.remote_file_exists(self.sftp_client, output_file):
                 skipped_already_done += 1
@@ -264,10 +260,6 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
         if failed_401_count > 0:
             self.log.error(
                 f"When downloading ALTO files for binding {self.dc_identifier}, {failed_401_count}/{total_alto_files} files failed with a 401"
-            )
-        if skipped_ignore > 0:
-            self.log.info(
-                f"When downloading ALTO files for binding {self.dc_identifier}, {skipped_ignore}/{total_alto_files} skipped due to ignore list"
             )
         if skipped_already_done > 0:
             self.log.info(
@@ -363,7 +355,6 @@ class StowBindingBatchOperator(BaseOperator):
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
             sftp_client = ssh_client.open_sftp()
-            ignore_files_set = self.get_ignore_files_set(sftp_client)
             batch, batch_num = self.batch_with_index
             batch_root = self.tmp_download_directory / f"batch_{batch_num}"
             mark_failed = False
@@ -381,7 +372,7 @@ class StowBindingBatchOperator(BaseOperator):
                         ssh_client=ssh_client,
                         dc_identifier=dc_identifier,
                         output_directory=tmp_binding_path / "mets",
-                        ignore_files_set=ignore_files_set,
+                        ignore_files_set={},
                     )
                     mets_operator.execute(context={})
                 except Exception as e:
@@ -406,7 +397,7 @@ class StowBindingBatchOperator(BaseOperator):
                         ssh_client=ssh_client,
                         dc_identifier=dc_identifier,
                         output_directory=tmp_binding_path / "alto",
-                        ignore_files_set=ignore_files_set,
+                        ignore_files_set={},
                     ).execute(context={})
                 except Exception as e:
                     if (not issubclass(type(e), RequestException)) and type(e) != DownloadBatchError:
@@ -513,10 +504,6 @@ class PrepareDownloadLocationOperator(BaseOperator):
             self.create_image_folder(sftp_client, self.file_download_dir)
             ssh_client.exec_command(f"mkdir -p {self.tar_dir}")
 
-            if utils.remote_file_exists(sftp_client, self.old_image_path):
-                self.create_file_listing_from_image(
-                    ssh_client,
-                )
 
 
 class CreateImageOperator(BaseOperator):
