@@ -83,7 +83,11 @@ def list_download_urls(mets_file_path, collection_dc_identifier, encoding):
         which the binding described by this METS belongs. E.g.
         https://digi.kansalliskirjasto.fi/sanomalehti/binding/380082.
     """
-    mets = METS(collection_dc_identifier, mets_file=open(mets_file_path, "rb"), encoding=encoding)
+    mets = METS(
+        collection_dc_identifier,
+        mets_file=open(mets_file_path, "rb"),
+        encoding=encoding,
+    )
     for file in mets.files():
         try:
             click.echo(file.download_url)
@@ -116,7 +120,11 @@ def download_files_from(mets_file_path, collection_dc_identifier, encoding, base
         which the binding described by this METS belongs. E.g.
         https://digi.kansalliskirjasto.fi/sanomalehti/binding/380082.
     """
-    mets = METS(collection_dc_identifier, mets_file=open(mets_file_path, "rb"), encoding=encoding)
+    mets = METS(
+        collection_dc_identifier,
+        mets_file=open(mets_file_path, "rb"),
+        encoding=encoding,
+    )
     for file in mets.files():
         try:
             output_file_path = utils.file_download_location(

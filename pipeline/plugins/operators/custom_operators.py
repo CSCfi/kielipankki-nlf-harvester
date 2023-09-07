@@ -376,9 +376,13 @@ class StowBindingBatchOperator(BaseOperator):
                     )
                     mets_operator.execute(context={})
                 except Exception as e:
-                    if (not issubclass(type(e), RequestException)) and type(e) != DownloadBatchError:
-                        self.log.error(f"Unexpected exception when downloading METS in {dc_identifier}, continuing anyway: {e}")
-                    if context['task_instance'].try_number < 3:
+                    if (not issubclass(type(e), RequestException)) and type(
+                        e
+                    ) != DownloadBatchError:
+                        self.log.error(
+                            f"Unexpected exception when downloading METS in {dc_identifier}, continuing anyway: {e}"
+                        )
+                    if context["task_instance"].try_number < 3:
                         # If we're not on our third try, we'll fail this batch before tar creation.
                         # If we *are* on our third task, create tar anyway, succeed in the task,
                         # and log failures.
@@ -400,9 +404,13 @@ class StowBindingBatchOperator(BaseOperator):
                         ignore_files_set={},
                     ).execute(context={})
                 except Exception as e:
-                    if (not issubclass(type(e), RequestException)) and type(e) != DownloadBatchError:
-                        self.log.error(f"Unexpected exception when downloading ALTOs in {dc_identifier}, continuing anyway: {e}")
-                    if context['task_instance'].try_number < 3:
+                    if (not issubclass(type(e), RequestException)) and type(
+                        e
+                    ) != DownloadBatchError:
+                        self.log.error(
+                            f"Unexpected exception when downloading ALTOs in {dc_identifier}, continuing anyway: {e}"
+                        )
+                    if context["task_instance"].try_number < 3:
                         mark_failed = True
                     else:
                         self.log.error(
@@ -503,7 +511,6 @@ class PrepareDownloadLocationOperator(BaseOperator):
 
             self.create_image_folder(sftp_client, self.file_download_dir)
             ssh_client.exec_command(f"mkdir -p {self.tar_dir}")
-
 
 
 class CreateImageOperator(BaseOperator):

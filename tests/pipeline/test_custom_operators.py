@@ -290,10 +290,7 @@ def test_existing_altos_not_downloaded_again(
             with open(simple_mets_path, encoding="utf-8") as local_file:
                 sftp_file.write(local_file.read())
 
-        alto_locations = [
-            alto_dir / filename
-            for filename in alto_filenames
-        ]
+        alto_locations = [alto_dir / filename for filename in alto_filenames]
 
         utils.make_intermediate_dirs(
             sftp_client=sftp,
@@ -311,8 +308,7 @@ def test_existing_altos_not_downloaded_again(
             mets_path=mets_file,
             dc_identifier=mets_dc_identifier,
             output_directory=alto_dir,
-            ignore_files_set = set([f"/alto/{filename}"
-                                    for filename in alto_filenames])
+            ignore_files_set=set([f"/alto/{filename}" for filename in alto_filenames]),
         )
 
         operator.execute(context={})
