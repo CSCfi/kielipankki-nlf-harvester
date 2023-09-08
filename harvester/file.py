@@ -193,6 +193,27 @@ class ALTOFile(File):
         return Path(utils.binding_id_from_dc(self.binding_dc_identifier)) / "alto"
 
 
+class AccessImageFile(File):
+    """
+    A jpg file containing a scanned page/sheet from a binding
+    """
+
+    @property
+    def download_url(self):
+        """
+        The URL from which this file can be downloaded from NLF.
+
+        These are in consist of the full DC identifier (e.g.
+        "https://digi.kansalliskirjasto.fi/sanomalehti/binding/1426186"), directory
+        "image" and the page number (e.g. "1"), no extension. The resulting URL will be
+        something like
+        "https://digi.kansalliskirjasto.fi/sanomalehti/binding/1426186/image/1"
+        """
+        filename_root = Path(self.filename).stem
+        page_number = re.search(r"[1-9]\d*", filename_root).group(0)
+        return f"{self.binding_dc_identifier}/image/{page_number}"
+
+
 class METSLocationParseError(ValueError):
     """
     Exception raised when location of a file cannot be determined.
