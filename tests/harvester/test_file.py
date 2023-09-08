@@ -118,3 +118,33 @@ def test_download_to_remote(alto_file, sftp_client, sftp_server, mock_alto_downl
 
     with sftp.file(str(output_path), "r") as file:
         assert file.read().decode("utf-8") == mock_alto_download
+
+
+def test_access_image_download_url(access_image, access_image_base_url):
+    """
+    Test that the most basic case of access image url parsing works
+    """
+    image = access_image(filename="pr-00001.tif")
+    assert image.download_url == access_image_base_url + "/1"
+
+
+def test_access_image_download_url_with_large_page_number(
+    access_image, access_image_base_url
+):
+    """
+    Test that URLs are parsed correctly when binding has a lot of pages
+    """
+    image = access_image(filename="pr-123456789.tif")
+    assert image.download_url == access_image_base_url + "/123456789"
+
+
+def test_access_image_download_url_with_zeros_in_page_number(
+    access_image, access_image_base_url
+):
+    """
+    Test that zeros in page number behave as expected:
+      * leading zeros are ignored
+      * other zeros (trailing and in the middle of the number) are included
+    """
+    image = access_image(filename="pr-012304560.tif")
+    assert image.download_url == access_image_base_url + "/12304560"

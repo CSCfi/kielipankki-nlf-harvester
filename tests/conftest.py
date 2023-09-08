@@ -7,7 +7,7 @@ import pytest
 import requests
 import requests_mock
 
-from harvester.file import ALTOFile
+from harvester.file import ALTOFile, AccessImageFile
 
 
 @pytest.fixture(autouse=True)
@@ -287,3 +287,38 @@ def mock_alto_download_for_test_mets():
             content=alto_file_content.encode("utf-8"),
         )
         yield alto_file_content
+
+
+@pytest.fixture
+def access_image_url():
+    """
+    Return the expected download URL for an access image
+    """
+    return "https://example.com/1234/image/1"
+
+
+@pytest.fixture
+def access_image_binding_dc():
+    return "https://example.com/1234"
+
+
+@pytest.fixture
+def access_image_base_url():
+    return "https://example.com/1234/image"
+
+
+@pytest.fixture
+def access_image(access_image_binding_dc):
+    """
+    Factory for ALTOFiles with desired file names for testing.
+    """
+
+    def image_factory(filename):
+        return AccessImageFile(
+            "test_checksum",
+            "test_algo",
+            f"file://./preservation_img/{filename}",
+            access_image_binding_dc,
+        )
+
+    return image_factory
