@@ -53,7 +53,7 @@ if __name__ == "__main__":
         sourcepaths += [
             os.path.join(args.dir, f)
             for f in os.listdir(args.dir)
-            if f.endswith(".zip") or f.endswith(".tar")
+            if f.endswith(".tar")
         ]
 
     if args.verbose:
