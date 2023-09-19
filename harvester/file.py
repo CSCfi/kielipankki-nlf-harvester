@@ -66,8 +66,12 @@ class File:
 
         if filegrp_use in ["alto", "Text"] and filegrp_id == "ALTOGRP":
             file_cls = ALTOFile
+        elif filegrp_use in ["Images"] and filegrp_id == "IMGGRP":
+            file_cls = AccessImageFile
+        elif filegrp_id in ["TARGETIMGGRP", "RETAINEDIMGGRP", "MISSINGIMGGRP"]:
+            file_cls = SkippedFile
         else:
-            file_cls = UnknownTypeFile
+            raise UnknownFileException
 
         return file_cls(
             checksum=file_element.attrib["CHECKSUM"],
@@ -147,11 +151,12 @@ class File:
                 output_file.write(chunk)
 
 
-class UnknownTypeFile(File):
+class SkippedFile(File):
     """
-    Temporary class for files whose type is not known.
+    A class for files that are listed in METS but do not need download logic.
 
-    To be deleted when we figure out the file type detection.
+    These can be e.g. versions of scanned pages with rulers etc present in the image,
+    that are not normally available for users.
     """
 
 
@@ -217,4 +222,10 @@ class AccessImageFile(File):
 class METSLocationParseError(ValueError):
     """
     Exception raised when location of a file cannot be determined.
+    """
+
+
+class UnknownFileException(ValueError):
+    """
+    Exception raised when the file corresponding to a File element cannot be determined
     """

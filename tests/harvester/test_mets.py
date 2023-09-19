@@ -5,7 +5,13 @@ Tests for the METSParser
 import pytest
 from lxml import etree
 
-from harvester.file import File, METSLocationParseError, ALTOFile, UnknownTypeFile
+from harvester.file import (
+    File,
+    METSLocationParseError,
+    ALTOFile,
+    SkippedFile,
+    AccessImageFile,
+)
 from harvester.mets import METS
 
 
@@ -108,7 +114,7 @@ def test_file_content_type_parsing(simple_mets_path, mets_dc_identifier):
     files = list(mets.files())
 
     first_file = files[0]
-    assert isinstance(first_file, UnknownTypeFile)
+    assert isinstance(first_file, AccessImageFile)
 
     last_file = files[-1]
     assert isinstance(last_file, ALTOFile)
@@ -122,3 +128,39 @@ def test_alto_files(simple_mets_path, mets_dc_identifier):
     alto_files = list(mets.files_of_type(ALTOFile))
     assert len(alto_files) == 4
     assert all(isinstance(file, ALTOFile) for file in alto_files)
+
+
+@pytest.fixture
+def exotic_files_mets_object():
+    """
+    Return a METS object representing a "METS" file that has multiple file types.
+
+    The said METS is not really a full, well-formed METS file, but a stripped down
+    version instead: only the `File`s (and their `fileGrp`s and `fileSec`s) and their
+    corresponding `amdSec`s are present. This is sufficient for testing file type
+    parsing.
+
+    The METS file contains the normal ALTO and access image files, but also "target" and
+    "retained" images (one of each).
+    """
+    return METS(
+        "https://example.com/dc_identifier/5678",
+        mets_file=open("tests/data/exotic_files_METS.xml", "rb"),
+    )
+
+
+def test_unusual_image_files_skipped(exotic_files_mets_object):
+    """
+    Ensure that images that are not access images are reported as SkippedFile
+    """
+    skipped_files = list(exotic_files_mets_object.files_of_type(SkippedFile))
+    assert len(skipped_files) == 2
+
+
+def test_access_image_files_found_when_unusual_images_present(exotic_files_mets_object):
+    """
+    Ensure that the normal image group members are found, even when there are other
+    images too.
+    """
+    access_files = list(exotic_files_mets_object.files_of_type(AccessImageFile))
+    assert len(access_files) == 4
