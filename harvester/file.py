@@ -61,10 +61,10 @@ class File:
         location = file_element.xpath("./*/@*[local-name()='href']")[0]
         parent = file_element.getparent()
 
-        if (
-            parent.attrib["USE"] in ["alto", "Text"]
-            and parent.attrib["ID"] == "ALTOGRP"
-        ):
+        filegrp_use = parent.attrib["USE"]
+        filegrp_id = parent.attrib["ID"]
+
+        if filegrp_use in ["alto", "Text"] and filegrp_id == "ALTOGRP":
             file_cls = ALTOFile
         else:
             file_cls = UnknownTypeFile
