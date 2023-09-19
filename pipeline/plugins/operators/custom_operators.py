@@ -215,8 +215,6 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
             total_alto_files += 1
             output_file = self.output_directory / alto_file.filename
 
-            file_name_in_image = re.sub("^.+batch_[^/]", "", str(output_file))
-
             if utils.remote_file_exists(self.sftp_client, output_file):
                 skipped_already_done += 1
                 continue
