@@ -544,7 +544,7 @@ class CreateImageOperator(BaseOperator):
 
     def ssh_execute_and_raise(self, ssh_client, command):
         """
-        Run the given command and raisie ImageCreationError on non-zero return value.
+        Run the given command and raise ImageCreationError on non-zero return value.
         """
         _, stdout, stderr = ssh_client.exec_command(command)
 
