@@ -515,7 +515,11 @@ class PrepareDownloadLocationOperator(BaseOperator):
                 self.create_target_folder(sftp_client, dirpath)
 
 
+<<<<<<< HEAD
 class CreateTargetOperator(BaseOperator):
+=======
+class CreateDistribution(BaseOperator):
+>>>>>>> 346ee9b (Switch to zip creation instead of sqfs creation)
     """
     Create a final distribution target of the given source data.
 
