@@ -299,12 +299,12 @@ class PrepareDownloadLocationOperator(BaseOperator):
                 self.create_target_folder(sftp_client, dirpath)
 
 
-class CreateImageOperator(BaseOperator):
+class CreateDistribution(BaseOperator):
     """
-    Create a disk image of the given source data.
+    Create a final distribution target of the given source data.
 
-    The image is first created as a temporary file with the suffix .tmp, and
-    if the creation is successful, it is moved into the final location,
+    The target file is first created as a temporary file with the suffix .tmp, and
+    if the creation is successful, moved into the final location,
     overwriting what was possibly already there.
 
     :param ssh_conn_id: SSH connection id
@@ -320,14 +320,14 @@ class CreateImageOperator(BaseOperator):
         self,
         ssh_conn_id,
         data_source,
-        image_path,
+        target_path,
         extra_bin_dir,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.ssh_conn_id = ssh_conn_id
         self.data_source = data_source
-        self.image_path = image_path
+        self.target_path = target_path
         self.extra_bin_dir = extra_bin_dir
 
     def ssh_execute_and_raise(self, ssh_client, command):
@@ -341,39 +341,30 @@ class CreateImageOperator(BaseOperator):
         exit_code = stdout.channel.recv_exit_status()
         if exit_code != 0:
             error_message = "\n".join(stderr.readlines())
-            raise ImageCreationError(
+            raise CreateDistributionError(
                 f"Command {command} failed (exit code {exit_code}). Stderr output:\n"
                 f"{error_message}"
             )
 
     def execute(self, context):
-        tmp_image_path = self.image_path.with_suffix(".sqfs.tmp")
+        tmp_target_path = self.target_path.with_suffix(".zip.tmp")
 
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
             with ssh_client.open_sftp() as sftp_client:
-                old_image_to_tar_cmd = ":"  # no-op
-                if utils.remote_file_exists(sftp_client, self.image_path):
-                    old_image_to_tar = (
-                        f"{self.extra_bin_dir}/sqfs2tar {self.image_path}"
-                    )
-                    self.log.info(
-                        "Will use old image %s as a tar source for new image on Puhti",
-                        self.image_path,
-                    )
-                mksquashfs_cmd = f"{self.extra_bin_dir}/sqfstar -ignore-zeros -mem 2G {tmp_image_path}"
-                self.log.info("Creating temporary image in %s on Puhti", tmp_image_path)
+                zip_creation_cmd = f"python3 {self.extra_bin_dir/update_zip_with_sources.py} {tmp_target_path} --dir {self.data_source}"
+                self.log.info("Creating temporary zip in %s on Puhti", tmp_target_path)
                 self.ssh_execute_and_raise(
                     ssh_client,
-                    f"{old_image_to_tar_cmd} | cat - {self.data_source}/*.tar | {mksquashfs_cmd}",
+                    zip_creation_cmd,
                 )
 
                 self.log.info(
-                    "Moving temporary image %s to final location %s on Puhti",
-                    tmp_image_path,
-                    self.image_path,
+                    "Moving temporary file %s to final location %s on Puhti",
+                    tmp_target_path,
+                    self.target_path,
                 )
-                sftp_client.posix_rename(str(tmp_image_path), str(self.image_path))
+                sftp_client.posix_rename(str(tmp_target_path), str(self.target_path))
 
                 self.log.info(
                     "Removing the source .tar tree %s",
@@ -382,7 +373,7 @@ class CreateImageOperator(BaseOperator):
                 self.ssh_execute_and_raise(ssh_client, f"rm -r {self.data_source}")
 
 
-class ImageCreationError(Exception):
+class CreateDistributionError(Exception):
     """
-    Error raised when an error occurs during the disk image creation/overwrite process
+    Error raised when an error occurs during the distribution creation/overwrite process
     """
