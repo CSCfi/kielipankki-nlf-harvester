@@ -9,8 +9,8 @@ from requests.exceptions import RequestException
 from harvester import utils
 from harvester.mets import METSFileEmptyError
 from harvester.pmh_interface import PMH_API
-from pipeline.plugins.operators.custom_operators import (
-    CreateConnectionOperator,
+from pipeline.plugins.operators.custom_operators import CreateConnectionOperator
+from pipeline.plugins.operators.file_download_operators import (
     SaveMetsSFTPOperator,
     SaveAltosSFTPOperator,
 )
