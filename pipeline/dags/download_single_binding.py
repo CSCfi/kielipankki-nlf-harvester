@@ -3,6 +3,9 @@
 Downloads METS and ALTO files for a single binding to a remote server (Puhti).
 """
 
+# pylint does not understand that operators is not third-party
+# pylint: disable=wrong-import-order
+
 from datetime import timedelta
 
 from airflow import DAG
@@ -15,10 +18,10 @@ from airflow.decorators import task
 from harvester import utils
 from harvester.pmh_interface import PMH_API
 
-from operators.custom_operators import (
+from operators.custom_operators import CreateConnectionOperator
+from operators.file_download_operators import (
     SaveMetsSFTPOperator,
     SaveAltosSFTPOperator,
-    CreateConnectionOperator,
 )
 
 # this fails
