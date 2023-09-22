@@ -5,6 +5,9 @@ from airflow.providers.ssh.hooks.ssh import SSHHook
 from airflow.models import Connection
 from airflow import settings
 
+# pylint does not understand that custom operators are not third party code
+# pylint: disable=wrong-import-order
+
 from harvester import utils
 from operators.file_download_operators import (
     SaveMetsSFTPOperator,
