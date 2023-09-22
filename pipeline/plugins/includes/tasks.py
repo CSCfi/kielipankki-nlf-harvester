@@ -7,6 +7,9 @@ from requests.exceptions import RequestException
 
 import yaml
 
+# pylint does not understand that custom operators are not third party code
+# pylint: disable=wrong-import-order
+
 from harvester import utils
 from operators.custom_operators import (
     PrepareDownloadLocationOperator,
