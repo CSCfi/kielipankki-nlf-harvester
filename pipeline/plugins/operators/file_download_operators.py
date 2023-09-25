@@ -133,7 +133,9 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
                 self.delete_temporary_file(tmp_output_file)
                 if e.response is not None:
                     self.log.error(
-                        f"METS download {self.dc_identifier} failed with {e.response.status_code}, will retry and/or continue with others"
+                        f"METS download {self.dc_identifier} failed with "
+                        f"{e.response.status_code}, will retry and/or continue with "
+                        f"others"
                     )
                 raise e
             except OSError as e:
@@ -236,15 +238,19 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
         """
         if failed_404_count > 0:
             self.log.error(
-                f"When downloading ALTO files for binding {self.dc_identifier}, {failed_404_count}/{total_alto_files} files failed with a 404"
+                f"When downloading ALTO files for binding {self.dc_identifier}, "
+                f"{failed_404_count}/{total_alto_files} files failed with a 404"
             )
         if failed_401_count > 0:
             self.log.error(
-                f"When downloading ALTO files for binding {self.dc_identifier}, {failed_401_count}/{total_alto_files} files failed with a 401"
+                f"When downloading ALTO files for binding {self.dc_identifier}, "
+                f"{failed_401_count}/{total_alto_files} files failed with a 401"
             )
         if skipped_already_done > 0:
             self.log.info(
-                f"When downloading ALTO files for binding {self.dc_identifier}, {skipped_already_done}/{total_alto_files} skipped as already downloaded"
+                f"When downloading ALTO files for binding {self.dc_identifier}, "
+                f"{skipped_already_done}/{total_alto_files} skipped as already "
+                f"downloaded"
             )
 
 
