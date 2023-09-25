@@ -217,6 +217,23 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
                     "Moving ALTO file %s from tmp to destination failed",
                     alto_file.download_url,
                 )
+
+            self._report_errors(
+                failed_404_count,
+                failed_401_count,
+                skipped_already_done,
+                total_alto_files,
+            )
+
+        if mark_failed:
+            raise DownloadBatchError
+
+    def _report_errors(
+        self, failed_404_count, failed_401_count, skipped_already_done, total_alto_files
+    ):
+        """
+        Log information about reasons some files were not successfully downloaded
+        """
         if failed_404_count > 0:
             self.log.error(
                 f"When downloading ALTO files for binding {self.dc_identifier}, {failed_404_count}/{total_alto_files} files failed with a 404"
@@ -229,9 +246,6 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
             self.log.info(
                 f"When downloading ALTO files for binding {self.dc_identifier}, {skipped_already_done}/{total_alto_files} skipped as already downloaded"
             )
-
-        if mark_failed:
-            raise DownloadBatchError
 
 
 class DownloadBatchError(Exception):
