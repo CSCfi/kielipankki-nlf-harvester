@@ -10,17 +10,6 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
 
 
-@pytest.fixture(autouse=True, scope="package")
-def airflow_path_addition():
-    """
-    Airflow automatically adds some paths to sys.path: do that manually for tests.
-
-    Without this, our tests won't discover custom operators like production Airflow
-    would.
-    """
-    sys.path.append("pipeline/plugins")
-
-
 @pytest.fixture
 def ssh_server(tmp_path):
     private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)

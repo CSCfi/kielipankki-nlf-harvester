@@ -4,7 +4,7 @@ apache-airflow-providers-ssh
 black
 flake8
 pylint<2.15
-pytest
+pytest>=7.0.0
 pytest-cov
 requests_mock
 sphinx
