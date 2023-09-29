@@ -299,7 +299,7 @@ class PrepareDownloadLocationOperator(BaseOperator):
                 self.create_target_folder(sftp_client, dirpath)
 
 
-class CreateDistribution(BaseOperator):
+class CreateDistributionOperator(BaseOperator):
     """
     Create a final distribution target of the given source data.
 
