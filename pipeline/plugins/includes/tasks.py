@@ -13,7 +13,7 @@ import yaml
 from harvester import utils
 from operators.custom_operators import (
     PrepareDownloadLocationOperator,
-    CreateImageOperator,
+    CreateDistributionOperator,
     StowBindingBatchOperator,
 )
 
@@ -108,12 +108,12 @@ def download_set(
                     extra_bin_dir=pathdict["EXTRA_BIN_DIR"],
                 )
 
-                create_image = CreateImageOperator(
+                create_image = CreateDistributionOperator(
                     task_id=f"create_image_{image_base_name}",
                     trigger_rule="none_skipped",
                     ssh_conn_id=ssh_conn_id,
                     data_source=tar_directory,
-                    image_path=image_path,
+                    target_path=image_path,
                     extra_bin_dir=pathdict["EXTRA_BIN_DIR"],
                 )
 
