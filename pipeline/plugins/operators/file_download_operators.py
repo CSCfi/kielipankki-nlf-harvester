@@ -8,7 +8,7 @@ from requests.exceptions import RequestException
 from airflow.models import BaseOperator
 
 from harvester.mets import METS, METSFileEmptyError
-from harvester.file import ALTOFile
+from harvester.file import ALTOFile, AccessImageFile
 from harvester import utils
 
 
@@ -98,6 +98,21 @@ class SaveFilesSFTPOperator(BaseOperator):
         String representation of the file type to be downloaded.
         """
         raise NotImplementedError("File type string must be defined in subclasses")
+
+    @property
+    def capitalized_file_type(self):
+        """
+        String representation of file type capitalized so that it can begin a sentence.
+
+        The first letter is always converted to upper case while the remaining
+        characters are kept as is. Thus e.g. "ALTO" will remain "ALTO" but "access image
+        file" will be converted to "Access image file".
+        """
+        if len(self.file_type) < 2:
+            raise NotImplementedError(
+                "Capitalization for single-letter file types not implemented"
+            )
+        return self.file_type[0].upper() + self.file_type[1:]
 
 
 class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
@@ -259,7 +274,7 @@ class SavePageFilesSFTPOperator(SaveFilesSFTPOperator):
                     else:
                         self.log.error(
                             "%s file download with URL %s failed: %s",
-                            self.file_type,
+                            self.capitalized_file_type,
                             file_.download_url,
                             e.response,
                         )
@@ -295,6 +310,19 @@ class SaveAltosSFTPOperator(SavePageFilesSFTPOperator):
     @property
     def file_type(self):
         return "ALTO"
+
+
+class SaveAccessImagesSFTPOperator(SavePageFilesSFTPOperator):
+    """
+    Save access images for one binding on remote filesystem.
+    """
+
+    def files(self, mets):
+        return mets.files_of_type(AccessImageFile)
+
+    @property
+    def file_type(self):
+        return "access image"
 
 
 class DownloadBatchError(Exception):

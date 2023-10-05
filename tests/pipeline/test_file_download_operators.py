@@ -1,5 +1,10 @@
 """
-Tests for file downloading operators
+Tests for file downloading operators.
+
+The shared page file downloading functionality is mainly covered by testing
+SaveAltosSFTPOperator. SaveAccessImagesSFTPOperator only has the tests necessary to
+demonstrate that it is likely to work as well as ALTO downloading and minimal testing
+for the functionality specific to it.
 """
 import os
 from pathlib import Path
@@ -13,6 +18,7 @@ from harvester.pmh_interface import PMH_API
 from pipeline.plugins.operators.file_download_operators import (
     SaveMetsSFTPOperator,
     SaveAltosSFTPOperator,
+    SaveAccessImagesSFTPOperator,
 )
 
 
@@ -298,3 +304,115 @@ def test_existing_altos_not_downloaded_again(
         for alto_location in alto_locations:
             with sftp.file(str(alto_location), "r") as alto:
                 assert alto.read().decode("utf-8") == "test content"
+
+
+def test_save_access_images_sftp_operator(
+    mets_dc_identifier,
+    sftp_server,
+    ssh_server,
+    mock_access_image_download_for_test_mets,
+    simple_mets_path,
+):
+    """
+    Check that executing SaveAccessImagesSFTPOperator does download the files.
+    """
+    tmp_path = Path(sftp_server.root) / "tmp"
+    image_dir = tmp_path / "sub_dir" / "access_images"
+    mets_file = tmp_path / "mets_dir" / "379973_METS.xml"
+
+    with ssh_server.client("user") as ssh_client:
+        sftp = ssh_client.open_sftp()
+
+        utils.make_intermediate_dirs(
+            sftp_client=sftp,
+            remote_directory=mets_file.parent,
+        )
+
+        with sftp.file(str(mets_file), "w") as sftp_file:
+            with open(simple_mets_path, encoding="utf-8") as local_file:
+                sftp_file.write(local_file.read())
+
+        operator = SaveAccessImagesSFTPOperator(
+            task_id="test_save_images_remote",
+            sftp_client=sftp,
+            ssh_client=ssh_client,
+            mets_path=mets_file,
+            dc_identifier=mets_dc_identifier,
+            output_directory=image_dir,
+        )
+
+        operator.execute(context={})
+
+        image_locations = [
+            image_dir / filename
+            for filename in [
+                "pr-00001.jp2",
+                "pr-00002.jp2",
+                "pr-00003.jp2",
+                "pr-00004.jp2",
+            ]
+        ]
+
+        for location in image_locations:
+            with sftp.file(str(location), "r") as image_file:
+                assert image_file.read() == mock_access_image_download_for_test_mets
+
+
+def test_save_altos_operator_file_type_str():
+    """
+    Check that SaveAltosSFTPOperator can report the type of files it downloads
+    """
+    operator = SaveAltosSFTPOperator(
+        task_id="dummy-test-task",
+        sftp_client=None,
+        ssh_client=None,
+        mets_path=None,
+        dc_identifier=None,
+        output_directory=None,
+    )
+    assert operator.file_type == "ALTO"
+
+
+def test_save_access_images_operator_file_type_str():
+    """
+    Check that SaveAccessImagesSFTPOperator can report the type of files it downloads
+    """
+    operator = SaveAccessImagesSFTPOperator(
+        task_id="dummy-test-task",
+        sftp_client=None,
+        ssh_client=None,
+        mets_path=None,
+        dc_identifier=None,
+        output_directory=None,
+    )
+    assert operator.file_type == "access image"
+
+
+def test_save_page_files_operator_capitalized_file_type_capitalized_first_letter():
+    """
+    Check that first (and only first) letter of all-lowercase file type is capitalized
+    """
+    operator = SaveAccessImagesSFTPOperator(
+        task_id="dummy-test-task",
+        sftp_client=None,
+        ssh_client=None,
+        mets_path=None,
+        dc_identifier=None,
+        output_directory=None,
+    )
+    assert operator.capitalized_file_type == "Access image"
+
+
+def test_save_page_files_operator_capitalized_file_type_keeps_uppercase_as_uppercase():
+    """
+    Check that no letters in all-uppercase file type are converted to lower case
+    """
+    operator = SaveAltosSFTPOperator(
+        task_id="dummy-test-task",
+        sftp_client=None,
+        ssh_client=None,
+        mets_path=None,
+        dc_identifier=None,
+        output_directory=None,
+    )
+    assert operator.capitalized_file_type == "ALTO"
