@@ -12,6 +12,7 @@ from harvester import utils
 from operators.file_download_operators import (
     SaveMetsSFTPOperator,
     SaveAltosSFTPOperator,
+    SaveAccessImagesSFTPOperator,
     DownloadBatchError,
 )
 
@@ -206,6 +207,17 @@ class StowBindingBatchOperator(BaseOperator):
                     ignore_files_set={},
                 )
                 self.execute_save_files_operator(alto_operator, context)
+
+                access_image_operator = SaveAccessImagesSFTPOperator(
+                    task_id=f"save_acces_images_{binding_id}",
+                    mets_path=mets_operator.output_file,
+                    sftp_client=sftp_client,
+                    ssh_client=ssh_client,
+                    dc_identifier=dc_identifier,
+                    output_directory=tmp_binding_path / "access_img",
+                    ignore_files_set={},
+                )
+                self.execute_save_files_operator(access_image_operator, context)
 
                 if self.temporary_files_present(ssh_client, tmp_binding_path):
                     raise DownloadBatchError(

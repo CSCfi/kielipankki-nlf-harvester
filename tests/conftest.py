@@ -290,6 +290,25 @@ def mock_alto_download_for_test_mets():
 
 
 @pytest.fixture
+def mock_access_image_download_for_test_mets(mets_dc_identifier):
+    """
+    Fake a response for GETting access images from "NLF".
+
+    We don't really need the proper images, so the response contains dummy binary data.
+    The "default" test METS represents a binding with four pages, so an image download
+    url is mocked for each of them.
+    """
+    file_content = "this is totally an image".encode("ascii")
+    with requests_mock.Mocker() as mocker:
+        for page_number in range(5):
+            mocker.get(
+                f"{mets_dc_identifier}/image/{page_number}",
+                content=file_content,
+            )
+        yield file_content
+
+
+@pytest.fixture
 def access_image_url():
     """
     Return the expected download URL for an access image
