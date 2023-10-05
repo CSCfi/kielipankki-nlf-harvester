@@ -352,7 +352,7 @@ class CreateDistributionOperator(BaseOperator):
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
             with ssh_client.open_sftp() as sftp_client:
-                zip_creation_cmd = f"python3 {self.extra_bin_dir/update_zip_with_sources.py} {tmp_target_path} --dir {self.data_source}"
+                zip_creation_cmd = f"python3 {self.extra_bin_dir/'update_zip_with_sources.py'} {tmp_target_path} --dir {self.data_source}"
                 self.log.info("Creating temporary zip in %s on Puhti", tmp_target_path)
                 self.ssh_execute_and_raise(
                     ssh_client,
