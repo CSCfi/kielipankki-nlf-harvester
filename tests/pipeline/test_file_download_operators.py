@@ -289,7 +289,7 @@ def test_existing_altos_not_downloaded_again(
             mets_path=mets_file,
             dc_identifier=mets_dc_identifier,
             output_directory=alto_dir,
-            ignore_files_set=set([f"/alto/{filename}" for filename in alto_filenames]),
+            ignore_files_set={f"/alto/{filename}" for filename in alto_filenames},
         )
 
         operator.execute(context={})
