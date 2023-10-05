@@ -157,31 +157,78 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
             )
 
 
-class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
+class SavePageFilesSFTPOperator(SaveFilesSFTPOperator):
     """
-    Save ALTO files for one binding on remote filesystem using SSH connection.
-
-    :param mets_path: Path to the METS file of the binding
+    A base class for downloading different representations of pages in a binding.
     """
 
     def __init__(self, mets_path, **kwargs):
+        """
+        :param mets_path: Path to the METS file for the binding
+        """
         super().__init__(**kwargs)
         self.mets_path = mets_path
 
+    @property
+    def file_type(self):
+        """
+        String representation of the file type to be downloaded.
+        """
+        raise NotImplementedError("File type string must be defined in subclasses")
+
+    def files(self, mets):
+        """
+        Iterable containing all of the files that are to be downloaded.
+
+        :param mets: :class:`harvester.mets.METS` for the binding
+        :returns: Iterable containing the files represented as
+                  :class:`harvester.file.File`.
+        """
+        raise NotImplementedError("Files list must be implemented in subclasses")
+
+    def _report_errors(
+        self, failed_404_count, failed_401_count, skipped_already_done, total_alto_files
+    ):
+        """
+        Log information about reasons some files were not successfully downloaded
+        """
+        if failed_404_count > 0:
+            self.log.error(
+                f"When downloading {self.file_type} files for binding "
+                f"{self.dc_identifier}, {failed_404_count}/{total_alto_files} files "
+                f"failed with a 404"
+            )
+        if failed_401_count > 0:
+            self.log.error(
+                f"When downloading {self.file_type} files for binding "
+                f"{self.dc_identifier}, {failed_401_count}/{total_alto_files} files "
+                f"failed with a 401"
+            )
+        if skipped_already_done > 0:
+            self.log.info(
+                f"When downloading {self.file_type} files for binding "
+                f"{self.dc_identifier}, {skipped_already_done}/{total_alto_files} "
+                f"were skipped as already downloaded"
+            )
+
     def execute(self, context):
+        """
+        Download all files of specific type listed in METS.
+        """
         mets = METS(self.dc_identifier, self.sftp_client.file(str(self.mets_path), "r"))
-        alto_files = mets.files_of_type(ALTOFile)
+        downloaded_files = self.files(mets)
 
         self.ensure_output_location()
 
-        total_alto_files = 0
+        total_files = 0
         failed_404_count = 0
         failed_401_count = 0
         skipped_already_done = 0
         mark_failed = False
-        for alto_file in alto_files:
-            total_alto_files += 1
-            output_file = self.output_directory / alto_file.filename
+
+        for file_ in downloaded_files:
+            total_files += 1
+            output_file = self.output_directory / file_.filename
 
             if utils.remote_file_exists(self.sftp_client, output_file):
                 skipped_already_done += 1
@@ -191,7 +238,7 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
 
             with self.sftp_client.file(str(tmp_output_file), "wb") as file:
                 try:
-                    alto_file.download(
+                    file_.download(
                         output_file=file,
                         chunk_size=10 * 1024 * 1024,
                     )
@@ -207,8 +254,9 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
                         failed_401_count += 1
                     else:
                         self.log.error(
-                            "ALTO download with URL %s failed: %s",
-                            alto_file.download_url,
+                            "%s file download with URL %s failed: %s",
+                            self.file_type,
+                            file_.download_url,
                             e.response,
                         )
                         raise e
@@ -216,42 +264,33 @@ class SaveAltosSFTPOperator(SaveFilesSFTPOperator):
 
             if self.move_file_to_final_location(tmp_output_file, output_file) != 0:
                 self.log.error(
-                    "Moving ALTO file %s from tmp to destination failed",
-                    alto_file.download_url,
+                    "Moving %s file %s from tmp to destination failed",
+                    self.file_type,
+                    file_.download_url,
                 )
 
             self._report_errors(
                 failed_404_count,
                 failed_401_count,
                 skipped_already_done,
-                total_alto_files,
+                total_files,
             )
 
         if mark_failed:
             raise DownloadBatchError
 
-    def _report_errors(
-        self, failed_404_count, failed_401_count, skipped_already_done, total_alto_files
-    ):
-        """
-        Log information about reasons some files were not successfully downloaded
-        """
-        if failed_404_count > 0:
-            self.log.error(
-                f"When downloading ALTO files for binding {self.dc_identifier}, "
-                f"{failed_404_count}/{total_alto_files} files failed with a 404"
-            )
-        if failed_401_count > 0:
-            self.log.error(
-                f"When downloading ALTO files for binding {self.dc_identifier}, "
-                f"{failed_401_count}/{total_alto_files} files failed with a 401"
-            )
-        if skipped_already_done > 0:
-            self.log.info(
-                f"When downloading ALTO files for binding {self.dc_identifier}, "
-                f"{skipped_already_done}/{total_alto_files} skipped as already "
-                f"downloaded"
-            )
+
+class SaveAltosSFTPOperator(SavePageFilesSFTPOperator):
+    """
+    Save ALTO files for one binding on remote filesystem using SSH connection.
+    """
+
+    def files(self, mets):
+        return mets.files_of_type(ALTOFile)
+
+    @property
+    def file_type(self):
+        return "ALTO"
 
 
 class DownloadBatchError(Exception):
