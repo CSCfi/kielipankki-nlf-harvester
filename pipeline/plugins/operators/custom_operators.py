@@ -78,6 +78,7 @@ class StowBindingBatchOperator(BaseOperator):
         self.tmp_download_directory = tmp_download_directory
         self.tar_directory = tar_directory
         self.api = api
+        self.mark_failed = False
 
     def create_tar_archive(self, ssh_client, target_file, source_dir):
         """
@@ -131,76 +132,80 @@ class StowBindingBatchOperator(BaseOperator):
         # grep will have exit code 0 only if it found some matches
         return stdout.channel.recv_exit_status() == 0
 
+    def execute_save_files_operator(self, operator, context, retries=3):
+        """
+        Execute the given operator, log errors and set `mark_failed` if necessary
+
+        The operator can be set to be retried a number of times before marking the task
+        as failed.
+
+        :operator: An operator to be executed, must inherit `SaveFilesSFTPOperator`
+        :context: Standard Airflow context object.
+        :retries: The number of failed tries allowed before marking this task as failed
+        :returns: True if the operation succeeded, otherwise False
+        """
+        try:
+            operator.execute(context=context)
+        except Exception as e:
+            if (not issubclass(type(e), RequestException)) and type(
+                e
+            ) != DownloadBatchError:
+                self.log.error(
+                    f"Unexpected exception when downloading {operator.file_type} in "
+                    f"{operator.dc_identifier}, continuing anyway: {e}"
+                )
+            if context["task_instance"].try_number < 3:
+                # If we're not on our third try, we'll fail this batch before
+                # tar creation. If we *are* on our third task, create tar
+                # anyway, succeed in the task, and log failures.
+                self.mark_failed = True
+            else:
+                self.log.error(
+                    f"Downloading {operator.file_type} in {operator.dc_identifier} "
+                    f"still failing, moving on with image creation"
+                )
+            return False
+        return True
+
     def execute(self, context):
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
             sftp_client = ssh_client.open_sftp()
             batch, batch_num = self.batch_with_index
             batch_root = self.tmp_download_directory / f"batch_{batch_num}"
-            mark_failed = False
             for dc_identifier in batch:
                 binding_id = utils.binding_id_from_dc(dc_identifier)
                 tmp_binding_path = batch_root / utils.binding_download_location(
                     binding_id
                 )
 
-                try:
-                    mets_operator = SaveMetsSFTPOperator(
-                        task_id=f"save_mets_{binding_id}",
-                        api=self.api,
-                        sftp_client=sftp_client,
-                        ssh_client=ssh_client,
-                        dc_identifier=dc_identifier,
-                        output_directory=tmp_binding_path / "mets",
-                        ignore_files_set={},
-                    )
-                    mets_operator.execute(context={})
-                except Exception as e:
-                    if (not issubclass(type(e), RequestException)) and type(
-                        e
-                    ) != DownloadBatchError:
-                        self.log.error(
-                            f"Unexpected exception when downloading METS in "
-                            f"{dc_identifier}, continuing anyway: {e}"
-                        )
-                    if context["task_instance"].try_number < 3:
-                        # If we're not on our third try, we'll fail this batch before
-                        # tar creation. If we *are* on our third task, create tar
-                        # anyway, succeed in the task, and log failures.
-                        mark_failed = True
-                    else:
-                        self.log.error(
-                            f"Downloading METS in {dc_identifier} still failing, "
-                            f"moving on with image creation"
-                        )
+                mets_operator = SaveMetsSFTPOperator(
+                    task_id=f"save_mets_{binding_id}",
+                    api=self.api,
+                    sftp_client=sftp_client,
+                    ssh_client=ssh_client,
+                    dc_identifier=dc_identifier,
+                    output_directory=tmp_binding_path / "mets",
+                    ignore_files_set={},
+                )
+
+                mets_downloaded = self.execute_save_files_operator(
+                    mets_operator, context
+                )
+
+                if not mets_downloaded:
                     continue
 
-                try:
-                    SaveAltosSFTPOperator(
-                        task_id=f"save_altos_{binding_id}",
-                        mets_path=mets_operator.output_file,
-                        sftp_client=sftp_client,
-                        ssh_client=ssh_client,
-                        dc_identifier=dc_identifier,
-                        output_directory=tmp_binding_path / "alto",
-                        ignore_files_set={},
-                    ).execute(context={})
-                except Exception as e:
-                    if (not issubclass(type(e), RequestException)) and type(
-                        e
-                    ) != DownloadBatchError:
-                        self.log.error(
-                            f"Unexpected exception when downloading ALTOs in "
-                            f"{dc_identifier}, continuing anyway: {e}"
-                        )
-                    if context["task_instance"].try_number < 3:
-                        mark_failed = True
-                    else:
-                        self.log.error(
-                            f"Downloading ALTOs in {dc_identifier} still failing, "
-                            f"moving on with image creation"
-                        )
-                    continue
+                alto_operator = SaveAltosSFTPOperator(
+                    task_id=f"save_altos_{binding_id}",
+                    mets_path=mets_operator.output_file,
+                    sftp_client=sftp_client,
+                    ssh_client=ssh_client,
+                    dc_identifier=dc_identifier,
+                    output_directory=tmp_binding_path / "alto",
+                    ignore_files_set={},
+                )
+                self.execute_save_files_operator(alto_operator, context)
 
                 if self.temporary_files_present(ssh_client, tmp_binding_path):
                     raise DownloadBatchError(
@@ -208,7 +213,7 @@ class StowBindingBatchOperator(BaseOperator):
                         "halting archive creation"
                     )
 
-            if mark_failed:
+            if self.mark_failed:
                 # Now, after all the downloads are done, we fail if necessary
                 # rather than continue with other stuff
                 raise DownloadBatchError

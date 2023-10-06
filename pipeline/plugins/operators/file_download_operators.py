@@ -92,6 +92,13 @@ class SaveFilesSFTPOperator(BaseOperator):
             "execute() must be defined separately for each file type."
         )
 
+    @property
+    def file_type(self):
+        """
+        String representation of the file type to be downloaded.
+        """
+        raise NotImplementedError("File type string must be defined in subclasses")
+
 
 class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
     """
@@ -103,6 +110,10 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
     def __init__(self, api, **kwargs):
         super().__init__(**kwargs)
         self.api = api
+
+    @property
+    def file_type(self):
+        return "METS"
 
     @property
     def output_file(self):
@@ -168,13 +179,6 @@ class SavePageFilesSFTPOperator(SaveFilesSFTPOperator):
         """
         super().__init__(**kwargs)
         self.mets_path = mets_path
-
-    @property
-    def file_type(self):
-        """
-        String representation of the file type to be downloaded.
-        """
-        raise NotImplementedError("File type string must be defined in subclasses")
 
     def files(self, mets):
         """
