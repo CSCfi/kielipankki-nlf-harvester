@@ -124,45 +124,47 @@ def bindings_with_prefix(bindings, prefix):
     ]
 
 
-def assign_bindings_to_images(bindings, max_bindings_per_image, shared_prefix=""):
+def assign_bindings_to_subsets(bindings, max_bindings_per_subset, shared_prefix=""):
     """
-    Split a list of bindings into images, each image containing no more than
-    max_bindings_per_image bindings.
+    Split a list of bindings into subsets, each containing no more than
+    max_bindings_per_subset bindings.
     """
-    if len(bindings) <= max_bindings_per_image:
+    if len(bindings) <= max_bindings_per_subset:
         return {shared_prefix: bindings}
-    images = {}
+    subsets = {}
     for i in range(10):
         prefix = shared_prefix + str(i)
         prefixed_bindings = bindings_with_prefix(bindings, prefix)
-        images.update(
-            assign_bindings_to_images(prefixed_bindings, max_bindings_per_image, prefix)
+        subsets.update(
+            assign_bindings_to_subsets(
+                prefixed_bindings, max_bindings_per_subset, prefix
+            )
         )
-    return images
+    return subsets
 
 
-def image_for_binding(dc_identifier, image_split):
+def subset_for_binding(dc_identifier, subset_split):
     """
-    Find the image of which prefix matches the prefix of the given binding ID.
+    Find the subset of which prefix matches the prefix of the given binding ID.
     """
     binding_id = binding_id_from_dc(dc_identifier)
-    for prefix in image_split:
+    for prefix in subset_split:
         if binding_id.startswith(prefix):
             return prefix
     raise ValueError(f"No prefix found for binding {binding_id}")
 
 
-def assign_update_bindings_to_images(bindings, image_split_file):
+def assign_update_bindings_to_subsets(bindings, subset_split_file):
     """
-    Assign an incoming list of new bindings into existing disk images
+    Assign an incoming list of new bindings into existing disk subsets
     based on their binding ID.
     """
-    with open(image_split_file, "r") as json_file:
-        image_split = json.load(json_file)
+    with open(subset_split_file, "r") as json_file:
+        subset_split = json.load(json_file)
     for dc_identifier in bindings:
-        image = image_for_binding(dc_identifier, image_split)
-        image_split[image].append(dc_identifier)
-    return image_split
+        subset = subset_for_binding(dc_identifier, subset_split)
+        subset_split[subset].append(dc_identifier)
+    return subset_split
 
 
 def read_bindings(binding_list_dir, set_id):
@@ -182,14 +184,14 @@ def read_bindings(binding_list_dir, set_id):
     return bindings
 
 
-def save_image_split(image_split, image_split_dir, set_id):
-    if os.path.exists(image_split_dir / f"{set_id}_images.json"):
+def save_subset_split(subset_split, subset_split_dir, set_id):
+    if os.path.exists(subset_split_dir / f"{set_id}_subsets.json"):
         return
-    if not os.path.exists(image_split_dir):
-        os.makedirs(image_split_dir)
-    with open(image_split_dir / f"{set_id}_images.json", "w") as json_file:
-        image_split = {k: [] for k in image_split}
-        json.dump(image_split, json_file)
+    if not os.path.exists(subset_split_dir):
+        os.makedirs(subset_split_dir)
+    with open(subset_split_dir / f"{set_id}_subsets.json", "w") as json_file:
+        subset_split = {k: [] for k in subset_split}
+        json.dump(subset_split, json_file)
 
 
 def remote_file_exists(sftp_client, path):

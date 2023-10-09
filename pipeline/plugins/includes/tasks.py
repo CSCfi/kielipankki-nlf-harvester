@@ -13,7 +13,7 @@ import yaml
 from harvester import utils
 from operators.custom_operators import (
     PrepareDownloadLocationOperator,
-    CreateDistributionOperator,
+    CreateTargetOperator,
     StowBindingBatchOperator,
 )
 
@@ -26,7 +26,7 @@ def check_if_download_should_begin(set_id, binding_list_dir, http_conn_id):
     """
 
     def newest_dag_run():
-        dag_runs = DagRun.find(dag_id=f"image_download_{set_id}", state="running")
+        dag_runs = DagRun.find(dag_id=f"subset_download_{set_id}", state="running")
         newest = dag_runs[0]
         for dag_run in dag_runs[1:]:
             if dag_run.execution_date > newest.execution_date:
@@ -61,7 +61,7 @@ def check_if_download_should_begin(set_id, binding_list_dir, http_conn_id):
 @task_group(group_id="download_set")
 def download_set(
     set_id,
-    image_size,
+    subset_size,
     api,
     ssh_conn_id,
     initial_download,
@@ -71,49 +71,49 @@ def download_set(
     bindings = utils.read_bindings(pathdict["BINDING_LIST_DIR"], set_id)
 
     if initial_download:
-        image_split = utils.assign_bindings_to_images(bindings, image_size)
-        utils.save_image_split(image_split, pathdict["IMAGE_SPLIT_DIR"], set_id)
+        subset_split = utils.assign_bindings_to_subsets(bindings, subset_size)
+        utils.save_subset_split(subset_split, pathdict["SUBSET_SPLIT_DIR"], set_id)
 
     else:
-        image_split = utils.assign_update_bindings_to_images(
-            bindings, pathdict["IMAGE_SPLIT_DIR"] / f"{set_id}_images.json"
+        subset_split = utils.assign_update_bindings_to_subsets(
+            bindings, pathdict["SUBSET_SPLIT_DIR"] / f"{set_id}_subsets.json"
         )
 
-    image_downloads = []
+    subset_downloads = []
 
-    for prefix in image_split:
-        if image_split[prefix]:
+    for prefix in subset_split:
+        if subset_split[prefix]:
 
-            @task_group(group_id=f"download_image_{set_id}_{prefix}".rstrip("_"))
-            def download_image(image):
+            @task_group(group_id=f"download_subset_{set_id}_{prefix}".rstrip("_"))
+            def download_subset(subset):
 
                 if prefix:
-                    image_base_name = f"{set_id}_{prefix}"
+                    subset_base_name = f"{set_id}_{prefix}"
                 else:
-                    image_base_name = set_id
+                    subset_base_name = set_id
 
-                file_download_dir = pathdict["TMPDIR_ROOT"] / image_base_name
-                image_path = (
-                    pathdict["OUTPUT_DIR"] / "images" / (image_base_name + ".sqfs")
+                file_download_dir = pathdict["TMPDIR_ROOT"] / subset_base_name
+                target_path = (
+                    pathdict["OUTPUT_DIR"] / "targets" / (subset_base_name + ".zip")
                 )
                 target_directory = pathdict["OUTPUT_DIR"] / "targets"
                 tar_directory = pathdict["OUTPUT_DIR"] / "tar" / image_base_name
 
                 prepare_download_location = PrepareDownloadLocationOperator(
-                    task_id=f"prepare_download_location_{image_base_name}",
+                    task_id=f"prepare_download_location_{subset_base_name}",
                     trigger_rule="none_skipped",
                     ssh_conn_id=ssh_conn_id,
                     ensure_dirs=[file_download_dir, tar_directory, target_directory],
-                    old_image_path=image_path,
+                    old_target_path=target_path,
                     extra_bin_dir=pathdict["EXTRA_BIN_DIR"],
                 )
 
-                create_image = CreateDistributionOperator(
-                    task_id=f"create_image_{image_base_name}",
+                create_target = CreateTargetOperator(
+                    task_id=f"create_target_{subset_base_name}",
                     trigger_rule="none_skipped",
                     ssh_conn_id=ssh_conn_id,
                     data_source=tar_directory,
-                    target_path=image_path,
+                    target_path=target_path,
                     extra_bin_dir=pathdict["EXTRA_BIN_DIR"],
                 )
 
@@ -124,21 +124,21 @@ def download_set(
                         trigger_rule="none_skipped",
                         ssh_conn_id=ssh_conn_id,
                         tmp_download_directory=pathdict["TMPDIR_ROOT"]
-                        / image_base_name,
+                        / subset_base_name,
                         tar_directory=tar_directory,
                         api=api,
                     ).expand(
                         batch_with_index=utils.split_into_download_batches(
-                            image_split[image]
+                            subset_split[subset]
                         )
                     )
-                    >> create_image
+                    >> create_target
                 )
 
-            image_download_tg = download_image(prefix)
-            if image_downloads:
-                image_downloads[-1] >> image_download_tg
-            image_downloads.append(image_download_tg)
+            subset_download_tg = download_subset(prefix)
+            if subset_downloads:
+                subset_downloads[-1] >> subset_download_tg
+            subset_downloads.append(subset_download_tg)
 
 
 @task(task_id="clear_temporary_directory", trigger_rule="all_done")
@@ -156,7 +156,7 @@ def create_restic_snapshot(ssh_conn_id, script_path, output_dir):
             envs = yaml.load(fobj, Loader=yaml.FullLoader)
 
         envs_str = " ".join([f"export {key}={value};" for key, value in envs.items()])
-        print("Creating snapshot of downloaded images")
+        print("Creating snapshot of downloaded subsets")
         _, stdout, stderr = ssh_client.exec_command(
             f"{envs_str} sh {script_path} {output_dir}", get_pty=True
         )

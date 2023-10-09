@@ -54,7 +54,7 @@ def fetch_bindings_dag():
 
             if not os.path.isdir(folder_path):
                 os.makedirs(folder_path)
-            last_run = get_most_recent_dag_run(f"image_download_{set_id}")
+            last_run = get_most_recent_dag_run(f"subset_download_{set_id}")
 
             with open(f"{folder_path}/binding_ids_{date.today()}", "w") as file_obj:
 

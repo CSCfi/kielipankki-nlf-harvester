@@ -1,6 +1,7 @@
 """
 Depth-first parallelized download procedure that creates a DAG for each collection.
-Collections are split into chunks and downloaded into disk images.
+Collections are split into subsets, and further into download batches, and
+assembled into targets, currently zip files.
 """
 
 from datetime import timedelta
@@ -24,14 +25,14 @@ pathdict = {
     "OUTPUT_DIR": Path("/scratch/project_2006633/nlf-harvester"),
     "TMPDIR_ROOT": Path("/local_scratch/robot_2006633_puhti/harvester"),
     "EXTRA_BIN_DIR": Path("/projappl/project_2006633/local/bin"),
-    "IMAGE_SPLIT_DIR": Path("/home/ubuntu/image_split/"),
+    "SUBSET_SPLIT_DIR": Path("/home/ubuntu/subset_split/"),
     "BINDING_LIST_DIR": Path("/home/ubuntu/binding_ids_all"),
 }
 SSH_CONN_ID = "puhti_conn"
 HTTP_CONN_ID = "nlf_http_conn"
 COLLECTIONS = [
-    {"id": "col-361", "image_size": 150},
-    # {"id": "col-861", "image_size": 100000},
+    {"id": "col-361", "subset_size": 150},
+    # {"id": "col-861", "subset_size": 100000},
 ]
 
 default_args = {
@@ -47,7 +48,7 @@ api = PMH_API(url=http_conn.host)
 
 for col in COLLECTIONS:
 
-    current_dag_id = f"image_download_{col['id']}"
+    current_dag_id = f"subset_download_{col['id']}"
 
     @dag(
         dag_id=current_dag_id,
@@ -74,7 +75,7 @@ for col in COLLECTIONS:
             begin_download
             >> download_set(
                 set_id=col["id"],
-                image_size=col["image_size"],
+                subset_size=col["subset_size"],
                 api=api,
                 ssh_conn_id=SSH_CONN_ID,
                 initial_download=INITIAL_DOWNLOAD,
@@ -84,7 +85,7 @@ for col in COLLECTIONS:
             >> create_restic_snapshot(
                 SSH_CONN_ID,
                 pathdict["EXTRA_BIN_DIR"] / "create_snapshot.sh",
-                pathdict["OUTPUT_DIR"] / "images",
+                pathdict["OUTPUT_DIR"] / "subsets",
             )
         )
 
