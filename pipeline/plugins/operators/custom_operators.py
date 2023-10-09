@@ -234,7 +234,7 @@ class StowBindingBatchOperator(BaseOperator):
 
 class PrepareDownloadLocationOperator(BaseOperator):
     """
-    Prepare download location for data that goes into one disk image.
+    Prepare download location for data that goes into one target.
 
     This consists of:
     - creating the destination directories if they do not exist
@@ -242,9 +242,9 @@ class PrepareDownloadLocationOperator(BaseOperator):
       file if one is found in the given ``image_output_dir``
 
     :param ssh_conn_id: SSH connection id
-    :param old_image_path: Path of the corresponding image created
+    :param old_target_path: Path of the corresponding target created
                            during the previous download.
-    :type old_image_path: :class:`pathlib.Path`
+    :type old_target_path: :class:`pathlib.Path`
     :param ensure_dirs: Directories needed for the download.
     :type ensure_dirs: :type: iterable of :class:`pathlib.Path`
     :param extra_bin_dir: Path for binaries on remote machine
@@ -255,31 +255,23 @@ class PrepareDownloadLocationOperator(BaseOperator):
     def __init__(
         self,
         ssh_conn_id,
-        old_image_path,
+        old_target_path,
         ensure_dirs,
         extra_bin_dir,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.ssh_conn_id = ssh_conn_id
-        self.old_image_path = old_image_path
+        self.old_target_path = old_target_path
         self.ensure_dirs = ensure_dirs
         self.extra_bin_dir = extra_bin_dir
 
-    def extract_image(self, ssh_client):
+    def create_file_listing_from_target(self, ssh_client):
         """
-        Extract contents of a disk image in given path.
-        """
-        ssh_client.exec_command(
-            f"{self.extra_bin_dir}/unsquashfs -d {self.file_download_dir} {self.old_image_path}"
-        )
-
-    def create_file_listing_from_image(self, ssh_client):
-        """
-        Extract file listing of a disk image in given path to file_download_dir.
+        Extract file listing of a target in given path to file_download_dir.
         """
         ssh_client.exec_command(
-            f'{self.extra_bin_dir}/unsquashfs -d "" -lc {self.old_image_path} > {self.file_download_dir}/existing_files.txt'
+            f"unzip -l {self.old_target_path} > {self.file_download_dir}/existing_files.txt"
         )
 
     def create_directory(self, sftp_client, path):
@@ -299,7 +291,7 @@ class PrepareDownloadLocationOperator(BaseOperator):
                 self.create_target_folder(sftp_client, dirpath)
 
 
-class CreateDistributionOperator(BaseOperator):
+class CreateTargetOperator(BaseOperator):
     """
     Create a final distribution target of the given source data.
 
@@ -310,10 +302,10 @@ class CreateDistributionOperator(BaseOperator):
     :param ssh_conn_id: SSH connection id
     :param data_source: Path to the directory that contains the .tar files
     :type data_source: :class:`pathlib.Path`
-    :param image_path: Path to which the newly-created image is written.
-    :type image_path: :class:`pathlib.Path`
-    :param image_path: Path for binaries on remote machine
-    :type image_path: :class:`pathlib.Path`
+    :param target_path: Path to which the newly-created target is written.
+    :type target_path: :class:`pathlib.Path`
+    :param target_path: Path for binaries on remote machine
+    :type taret_path: :class:`pathlib.Path`
     """
 
     def __init__(
@@ -332,7 +324,7 @@ class CreateDistributionOperator(BaseOperator):
 
     def ssh_execute_and_raise(self, ssh_client, command):
         """
-        Run the given command and raise ImageCreationError on non-zero return value.
+        Run the given command and raise TargetCreationError on non-zero return value.
         """
         _, stdout, stderr = ssh_client.exec_command(command)
 
@@ -341,7 +333,7 @@ class CreateDistributionOperator(BaseOperator):
         exit_code = stdout.channel.recv_exit_status()
         if exit_code != 0:
             error_message = "\n".join(stderr.readlines())
-            raise CreateDistributionError(
+            raise TargetCreationError(
                 f"Command {command} failed (exit code {exit_code}). Stderr output:\n"
                 f"{error_message}"
             )
@@ -373,7 +365,7 @@ class CreateDistributionOperator(BaseOperator):
                 self.ssh_execute_and_raise(ssh_client, f"rm -r {self.data_source}")
 
 
-class CreateDistributionError(Exception):
+class TargetCreationError(Exception):
     """
     Error raised when an error occurs during the distribution creation/overwrite process
     """

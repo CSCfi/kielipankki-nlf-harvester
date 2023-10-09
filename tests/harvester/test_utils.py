@@ -70,67 +70,67 @@ def test_binding_download_location():
     assert dir_structure_set_depth == "1/12/123/123456"
 
 
-def test_assign_bindings_to_images():
+def test_assign_bindings_to_subsets():
     """
-    Test that bindings are assigned to disk images correctly,
-    the correct number of disk images are created.
+    Test that bindings are assigned to subsets correctly,
+    the correct number of subsets are created.
     """
     with open("tests/data/test_col_bindings", "r") as f:
         bindings = f.read().splitlines()
 
-    images_1 = utils.assign_bindings_to_images(bindings, 1000)
-    assert len(images_1) == 1
-    assert images_1 == {"": bindings}
+    subsets_1 = utils.assign_bindings_to_subsets(bindings, 1000)
+    assert len(subsets_1) == 1
+    assert subsets_1 == {"": bindings}
 
-    images_2 = utils.assign_bindings_to_images(bindings, 300)
-    assert len(images_2) == 10
+    subsets_2 = utils.assign_bindings_to_subsets(bindings, 300)
+    assert len(subsets_2) == 10
 
-    for prefix, bindings in images_2.items():
+    for prefix, bindings in subsets_2.items():
         for binding in bindings:
             assert utils.binding_id_from_dc(binding).startswith(prefix)
 
 
-def test_image_for_binding(mets_dc_identifier):
+def test_subset_for_binding(mets_dc_identifier):
     """
-    Test that the correct image prefix is found for a binding and if
+    Test that the correct subset prefix is found for a binding and if
     no prefix is found, an error is raised.
     """
-    image_split = {"36": [], "37": []}
-    prefix = utils.image_for_binding(mets_dc_identifier, image_split)
+    subset_split = {"36": [], "37": []}
+    prefix = utils.subset_for_binding(mets_dc_identifier, subset_split)
     assert prefix == "37"
 
-    image_split = {"": []}
-    prefix = utils.image_for_binding(mets_dc_identifier, image_split)
+    subset_split = {"": []}
+    prefix = utils.subset_for_binding(mets_dc_identifier, subset_split)
     assert prefix == ""
 
-    image_split = {"12": [], "13": []}
+    subset_split = {"12": [], "13": []}
     with pytest.raises(ValueError):
-        prefix = utils.image_for_binding(mets_dc_identifier, image_split)
+        prefix = utils.subset_for_binding(mets_dc_identifier, subset_split)
 
 
-def test_assign_update_bindings_to_images():
+def test_assign_update_bindings_to_subsets():
     """
-    Test that incoming bindings are assigned to the existing images correctly.
+    Test that incoming bindings are assigned to the existing subsets correctly.
     """
     with open("tests/data/binding_list.txt", "r") as f:
         bindings = f.read().splitlines()
 
-    image_split = utils.assign_update_bindings_to_images(
-        bindings, "tests/data/image_split.json"
+    subset_split = utils.assign_update_bindings_to_subsets(
+        bindings, "tests/data/subset_split.json"
     )
 
-    assert image_split["20"] == [bindings[0]]
-    assert image_split["21"] == [bindings[1]]
-    assert image_split["22"] == []
-    assert image_split["3"] == [bindings[2]]
-    assert image_split["9"] == [bindings[3]]
+    assert subset_split["20"] == [bindings[0]]
+    assert subset_split["21"] == [bindings[1]]
+    assert subset_split["22"] == []
+    assert subset_split["3"] == [bindings[2]]
+    assert subset_split["9"] == [bindings[3]]
 
-    small_image_split = utils.assign_update_bindings_to_images(
-        bindings, "tests/data/small_image_split.json"
+    small_subset_split = utils.assign_update_bindings_to_subsets(
+        bindings, "tests/data/small_subset_split.json"
     )
 
-    assert len(small_image_split) == 1
-    assert small_image_split[""] == bindings
+    assert len(small_subset_split) == 1
+    assert small_subset_split[""] == bindings
 
 
 def test_read_bindings(tmpdir):
@@ -150,17 +150,17 @@ def test_read_bindings(tmpdir):
         utils.read_bindings(tmpdir, "col-001")
 
 
-def test_save_image_split(tmpdir):
+def test_save_subset_split(tmpdir):
     """
-    Test that saving the image split to file actually creates a file.
+    Test that saving the subset split to file actually creates a file.
     """
     with open("tests/data/binding_list.txt", "r") as f:
         bindings = f.read().splitlines()
 
-    image_split = utils.assign_update_bindings_to_images(
-        bindings, "tests/data/image_split.json"
+    subset_split = utils.assign_update_bindings_to_subsets(
+        bindings, "tests/data/subset_split.json"
     )
-    utils.save_image_split(image_split, tmpdir, "col-000")
-    output_path = Path(tmpdir) / Path("col-000_images.json")
+    utils.save_subset_split(subset_split, tmpdir, "col-000")
+    output_path = Path(tmpdir) / Path("col-000_subsets.json")
     assert output_path.is_file()
-    assert utils.save_image_split(image_split, tmpdir, "col-000") == None
+    assert utils.save_subset_split(subset_split, tmpdir, "col-000") == None
