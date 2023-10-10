@@ -97,7 +97,7 @@ def download_set(
                     pathdict["OUTPUT_DIR"] / "targets" / (subset_base_name + ".zip")
                 )
                 target_directory = pathdict["OUTPUT_DIR"] / "targets"
-                tar_directory = pathdict["OUTPUT_DIR"] / "tar" / image_base_name
+                tar_directory = pathdict["OUTPUT_DIR"] / "tar" / subset_base_name
 
                 prepare_download_location = PrepareDownloadLocationOperator(
                     task_id=f"prepare_download_location_{subset_base_name}",
