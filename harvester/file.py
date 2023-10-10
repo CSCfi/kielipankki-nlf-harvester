@@ -66,7 +66,10 @@ class File:
 
         if filegrp_use in ["alto", "Text"] and filegrp_id == "ALTOGRP":
             file_cls = ALTOFile
-        elif filegrp_use in ["Images"] and filegrp_id == "IMGGRP":
+        elif filegrp_use in ["Images", "reference"] and filegrp_id in [
+            "IMGGRP",
+            "ACIMGGRP",
+        ]:
             file_cls = AccessImageFile
         elif filegrp_id in ["TARGETIMGGRP", "RETAINEDIMGGRP", "MISSINGIMGGRP"]:
             file_cls = SkippedFile
