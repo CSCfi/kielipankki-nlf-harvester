@@ -71,7 +71,14 @@ class File:
             "ACIMGGRP",
         ]:
             file_cls = AccessImageFile
-        elif filegrp_id in ["TARGETIMGGRP", "RETAINEDIMGGRP", "MISSINGIMGGRP"]:
+        elif filegrp_id in [
+            "TARGETIMGGRP",
+            "RETAINEDIMGGRP",
+            "MISSINGIMGGRP",
+            "MAIMGGRP",
+            "TNIMGGRP",
+            "PDF",
+        ]:
             file_cls = SkippedFile
         else:
             raise UnknownFileException(
