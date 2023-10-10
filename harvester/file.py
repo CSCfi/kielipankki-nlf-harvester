@@ -71,7 +71,10 @@ class File:
         elif filegrp_id in ["TARGETIMGGRP", "RETAINEDIMGGRP", "MISSINGIMGGRP"]:
             file_cls = SkippedFile
         else:
-            raise UnknownFileException
+            raise UnknownFileException(
+                f"Unexpected fileGrp with ID {filegrp_id} and USE {filegrp_use} "
+                f"encountered"
+            )
 
         return file_cls(
             checksum=file_element.attrib["CHECKSUM"],
