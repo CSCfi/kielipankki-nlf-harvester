@@ -344,6 +344,10 @@ class CreateTargetOperator(BaseOperator):
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
             with ssh_client.open_sftp() as sftp_client:
+                utils.make_intermediate_dirs(
+                    sftp_client=sftp_client,
+                    remote_directory=tmp_target_path,
+                )
                 zip_creation_cmd = f"python3 {self.extra_bin_dir/'update_zip_with_sources.py'} {tmp_target_path} --dir {self.data_source}"
                 self.log.info("Creating temporary zip in %s on Puhti", tmp_target_path)
                 self.ssh_execute_and_raise(
