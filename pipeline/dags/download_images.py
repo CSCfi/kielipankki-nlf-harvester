@@ -86,7 +86,7 @@ for col in COLLECTIONS:
             >> create_restic_snapshot(
                 SSH_CONN_ID,
                 pathdict["EXTRA_BIN_DIR"] / "create_snapshot.sh",
-                pathdict["OUTPUT_DIR"] / "subsets",
+                pathdict["OUTPUT_DIR"] / "targets",
             )
         )
 
