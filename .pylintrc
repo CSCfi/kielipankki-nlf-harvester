@@ -13,3 +13,6 @@ good-names=i,j,k,e,ex,Run,_
 # expression-not-assigned: False positives from '>>' operators in Airflow DAGs
 # pointless-statement: False positives from '>>' operators in Airflow DAGs
 disable=cell-var-from-loop,expression-not-assigned,pointless-statement
+
+[LOGGING]
+logging-format-style=fstr
