@@ -32,7 +32,7 @@ SSH_CONN_ID = "puhti_conn"
 HTTP_CONN_ID = "nlf_http_conn"
 COLLECTIONS = [
     {"id": "col-361", "subset_size": 150},
-    # {"id": "col-861", "subset_size": 100000},
+    {"id": "col-861", "subset_size": 100000},
 ]
 
 default_args = {
