@@ -96,15 +96,15 @@ def download_set(
                 image_path = (
                     pathdict["OUTPUT_DIR"] / "images" / (image_base_name + ".sqfs")
                 )
+                target_directory = pathdict["OUTPUT_DIR"] / "targets"
                 tar_directory = pathdict["OUTPUT_DIR"] / "tar" / image_base_name
 
                 prepare_download_location = PrepareDownloadLocationOperator(
                     task_id=f"prepare_download_location_{image_base_name}",
                     trigger_rule="none_skipped",
                     ssh_conn_id=ssh_conn_id,
-                    file_download_dir=file_download_dir,
+                    ensure_dirs=[file_download_dir, tar_directory, target_directory],
                     old_image_path=image_path,
-                    tar_dir=tar_directory,
                     extra_bin_dir=pathdict["EXTRA_BIN_DIR"],
                 )
 
