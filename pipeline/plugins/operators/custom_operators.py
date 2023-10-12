@@ -237,16 +237,16 @@ class PrepareDownloadLocationOperator(BaseOperator):
     Prepare download location for data that goes into one disk image.
 
     This consists of:
-    - creating the destination directory if it does not exist
+    - creating the destination directories if they do not exist
     - listing the contents of the previous corresponding image into a text
       file if one is found in the given ``image_output_dir``
 
     :param ssh_conn_id: SSH connection id
-    :param file_download_dir: Path of the output directory
-    :type file_download_dir: :class:`pathlib.Path`
     :param old_image_path: Path of the corresponding image created
                            during the previous download.
     :type old_image_path: :class:`pathlib.Path`
+    :param ensure_dirs: Directories needed for the download.
+    :type ensure_dirs: :type: iterable of :class:`pathlib.Path`
     :param extra_bin_dir: Path for binaries on remote machine
     :type extra_bin_dir: :class:`pathlib.Path`
 
@@ -255,17 +255,15 @@ class PrepareDownloadLocationOperator(BaseOperator):
     def __init__(
         self,
         ssh_conn_id,
-        file_download_dir,
         old_image_path,
-        tar_dir,
+        ensure_dirs,
         extra_bin_dir,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.ssh_conn_id = ssh_conn_id
-        self.file_download_dir = file_download_dir
         self.old_image_path = old_image_path
-        self.tar_dir = tar_dir
+        self.ensure_dirs = ensure_dirs
         self.extra_bin_dir = extra_bin_dir
 
     def extract_image(self, ssh_client):
@@ -284,22 +282,21 @@ class PrepareDownloadLocationOperator(BaseOperator):
             f'{self.extra_bin_dir}/unsquashfs -d "" -lc {self.old_image_path} > {self.file_download_dir}/existing_files.txt'
         )
 
-    def create_image_folder(self, sftp_client, image_dir_path):
+    def create_directory(self, sftp_client, path):
         """
-        Create folder to store image contents in.
+        Create directory (and parents) to store files in.
         """
         utils.make_intermediate_dirs(
             sftp_client=sftp_client,
-            remote_directory=image_dir_path,
+            remote_directory=path,
         )
 
     def execute(self, context):
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
             sftp_client = ssh_client.open_sftp()
-
-            self.create_image_folder(sftp_client, self.file_download_dir)
-            ssh_client.exec_command(f"mkdir -p {self.tar_dir}")
+            for dirpath in self.ensure_dirs:
+                self.create_target_folder(sftp_client, dirpath)
 
 
 class CreateImageOperator(BaseOperator):
