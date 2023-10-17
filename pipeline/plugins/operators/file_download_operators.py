@@ -127,8 +127,8 @@ class SaveMetsSFTPOperator(SaveFilesSFTPOperator):
 
     def execute(self, context):
 
-        file_name_in_image = re.sub("^.+batch_[^/]", "", str(self.output_file))
-        if file_name_in_image in self.ignore_files_set:
+        file_name_in_target = re.sub("^.+batch_[^/]", "", str(self.output_file))
+        if file_name_in_target in self.ignore_files_set:
             return
 
         tmp_output_file = self.tmp_path(self.output_file)
