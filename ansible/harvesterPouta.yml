@@ -30,6 +30,7 @@
   roles:
     - public-key-to-puhti
     - restic-script-to-puhti
+    - zip-merge-script-to-puhti
 
 - name: Install requirements for Airflow
   hosts: airflow
