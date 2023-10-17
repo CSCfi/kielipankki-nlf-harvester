@@ -266,14 +266,6 @@ class PrepareDownloadLocationOperator(BaseOperator):
         self.ensure_dirs = ensure_dirs
         self.extra_bin_dir = extra_bin_dir
 
-    def create_file_listing_from_target(self, ssh_client):
-        """
-        Extract file listing of a target in given path to file_download_dir.
-        """
-        ssh_client.exec_command(
-            f"unzip -l {self.old_target_path} > {self.file_download_dir}/existing_files.txt"
-        )
-
     def create_directory(self, sftp_client, path):
         """
         Create directory (and parents) to store files in.
