@@ -25,7 +25,7 @@
           - "193.166.84.0/24" #CSC VPN
           - "193.166.85.0/24" #CSC VPN
 
-- name: Setup Puhti access for Airflow and make sure restic script exists
+- name: Setup Puhti access for Airflow and install remote scripts
   hosts: puhti
   roles:
     - public-key-to-puhti
