@@ -162,7 +162,7 @@ class StowBindingBatchOperator(BaseOperator):
             else:
                 self.log.error(
                     f"Downloading {operator.file_type} in {operator.dc_identifier} "
-                    f"still failing, moving on with image creation"
+                    f"still failing, moving on with target creation"
                 )
             return False
         return True
@@ -238,8 +238,8 @@ class PrepareDownloadLocationOperator(BaseOperator):
 
     This consists of:
     - creating the destination directories if they do not exist
-    - listing the contents of the previous corresponding image into a text
-      file if one is found in the given ``image_output_dir``
+    - listing the contents of the previous corresponding target into a text
+      file if one is found in the given ``old_target_path``
 
     :param ssh_conn_id: SSH connection id
     :param old_target_path: Path of the corresponding target created
