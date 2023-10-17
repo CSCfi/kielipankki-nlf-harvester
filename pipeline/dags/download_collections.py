@@ -22,8 +22,8 @@ from harvester.pmh_interface import PMH_API
 INITIAL_DOWNLOAD = True
 
 pathdict = {
-    "OUTPUT_DIR": Path(f"/scratch/project_2006633/nlf-harvester"),
-    "TMPDIR_ROOT": Path(f"/local_scratch/robot_2006633_puhti/harvester"),
+    "OUTPUT_DIR": Path("/scratch/project_2006633/nlf-harvester"),
+    "TMPDIR_ROOT": Path("/local_scratch/robot_2006633_puhti/harvester"),
     "EXTRA_BIN_DIR": Path("/projappl/project_2006633/local/bin"),
     "SUBSET_SPLIT_DIR": Path("/home/ubuntu/subset_split/"),
     "BINDING_LIST_DIR": Path("/home/ubuntu/binding_ids_all"),
