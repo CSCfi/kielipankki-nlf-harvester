@@ -292,7 +292,7 @@ class PrepareDownloadLocationOperator(BaseOperator):
         with ssh_hook.get_conn() as ssh_client:
             sftp_client = ssh_client.open_sftp()
             for dirpath in self.ensure_dirs:
-                self.create_target_folder(sftp_client, dirpath)
+                self.create_directory(sftp_client, dirpath)
 
 
 class CreateTargetOperator(BaseOperator):
