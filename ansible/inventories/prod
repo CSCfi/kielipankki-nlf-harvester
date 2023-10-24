@@ -8,9 +8,10 @@ all:
   children:
     airflow:
       hosts:
-        86.50.229.130
+        86.50.229.130:
            ansible_user: ubuntu
     puhti:
       hosts:
         puhti.csc.fi:
           ansible_user: "{{ puhti_robot_user }}"
+          ansible_password: "{{ puhti_robot_password }}"
