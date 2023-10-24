@@ -14,7 +14,7 @@ from harvester.pmh_interface import PMH_API
 
 
 SET_IDS = [
-    # "col-361",
+    "col-361",
     "col-861",
 ]
 BASE_PATH = Path("/home/ubuntu/binding_ids_all")
