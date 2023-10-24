@@ -46,6 +46,9 @@ full provisioning, you can run
 ```
 ansible-playbook harvesterPouta.yml -i inventories/dev --tags dag-update
 ```
+If the dependencies do not need to be updated, an even lighter
+`minimal-dag-update` tag is available.
+
 
 If you have a specific branch/tag/SHA-1 you wish to use, you can provide that:
 
