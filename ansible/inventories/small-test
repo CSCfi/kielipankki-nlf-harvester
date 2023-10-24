@@ -1,0 +1,26 @@
+all:
+  hosts:
+    localhost:
+      ansible_connection: local
+      ansible_python_interpreter: "{{ansible_playbook_python}}"
+      floating_ip: 128.214.252.206
+      vm_name_postfix: small-test
+      servers:
+        - name: "{{ pouta_instance_name }}"
+          image: "{{ std_image }}"
+          flavor: standard.small
+          key_name: "{{ project_key }}"
+          security_groups: "{{ project_security_groups }}"
+          meta:
+            group: default
+  children:
+    airflow:
+      hosts:
+        128.214.252.206:
+          ansible_user: ubuntu
+          navbar_color: "#ccc"
+    puhti:
+      hosts:
+        puhti.csc.fi:
+          ansible_user: "{{ puhti_robot_user }}"
+          ansible_password: "{{ puhti_robot_password }}"
