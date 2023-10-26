@@ -88,13 +88,13 @@ def binding_download_location(binding_id, depth=None):
     return os.path.join(*sub_dirs)
 
 
-def calculate_batch_size(col_size):
+def calculate_batch_size(subset_size):
     """
-    Return a suitable download batch size for a collection.
+    Return a suitable download batch size for a subset.
     """
-    if col_size < 500:
-        return min(col_size, 10)
-    if col_size < 50000:
+    if subset_size < 500:
+        return min(subset_size, 10)
+    if subset_size < 50000:
         return 30
     else:
         return 100
@@ -102,12 +102,12 @@ def calculate_batch_size(col_size):
 
 def split_into_download_batches(bindings):
     """
-    Split a collection into download batches.
+    Split a subset into download batches.
     Return a list of tuples, containing the batch itself and the batch index.
     """
-    col_size = len(bindings)
-    batch_size = calculate_batch_size(col_size)
-    batches = [bindings[i : i + batch_size] for i in range(0, col_size, batch_size)]
+    subset_size = len(bindings)
+    batch_size = calculate_batch_size(subset_size)
+    batches = [bindings[i : i + batch_size] for i in range(0, subset_size, batch_size)]
     return list(zip(batches, range(len(batches))))
 
 
