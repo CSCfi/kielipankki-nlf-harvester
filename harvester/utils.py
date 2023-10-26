@@ -95,11 +95,9 @@ def calculate_batch_size(col_size):
     if col_size < 500:
         return min(col_size, 10)
     if col_size < 50000:
-        return 100
-    if col_size < 500000:
-        return 500
+        return 30
     else:
-        return 2000
+        return 100
 
 
 def split_into_download_batches(bindings):
