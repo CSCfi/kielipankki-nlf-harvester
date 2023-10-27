@@ -1,6 +1,6 @@
 airflow_directory: "/home/{{ ansible_user }}/airflow"
 executor: LocalExecutor
-parallel_tasks: 6
+parallel_tasks: 8
 max_active_tasks_per_dag: 16  # Default value, likely too big for medium pouta?
 max_active_runs_per_dag: 16  # Default value, pretty big but on the other hand mostly relevant when backgilling?
 min_file_process_interval: 300
