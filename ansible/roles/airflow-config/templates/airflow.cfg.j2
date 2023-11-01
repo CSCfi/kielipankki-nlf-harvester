@@ -941,12 +941,12 @@ tls_key =
 # Task instances listen for external kill signal (when you clear tasks
 # from the CLI or the UI), this defines the frequency at which they should
 # listen (in seconds).
-job_heartbeat_sec = 5
+job_heartbeat_sec = {{ job_heartbeat_sec }}
 
 # The scheduler constantly tries to trigger new tasks (look at the
 # scheduler section in the docs for more information). This defines
 # how often the scheduler should run (in seconds).
-scheduler_heartbeat_sec = 5
+scheduler_heartbeat_sec = {{ scheduler_heartbeat_sec }}
 
 # The number of times to try to schedule each DAG file
 # -1 indicates unlimited number
@@ -979,7 +979,7 @@ pool_metrics_interval = 5.0
 # If the last scheduler heartbeat happened more than scheduler_health_check_threshold
 # ago (in seconds), scheduler is considered unhealthy.
 # This is used by the health check in the "/health" endpoint
-scheduler_health_check_threshold = 30
+scheduler_health_check_threshold = {{ scheduler_health_check_threshold }}
 
 # When you start a scheduler, airflow starts a tiny web server
 # subprocess to serve a health check if this is set to True
@@ -1038,7 +1038,7 @@ max_dagruns_per_loop_to_schedule = 20
 # Should the Task supervisor process perform a "mini scheduler" to attempt to schedule more tasks of the
 # same DAG. Leaving this on will mean tasks in the same DAG execute quicker, but might starve out other
 # dags in some circumstances
-schedule_after_task_execution = True
+schedule_after_task_execution = False
 
 # The scheduler can run multiple processes in parallel to parse dags.
 # This defines how many processes will run.

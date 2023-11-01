@@ -12,3 +12,6 @@ gunicorn_workers: 7  # gunicorn recommendation (2 x $num_cores) + 1 for a medium
 navbar_color: "#fff"
 email_on_retry: False
 email_on_failure: False  # consider making this/these True for prod instance when properly in production
+job_heartbeat_sec: 15
+scheduler_heartbeat_sec: 15
+scheduler_health_check_threshold: 90
