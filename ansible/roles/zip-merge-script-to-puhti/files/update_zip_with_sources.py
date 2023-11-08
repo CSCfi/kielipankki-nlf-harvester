@@ -68,7 +68,7 @@ if __name__ == "__main__":
         "--no-compress",
         "-n",
         help="A colon-separated list of suffixes to not compress, as in zip",
-        default=".jpg:.jpeg",
+        default=".jpg:.jpeg:.jp2",
     )
     args = argparser.parse_args()
     args.sourcepaths = []
