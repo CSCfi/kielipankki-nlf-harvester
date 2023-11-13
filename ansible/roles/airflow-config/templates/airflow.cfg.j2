@@ -996,7 +996,7 @@ child_process_log_directory = {{ airflow_directory }}/logs/scheduler
 # Local task jobs periodically heartbeat to the DB. If the job has
 # not heartbeat in this many seconds, the scheduler will mark the
 # associated task instance as failed and will re-schedule the task.
-scheduler_zombie_task_threshold = 300
+scheduler_zombie_task_threshold = {{ scheduler_zombie_task_threshold }}
 
 # How often (in seconds) should the scheduler check for zombie tasks.
 zombie_detection_interval = 10.0
