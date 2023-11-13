@@ -14,5 +14,5 @@ email_on_retry: False
 email_on_failure: False  # consider making this/these True for prod instance when properly in production
 job_heartbeat_sec: 15
 scheduler_heartbeat_sec: 15
-scheduler_health_check_threshold: 90
+scheduler_health_check_threshold: 300
 scheduler_zombie_task_threshold: 600
