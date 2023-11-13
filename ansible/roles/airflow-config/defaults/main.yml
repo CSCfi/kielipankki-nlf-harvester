@@ -15,3 +15,4 @@ email_on_failure: False  # consider making this/these True for prod instance whe
 job_heartbeat_sec: 15
 scheduler_heartbeat_sec: 15
 scheduler_health_check_threshold: 90
+scheduler_zombie_task_threshold: 600
