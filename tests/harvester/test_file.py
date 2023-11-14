@@ -19,16 +19,16 @@ def test_file_initialized_values():
     """
     Check that the values given when initializing are utilized correctly
     """
-    test_file = File("test_location", "test_dc_identifier")
-    assert test_file.location_xlink == "test_location"
+    test_file = File(binding_dc_identifier="test_dc_identifier", page_number=123)
     assert test_file.binding_dc_identifier == "test_dc_identifier"
+    assert test_file.page_number == 123
 
 
-def test_alto_download_url(alto_file, alto_url, alto_filename):
+def test_alto_download_url(alto_file, alto_url, alto_pagenumber):
     """
     Ensure that the download URL is formed using the filename and dc_identifier.
     """
-    assert alto_file.download_url == f"{alto_url}/page-{alto_filename}"
+    assert alto_file.download_url == f"{alto_url}/page-{alto_pagenumber}.xml"
 
 
 def test_filename(alto_file, alto_filename):
@@ -36,24 +36,6 @@ def test_filename(alto_file, alto_filename):
     Ensure that determining the file name based on the xpath works.
     """
     assert alto_file.filename == alto_filename
-
-
-def test_erroneus_filename(alto_file_with_erroneous_name):
-    """
-    Ensure that an erroneous ALTO filename raises an error.
-    """
-    with pytest.raises(AttributeError, match=r".* alto.xml .*"):
-        alto_file_with_erroneous_name.download_url()
-
-
-def test_parsable_filename(alto_file_with_parsable_name):
-    """
-    Ensure that an ALTO file with a non-standard name gets parsed correctly.
-    """
-    assert (
-        alto_file_with_parsable_name.download_url.rsplit("/", maxsplit=1)[-1]
-        == "page-1.xml"
-    )
 
 
 def test_download_to_default_path(
@@ -120,7 +102,7 @@ def test_access_image_download_url(access_image, access_image_base_url):
     """
     Test that the most basic case of access image url parsing works
     """
-    image = access_image(filename="pr-00001.tif")
+    image = access_image(page_number=1, extension=".tif")
     assert image.download_url == access_image_base_url + "/1"
 
 
@@ -130,7 +112,7 @@ def test_access_image_download_url_with_large_page_number(
     """
     Test that URLs are parsed correctly when binding has a lot of pages
     """
-    image = access_image(filename="pr-123456789.tif")
+    image = access_image(page_number=123456789, extension=".jp2")
     assert image.download_url == access_image_base_url + "/123456789"
 
 
@@ -142,5 +124,5 @@ def test_access_image_download_url_with_zeros_in_page_number(
       * leading zeros are ignored
       * other zeros (trailing and in the middle of the number) are included
     """
-    image = access_image(filename="pr-012304560.tif")
+    image = access_image(page_number=12304560, extension=".tif")
     assert image.download_url == access_image_base_url + "/12304560"

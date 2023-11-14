@@ -7,12 +7,11 @@ from lxml import etree
 
 from harvester.file import (
     File,
-    METSLocationParseError,
     ALTOFile,
     SkippedFile,
     AccessImageFile,
 )
-from harvester.mets import METS
+from harvester.mets import METS, METSLocationParseError
 
 
 # Pylint does not understand fixtures
@@ -67,9 +66,6 @@ def test_file_location_parsing(simple_mets_object):
 
     first_file = files[0]
     assert first_file.location_xlink == "file://./preservation_img/pr-00001.jp2"
-
-    last_file = files[-1]
-    assert last_file.location_xlink == "file://./alto/00004.xml"
 
 
 def test_files_exception_on_two_locations_for_a_file(
@@ -134,14 +130,6 @@ def exotic_files_mets_object():
     )
 
 
-def test_unusual_image_files_skipped(exotic_files_mets_object):
-    """
-    Ensure that images that are not access images are reported as SkippedFile
-    """
-    skipped_files = list(exotic_files_mets_object.files_of_type(SkippedFile))
-    assert len(skipped_files) == 2
-
-
 def test_access_image_files_found_when_unusual_images_present(exotic_files_mets_object):
     """
     Ensure that the normal image group members are found, even when there are other
@@ -149,3 +137,39 @@ def test_access_image_files_found_when_unusual_images_present(exotic_files_mets_
     """
     access_files = list(exotic_files_mets_object.files_of_type(AccessImageFile))
     assert len(access_files) == 4
+
+
+def test_alto_files_found_when_unusual_images_present(exotic_files_mets_object):
+    """
+    Ensure that the normal image group members are found, even when there are other
+    images too.
+    """
+    access_files = list(exotic_files_mets_object.files_of_type(ALTOFile))
+    assert len(access_files) == 4
+
+
+def test_access_image_page_numbers_work_when_unusual_images_present(
+    exotic_files_mets_object,
+):
+    """
+    Ensure that exotic images with low-end file names don't throw off page numbers.
+
+    Even if there are target images or such whose file names suggest they come before
+    the actual access images (or even in the middle of them), we should extract files
+    with correct page numbers (e.g. 1-4, not 2, 3, 4 and 6 if files  pr-00001.jp2 and
+    pr-00005.jp2 are not access images).
+    """
+    access_files = list(exotic_files_mets_object.files_of_type(AccessImageFile))
+    for index, access_file in zip(range(1, 5), access_files):
+        assert access_file.download_url.endswith(f"/{index}")
+
+
+def test_alto_page_numbers_work_when_unusual_images_present(
+    exotic_files_mets_object,
+):
+    """
+    Ensure that we don't try to download ALTO counterparts of target images etc.
+    """
+    alto_files = list(exotic_files_mets_object.files_of_type(AccessImageFile))
+    for index, alto_file in zip(range(1, 5), alto_files):
+        assert alto_file.download_url.endswith(f"/{index}")

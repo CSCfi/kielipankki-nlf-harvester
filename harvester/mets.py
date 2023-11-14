@@ -4,7 +4,7 @@ Tools for reading and interpreting METS files.
 
 from lxml import etree
 
-from harvester.file import File
+from harvester.file import AccessImageFile, ALTOFile
 
 
 # Due to security reasons related to executing C code, pylint does not have an
@@ -61,13 +61,59 @@ class METS:
         )
 
         self._files = []
-        for file_element in files:
-            self._files.append(
-                File.file_from_element(
-                    file_element,
-                    self.binding_dc_identifier,
+
+        self._add_access_image_files(file_elements=files)
+        self._add_alto_files_for_images()
+
+    def _add_access_image_files(self, file_elements):
+        """
+        Add an AccessImageFile to self._files for every access image in file_elements
+        """
+        for file_element in file_elements:
+            children = file_element.getchildren()
+            if len(children) != 1:
+                raise METSLocationParseError(
+                    "Expected 1 location, found {len(children)}"
+                )
+            location = file_element.xpath("./*/@*[local-name()='href']")[0]
+            parent = file_element.getparent()
+
+            filegrp_use = parent.attrib["USE"]
+            filegrp_id = parent.attrib["ID"]
+
+            if filegrp_use in ["Images", "reference"] and filegrp_id in [
+                "IMGGRP",
+                "ACIMGGRP",
+            ]:
+                page_number = int(file_element.attrib["SEQ"])
+                self._files.append(
+                    AccessImageFile(
+                        binding_dc_identifier=self.binding_dc_identifier,
+                        page_number=page_number,
+                        location_xlink=location,
+                    )
+                )
+
+    def _add_alto_files_for_images(self):
+        """
+        Add an ALTOFile to self._files for every access image already present
+
+        We add ALTOs based on access image files instead of the entries in the METS file
+        because METS also lists ALTOs for target images etc even though they are not
+        available for downloading via digi.kansalliskirjasto.fi.
+        """
+        alto_files = []
+        for file_ in self._files:
+            if not isinstance(file_, AccessImageFile):
+                continue
+
+            alto_files.append(
+                ALTOFile(
+                    binding_dc_identifier=file_.binding_dc_identifier,
+                    page_number=file_.page_number,
                 )
             )
+        self._files = self._files + alto_files
 
     def files(self):
         """
@@ -97,4 +143,10 @@ class METS:
 class METSFileEmptyError(Exception):
     """
     Exception raised when an empty METS file is downloaded.
+    """
+
+
+class METSLocationParseError(ValueError):
+    """
+    Exception raised when location of a file cannot be determined.
     """

@@ -346,10 +346,10 @@ def test_save_access_images_sftp_operator(
         image_locations = [
             image_dir / filename
             for filename in [
-                "pr-00001.jp2",
-                "pr-00002.jp2",
-                "pr-00003.jp2",
-                "pr-00004.jp2",
+                "00001.jp2",
+                "00002.jp2",
+                "00003.jp2",
+                "00004.jp2",
             ]
         ]
 
