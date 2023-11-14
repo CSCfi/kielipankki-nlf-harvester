@@ -203,22 +203,27 @@ def alto_url():
 
 
 @pytest.fixture()
-def alto_filename():
+def alto_pagenumber():
+    """
+    Return the page number for an ALTO test file
+    """
+    return 2
+
+
+@pytest.fixture()
+def alto_filename(alto_pagenumber):
     """
     Return the filename for an ALTO test file
     """
-    return "2.xml"
+    return f"0000{alto_pagenumber}.xml"
 
 
 @pytest.fixture
-def alto_file(alto_url, alto_filename):
+def alto_file(alto_url, alto_pagenumber):
     """
     Return an ALTOFile for testing.
     """
-    return ALTOFile(
-        f"file://./alto/{alto_filename}",
-        alto_url,
-    )
+    return ALTOFile(binding_dc_identifier=alto_url, page_number=alto_pagenumber)
 
 
 @pytest.fixture
@@ -233,18 +238,7 @@ def alto_file_with_erroneous_name(alto_url):
 
 
 @pytest.fixture
-def alto_file_with_parsable_name(alto_url):
-    """
-    Return an ALTOfile with a non-standard, but parsable and working filename.
-    """
-    return ALTOFile(
-        "file://./alto/img0001-alto.xml",
-        alto_url,
-    )
-
-
-@pytest.fixture
-def mock_alto_download(alto_url, alto_filename):
+def mock_alto_download(alto_url, alto_pagenumber):
     """
     Fake a response for GETting an ALTO file from "NLF".
 
@@ -254,7 +248,7 @@ def mock_alto_download(alto_url, alto_filename):
     alto_file_content = "<xml>test cöntent</xml>"
     with requests_mock.Mocker() as mocker:
         mocker.get(
-            f"{alto_url}/page-{alto_filename}",
+            f"{alto_url}/page-{alto_pagenumber}.xml",
             content=alto_file_content.encode("utf-8"),
         )
         yield alto_file_content
@@ -326,10 +320,11 @@ def access_image(access_image_binding_dc):
     Factory for ALTOFiles with desired file names for testing.
     """
 
-    def image_factory(filename):
+    def image_factory(page_number, extension):
         return AccessImageFile(
-            f"file://./preservation_img/{filename}",
-            access_image_binding_dc,
+            binding_dc_identifier=access_image_binding_dc,
+            page_number=page_number,
+            location_xlink=f"file://./preservation_img/{page_number}{extension}",
         )
 
     return image_factory

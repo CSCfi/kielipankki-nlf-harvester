@@ -16,74 +16,44 @@ class File:
     A shared base class for files originating from NLF.
     """
 
-    def __init__(self, location_xlink, binding_dc_identifier):
+    def __init__(self, binding_dc_identifier, page_number):
         """
         Create a new file
 
-        :param location_xlink: Location of the file as given in METS.
-        :type location_xlink: String
-        :param content_type: Type of information represented by this file.
-        :type content_type: :class:`~harvester.file.ContentType`
+        :param binding_dc_identifier: DC identifier of the binding to which this file
+                                      belongs
+        :type binding_dc_identifier: String
+        :param page_number: The page number for the page which this file represents in
+                            binding.
+        :type page_number: int
         """
-        self.location_xlink = location_xlink
         self.binding_dc_identifier = binding_dc_identifier
+        self.page_number = page_number
+
+    @property
+    def file_extension(self):
+        """
+        Return the file type extension for this file.
+
+        :return: File type suffix, including the leading dot (".xml")
+        :rtype: str
+        """
+        raise NotImplementedError(
+            "file_extension must be defined separately for each subclass of File"
+        )
 
     @property
     def filename(self):
         """
-        Name of the file as reported in ``self.location_xlink``
+        Name of the file constructed from page number and file type appropriate suffix.
 
-        :return: File name part of ``self.location_xlink``
+        The page number is padded with leading zeroes so that it is always five digits
+        long (e.g. 00002.jp2).
+
+        :return: File name (e.g. "00002.jp2")
         :rtype: str
         """
-        path_without_scheme = self.location_xlink.split("://")[-1]
-        return Path(path_without_scheme).name
-
-    @classmethod
-    def file_from_element(cls, file_element, binding_dc_identifier):
-        """
-        Return new subclass object representing the given file element.
-
-        :param file_element: A ``file`` element from METS. The
-            information for the parent and child elements must be
-            accessible too.
-        :type file_element: :class:`lxml.etree._Element`
-        """
-        children = file_element.getchildren()
-        if len(children) != 1:
-            raise METSLocationParseError("Expected 1 location, found {len(children)}")
-        location = file_element.xpath("./*/@*[local-name()='href']")[0]
-        parent = file_element.getparent()
-
-        filegrp_use = parent.attrib["USE"]
-        filegrp_id = parent.attrib["ID"]
-
-        if filegrp_use in ["alto", "Text"] and filegrp_id == "ALTOGRP":
-            file_cls = ALTOFile
-        elif filegrp_use in ["Images", "reference"] and filegrp_id in [
-            "IMGGRP",
-            "ACIMGGRP",
-        ]:
-            file_cls = AccessImageFile
-        elif filegrp_id in [
-            "TARGETIMGGRP",
-            "RETAINEDIMGGRP",
-            "MISSINGIMGGRP",
-            "MAIMGGRP",
-            "TNIMGGRP",
-            "PDF",
-        ]:
-            file_cls = SkippedFile
-        else:
-            raise UnknownFileException(
-                f"Unexpected fileGrp with ID {filegrp_id} and USE {filegrp_use} "
-                f"encountered"
-            )
-
-        return file_cls(
-            location_xlink=location,
-            binding_dc_identifier=binding_dc_identifier,
-        )
+        return f"{self.page_number:05}{self.file_extension}"
 
     @property
     def download_url(self):
@@ -183,14 +153,7 @@ class ALTOFile(File):
             data).
         :type dc_identifier: String
         """
-        href_filename = self.location_xlink.rsplit("/", maxsplit=1)[-1]
-        try:
-            href_filename = f"{re.search(r'([1-9]+0*)+', href_filename).group(0)}.xml"
-        except AttributeError:
-            raise AttributeError(
-                f"ALTO filename {href_filename} does not follow the accepted convention."
-            )
-        return f"{self.binding_dc_identifier}/page-{href_filename}"
+        return f"{self.binding_dc_identifier}/page-{self.page_number}.xml"
 
     def _default_file_dir(self):
         """
@@ -202,11 +165,31 @@ class ALTOFile(File):
         """
         return Path(utils.binding_id_from_dc(self.binding_dc_identifier)) / "alto"
 
+    @property
+    def file_extension(self):
+        return ".xml"
+
 
 class AccessImageFile(File):
     """
     A jpg file containing a scanned page/sheet from a binding
     """
+
+    def __init__(self, binding_dc_identifier, page_number, location_xlink):
+        """
+        Create a new file
+
+        :param location_xlink: Location of the file as given in METS.
+        :type location_xlink: String
+        :param binding_dc_identifier: DC identifier of the binding to which this file
+                                      belongs
+        :type binding_dc_identifier: String
+        :param page_number: The page number for the page which this file represents in
+                            binding.
+        :type page_number: int
+        """
+        self.location_xlink = location_xlink
+        super().__init__(binding_dc_identifier, page_number)
 
     @property
     def download_url(self):
@@ -223,11 +206,18 @@ class AccessImageFile(File):
         page_number = re.search(r"[1-9]\d*", filename_root).group(0)
         return f"{self.binding_dc_identifier}/image/{page_number}"
 
+    @property
+    def file_extension(self):
+        """
+        Return the file type extension for this file.
 
-class METSLocationParseError(ValueError):
-    """
-    Exception raised when location of a file cannot be determined.
-    """
+        Image files could have different suffixes and we have the location_xlink readily
+        available for access images, so we can parse them dynamically.
+
+        :return: File type suffix, including the leading dot (".xml")
+        :rtype: str
+        """
+        return "".join(Path(self.location_xlink).suffixes)
 
 
 class UnknownFileException(ValueError):
