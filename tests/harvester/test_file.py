@@ -19,11 +19,7 @@ def test_file_initialized_values():
     """
     Check that the values given when initializing are utilized correctly
     """
-    test_file = File(
-        "test_checksum", "test_algo", "test_location", "test_dc_identifier"
-    )
-    assert test_file.checksum == "test_checksum"
-    assert test_file.algorithm == "test_algo"
+    test_file = File("test_location", "test_dc_identifier")
     assert test_file.location_xlink == "test_location"
     assert test_file.binding_dc_identifier == "test_dc_identifier"
 

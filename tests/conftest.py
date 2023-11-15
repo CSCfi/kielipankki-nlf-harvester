@@ -216,8 +216,6 @@ def alto_file(alto_url, alto_filename):
     Return an ALTOFile for testing.
     """
     return ALTOFile(
-        "test_checksum",
-        "test_algo",
         f"file://./alto/{alto_filename}",
         alto_url,
     )
@@ -229,8 +227,6 @@ def alto_file_with_erroneous_name(alto_url):
     Return an ALTOFile with an erroneus filename for testing.
     """
     return ALTOFile(
-        "test_checksum",
-        "test_algo",
         "file://./alto/alto.xml",
         alto_url,
     )
@@ -242,8 +238,6 @@ def alto_file_with_parsable_name(alto_url):
     Return an ALTOfile with a non-standard, but parsable and working filename.
     """
     return ALTOFile(
-        "test_checksum",
-        "test_algo",
         "file://./alto/img0001-alto.xml",
         alto_url,
     )
@@ -334,8 +328,6 @@ def access_image(access_image_binding_dc):
 
     def image_factory(filename):
         return AccessImageFile(
-            "test_checksum",
-            "test_algo",
             f"file://./preservation_img/{filename}",
             access_image_binding_dc,
         )

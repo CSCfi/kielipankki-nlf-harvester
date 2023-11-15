@@ -71,25 +71,6 @@ def test_binding_ids_from_default_url(two_page_pmh_response, two_page_set_id):
 
 
 @requires_37
-def test_checksums(simple_mets_path, mets_dc_identifier):
-    """
-    Check that at least one correct checksum is printed
-    """
-    runner = CliRunner()
-
-    result = runner.invoke(
-        cli,
-        [
-            "checksums",
-            simple_mets_path,
-            mets_dc_identifier,
-        ],
-        catch_exceptions=False,
-    )
-    assert "\n33cbc005ce7dac534bdcc424c8a082cd\n" in result.output
-
-
-@requires_37
 def test_list_download_urls(simple_mets_path):
     """
     Check that the CLI is able to call the `download_urls` function.
