@@ -59,21 +59,6 @@ def mets_with_multiple_file_locations(simple_mets_path, tmp_path):
     return mets_output_path
 
 
-def test_file_checksum_parsing(simple_mets_object):
-    """
-    Test checksum parsing when there's one location for each file.
-    """
-    files = list(simple_mets_object.files())
-
-    first_file = files[0]
-    assert first_file.checksum == "ab64aff5f8375ca213eeaee260edcefe"
-    assert first_file.algorithm == "MD5"
-
-    last_file = files[-1]
-    assert last_file.checksum == "a462f99b087161579104902c19d7746d"
-    assert last_file.algorithm == "MD5"
-
-
 def test_file_location_parsing(simple_mets_object):
     """
     Test file location parsing when there's one location for each file.

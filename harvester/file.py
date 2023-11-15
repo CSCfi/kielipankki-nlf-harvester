@@ -16,21 +16,15 @@ class File:
     A shared base class for files originating from NLF.
     """
 
-    def __init__(self, checksum, algorithm, location_xlink, binding_dc_identifier):
+    def __init__(self, location_xlink, binding_dc_identifier):
         """
         Create a new file
 
-        :param checksum: Checksum for the file
-        :type checksum: String
-        :param algorithm: Algorithm used when calculating the checksum, e.g. MD5
-        :type algorithm: String
         :param location_xlink: Location of the file as given in METS.
         :type location_xlink: String
         :param content_type: Type of information represented by this file.
         :type content_type: :class:`~harvester.file.ContentType`
         """
-        self.checksum = checksum
-        self.algorithm = algorithm
         self.location_xlink = location_xlink
         self.binding_dc_identifier = binding_dc_identifier
 
@@ -87,8 +81,6 @@ class File:
             )
 
         return file_cls(
-            checksum=file_element.attrib["CHECKSUM"],
-            algorithm=file_element.attrib["CHECKSUMTYPE"],
             location_xlink=location,
             binding_dc_identifier=binding_dc_identifier,
         )

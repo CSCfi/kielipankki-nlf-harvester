@@ -43,32 +43,6 @@ def binding_ids(set_id, url):
     "collection_dc_identifier",
 )
 @click.option("--encoding", default="utf-8")
-def checksums(mets_file_path, collection_dc_identifier, encoding):
-    """
-    Output checksums for all files listed in the METS document.
-
-    \b
-    METS_FILE_PATH:
-        Path to the METS file to be read
-
-    \b
-    COLLECTION_DC_IDENTIFIER:
-        Dublin Core identifier for the collection to
-        which the binding described by this METS belongs. E.g.
-        https://digi.kansalliskirjasto.fi/sanomalehti/binding/380082.
-    """
-    mets_file = open(mets_file_path, "rb")
-    mets = METS(collection_dc_identifier, mets_file=mets_file, encoding=encoding)
-    for file in mets.files():
-        click.echo(file.checksum)
-
-
-@cli.command
-@click.argument("mets_file_path")
-@click.argument(
-    "collection_dc_identifier",
-)
-@click.option("--encoding", default="utf-8")
 def list_download_urls(mets_file_path, collection_dc_identifier, encoding):
     """
     Print download URLs for all files in METS
