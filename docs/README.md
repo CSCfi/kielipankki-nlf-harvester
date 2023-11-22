@@ -49,7 +49,8 @@ For each binding, we have three kinds of files:
 - the [ALTO](https://www.loc.gov/standards/alto/) files containing the text on
   pages as reported by OCR performed by The National Library of Finland (found
   in the `alto` subdirectory)
-- the JPEG 2000 files containing the scanned pages (found in the `access_img`
+- the image files (most often JPEG2000 but other formats such as tiff are also
+  present) containing the scanned pages (found in the `access_img`
   subdirectory)
 
 Thus e.g. the files for a four-page binding with ID 123 are found in the zip as
