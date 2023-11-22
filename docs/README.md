@@ -53,9 +53,9 @@ For each binding, we have three kinds of files:
   present) containing the scanned pages (found in the `access_img`
   subdirectory)
 
-Thus e.g. the files for a four-page binding with ID 123 are found in the zip as
-the following directory structure (all other bindings and their directories
-omitted):
+Thus e.g. the files for an imaginary four-page binding with ID 123 would be
+found in the zip as the following directory structure (all other bindings and
+their directories omitted):
 ```
 .
 └── 1/
