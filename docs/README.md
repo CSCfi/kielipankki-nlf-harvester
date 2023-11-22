@@ -29,16 +29,19 @@ todo
 ## Dataset Description
 
 The most recent version of the data set is located on Puhti supercomputer (see
-https://docs.csc.fi/computing/ for more details) as a single zip. This zip is
-found in `/scratch/project_2006633/nlf-harvester/zip/col-861.zip`.
+https://docs.csc.fi/computing/ for more details) as a collection zips. They are
+found in `/scratch/project_2006633/nlf-harvester/targets`. Each zip contains
+bindings with a shared binding ID prefix, e.g. file col-861_13.zip contains
+bindings 130010 and 1329879 while col-861_3.zip contains 30038 and 399915.
 
-Inside the zip each binding is in its own directory, named with the binding ID
-number and found at the end of a directory hierarchy in which each successive
-directory name contains one more digit from the binding ID. Thus e.g. the files
-for binding with ID `123012` are found in `1/12/123/1230/12301/123012/123012`.
-Note that the full binding ID is present twice in the path: this prevents the
-same path containing both files for an individual binding and further directory
-hierarchy for other bindings with the same binding ID prefix.
+Inside the zips, each binding is in its own directory, named with the binding
+ID number and found at the end of a directory hierarchy in which each
+successive directory name contains one more digit from the binding ID. Thus
+e.g. the files for binding with ID `123012` are found in directory
+`1/12/123/1230/12301/123012/123012`.  Note that the full binding ID is present
+twice in the path: this prevents the same path containing both files for an
+individual binding and further directory hierarchy for other bindings with the
+same binding ID prefix.
 
 For each binding, we have three kinds of files:
 - the [METS](https://www.loc.gov/standards/mets/) file containing metadata
