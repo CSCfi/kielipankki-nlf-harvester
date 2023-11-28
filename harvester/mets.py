@@ -68,16 +68,7 @@ class METS:
     def _add_access_image_files(self, file_elements):
         """
         Add an AccessImageFile to self._files for every access image in file_elements
-
-        There doesn't seem to be a reliable way of matching the elements to the
-        digi.kansalliskirjasto.fi download URLs (at least the numeric part of file name
-        nor the SEQ numbers do not work), so creating the right number of files whose
-        page numbers go from 1 to n is prioritized. In all reviewed cases, this also
-        seems to be the right order, but this cannot be guaranteed. Fortunately all
-        files in a fileGrp have also always had the same file type extension (which is
-        the only part utilized from location_xlink).
         """
-        page_number = 1
         for file_element in file_elements:
             children = file_element.getchildren()
             if len(children) != 1:
@@ -94,6 +85,7 @@ class METS:
                 "IMGGRP",
                 "ACIMGGRP",
             ]:
+                page_number = int(file_element.attrib["SEQ"])
                 self._files.append(
                     AccessImageFile(
                         binding_dc_identifier=self.binding_dc_identifier,
@@ -101,7 +93,6 @@ class METS:
                         location_xlink=location,
                     )
                 )
-                page_number += 1
 
     def _add_alto_files_for_images(self):
         """
