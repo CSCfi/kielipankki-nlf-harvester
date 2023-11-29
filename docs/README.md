@@ -1,21 +1,31 @@
-# National Library of Finland Dataset on Puhti
+# National Library of Finland Dataset @ CSC
 
-todo: one sentence description of the dataset
+Out-of-copyright publications since 1771, with page scans and OCRed text. This collection is periodically harvested from NLF's OAI-PMH interface, and is inteded to ultimately provide all of NLF's freely available material as it becomes available.
 
-All in all, this file should be fairly short: so short that the user is likely
-to glance all the headings with ease. If (when) the sections become too long,
-the actual content should be put into separate md files and linked from here.
+## Dataset size as of 2023
 
-## Using the Dataset on Puhti
+TODO
 
-todo
+- XXX bindings (one binding typically being one issue of a newspaper or periodical, or a book)
+
+- XXX pages
+
+- XXX tokens
+
+## Accessing the dataset
+
+### Allas
+
+### Puhti
+
+TODO
+
 - location of data
 - format of data
 - most common operations (list, partial extract based on binding id/file
   type/hand-picked list)
 - using the zip in python script?
 - fusermount
-
 
 ## Versioning
 
@@ -26,7 +36,7 @@ todo
   running
 
 
-## Dataset Description
+## Structure of the dataset
 
 The most recent version of the data set is located on Puhti supercomputer (see
 https://docs.csc.fi/computing/ for more details) as a collection zips. They are
