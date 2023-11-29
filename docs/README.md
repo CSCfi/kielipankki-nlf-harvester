@@ -34,7 +34,7 @@ The following will extract all metadata files:
 
 The resulting target directories will have segmented paths, like `1/16/163/1631/16318/16318/mets/16318_METS.xml`, and you can extract multiple times with different filters into the same target directory.
 
-For more advanced searching and extracting, consider matching against the metadata, (see our [example](https://github.com/CSCfi/kielipankki-nlf-harvester/blob/main/apptainer/filter.py) of parsing and matching) and using eg. Python's [zipfile](https://docs.python.org/3/library/zipfile.html) library for extracting the files you want.
+For more advanced searching and extracting, consider matching against the metadata, (see our [example](https://github.com/CSCfi/kielipankki-nlf-harvester/blob/main/docs/apptainer/filter.py) of parsing and matching) and using eg. Python's [zipfile](https://docs.python.org/3/library/zipfile.html) library for extracting the files you want.
 
 ### Allas
 
