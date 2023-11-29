@@ -26,7 +26,7 @@ The [recommended way](https://docs.csc.fi/computing/disk/) to process the data o
 
 For example, the following command will extract binding `1416885` into `$TMPDIR`:
 
-`unzip /scratch/project_2006633/nlf-harvester/col-861_14.zip "*/1416885/1416885/*" -d $TMPDIR`
+`unzip /scratch/project_2006633/nlf-harvester/zip/col-861_14.zip "*/1416885/1416885/*" -d $TMPDIR`
 
 The following will extract all metadata files:
 
