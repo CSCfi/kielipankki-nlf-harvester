@@ -6,6 +6,10 @@
 - Metadata comes as **[METS](https://en.wikipedia.org/wiki/Metadata_Encoding_and_Transmission_Standard)**, text and layout as **[ALTO](https://en.wikipedia.org/wiki/Analyzed_Layout_and_Text_Object)**, and page scans as **[JPG 2000](https://en.wikipedia.org/wiki/JPEG_2000)** files
 - The dataset is currently based on [collection 861](https://digi.kansalliskirjasto.fi/collections?id=861&set_language=en) at the NLF.
 
+TODO: document the technical stuff that can affect completeness of the data set:
+- we download files listed under USE "Images" or "reference" and their corresponding ALTOs
+- how to match the image files to the metadata in METS and that this is not easy for ALTOs :---)
+
 ## Dataset size
 
 Approximate figures as of 2023:
@@ -42,9 +46,16 @@ Versions of the data set will also be made available as [`restic`](https://resti
 
 The retention policy of the previous versions is still open and the Allas versions of the data set have not yet been published.
 
+TODO:
+- allas bucket
+- restic quickstart
+
 ## Versioning
 
 `restic` stores and displays the timestamps of the time when the dataset was archived, but the official way to reference old versions is the SHA-256 hash calculated by `restic` from the archive. The full hash is 256 bits long, but for referencing purposes, its 32-bit prefix is sufficient, and is represented by a 8-character string, like `9ed7c15f`.
+
+TODO:
+- when the data set on disk changes, how that can affect you if you have jobs running
 
 ## Structure of the dataset
 
@@ -57,6 +68,9 @@ For each binding, we have three kinds of files:
 - A [METS](https://www.loc.gov/standards/mets/) file containing metadata  about the binding, under `mets/`
 - [ALTO](https://www.loc.gov/standards/alto/) files containing the text and layout information as reported by OCR performed by The National Library of Finland, under `alto/`
 - The image files (most often JPEG2000 files, ending in `.jp2`, but other formats such as TIFF may also be present) containing the scanned pages, under `access_img/`
+
+TODO:
+- the new file naming for images
 
 The files for a four-page binding with ID 123 would be found in the zip with the following directory structure:
 ```
