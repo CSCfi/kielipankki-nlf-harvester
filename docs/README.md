@@ -52,7 +52,7 @@ TODO:
 
 ## Versioning
 
-`restic` stores and displays the timestamps of the time when the dataset was archived, but the official way to reference old versions is the SHA-256 hash calculated by `restic` from the archive. The full hash is 256 bits long, but for referencing purposes, its 32-bit prefix is sufficient, and is represented by a 8-character string, like `9ed7c15f`.
+Older versions of the data can be accessed by using `restic`, which also stores and displays timestamps for the archival of the previous dataset versions. The official way to reference old versions is the SHA-256 hash calculated by `restic` from the archive. The full hash is 256 bits long, but for referencing purposes, its 32-bit prefix is sufficient, and is represented by a 8-character string, like `9ed7c15f`.
 
 TODO:
 - when the data set on disk changes, how that can affect you if you have jobs running
