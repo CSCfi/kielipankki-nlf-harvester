@@ -52,10 +52,10 @@ TODO:
 
 ## Versioning
 
+The dataset will be updated periodically to keep up with newly digitized bindings and remove bindings that are no longer available for public access. This means that the dataset can change while your computations are in progress, which can lead to your analysis crashing or producing inconsistent results. Currently the only way to see if that has happened is to check the last edit time of the zip files by running `ls -l /scratch/project_2006633/nlf-harvester/zip/` on Puhti: if it is before your job started, your results have not been affected by an update.
+
 Older versions of the data can be accessed by using `restic`, which also stores and displays timestamps for the archival of the previous dataset versions. The official way to reference old versions is the SHA-256 hash calculated by `restic` from the archive. The full hash is 256 bits long, but for referencing purposes, its 32-bit prefix is sufficient, and is represented by a 8-character string, like `9ed7c15f`.
 
-TODO:
-- when the data set on disk changes, how that can affect you if you have jobs running
 
 ## Structure of the dataset
 
