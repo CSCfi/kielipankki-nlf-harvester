@@ -69,9 +69,6 @@ For each binding, we have three kinds of files:
 - [ALTO](https://www.loc.gov/standards/alto/) files containing the text and layout information as reported by OCR performed by The National Library of Finland, under `alto/`
 - The image files (most often JPEG2000 files, ending in `.jp2`, but other formats such as TIFF may also be present) containing the scanned pages, under `access_img/`
 
-TODO:
-- the new file naming for images
-
 The files for a four-page binding with ID 123 would be found in the zip with the following directory structure:
 ```
 .
@@ -87,8 +84,8 @@ The files for a four-page binding with ID 123 would be found in the zip with the
                 │   ├── 00003.xml
                 │   └── 00004.xml
                 └── access_img/
-                    ├── pr-00001.jp2
-                    ├── pr-00002.jp2
-                    ├── pr-00003.jp2
-                    └── pr-00004.jp2
+                    ├── 00001.jp2
+                    ├── 00002.jp2
+                    ├── 00003.jp2
+                    └── 00004.jp2
 ```
