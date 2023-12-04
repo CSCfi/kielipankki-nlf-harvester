@@ -86,6 +86,6 @@ The files for a four-page binding with ID 123 would be found in the zip with the
                 └── access_img/
                     ├── 00001.jp2
                     ├── 00002.jp2
-                    ├── 00003.jp2
+                    ├── 00003.tif
                     └── 00004.jp2
 ```
