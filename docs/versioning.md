@@ -6,17 +6,49 @@ Older versions of the data set are stored in Allas and can be accessed by using 
 - extract chosen `.zip`s
 - extract an entire snapshot
 
-The backups are stored in an [Allas](https://docs.csc.fi/data/Allas/introduction/) bucket called `nlf-harvester-versioning`.
-
+The backups are stored in an [Allas](https://docs.csc.fi/data/Allas/introduction/) bucket called `nlf-harvester-versioning`. The password for the backup repository is `nlf-data-at-csc`.
 
 ## Restic basics
 
-todo
+The intended purpose for [restic](https://restic.net/) is taking backups, but as it does incremental backups with unique identifiers for each backup and is easily available on Puhti, it was chosen as the tool to use for versioning the data set.
 
-- `module load allas` / install on own computer
+### Getting started in Puhti
+
+The "allas" module on Puhti comes with the restic software. It can be activated with i
+```
+$ module load allas
+```
+
+The output will suggest setting up connection to Allas, but it is not necessary for accessing these backups as they are public and thus don't require authentication.
+
+You can verify that the module has been successfully loaded by checking that
+```
+$ restic version
+```
+reports the currently installed version.
+
+### Getting started on another Linux machine
+
+Restic is available for a variety of Linux distributions and on macOS. See [official installation instructions](https://restic.readthedocs.io/en/latest/020_installation.html) for more information. You can verify the installation by checking that
+```
+$ restic version
+```
+reports the currently installed version.
+
+### Providing the repository URL and credentials
+
+todo
 - basic command structure, repository url
 - always --no-lock
 - you can set configuration with environment variables (include or not?)
+
+```
+$ restic -r s3:https://a3s.fi/nlf-harvester-versioning snapshots
+enter password for repository:
+repository c08c9567 opened (version 2, compression level auto)
+Save(<lock/b46701cca0>) returned error, retrying after 318.869268ms: client.PutObject: Access Denied.
+```
+
 
 ## Listing snapshots
 
@@ -30,6 +62,7 @@ ID        Time                 Host                 Tags        Paths
 --------------------------------------------------------------------------------------------------------------
 1 snapshots
 ```
+
 
 ## Referencing old versions
 
