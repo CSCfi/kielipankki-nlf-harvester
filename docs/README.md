@@ -22,7 +22,7 @@ Approximate figures as of 2023:
 
 ## Accessing the dataset
 
-### Puhti
+### The newest version on Puhti
 
 For immediate access on the shared file system, the newest dataset is kept in the directory `/scratch/project_2006633/nlf-harvester/zip/`. That directory should be accessible to all users on Puhti.
 
@@ -40,21 +40,16 @@ The resulting target directories will have segmented paths, like `1/16/163/1631/
 
 For more advanced searching and extracting, consider extracting the metadata files as above, and using them to generate a list of binding IDs of interest. See our [example](https://github.com/CSCfi/kielipankki-nlf-harvester/blob/main/docs/apptainer/filter.py) of parsing and matching, and using either `unzip` or eg. Python's [zipfile](https://docs.python.org/3/library/zipfile.html) library for extracting the files you want.
 
-### Allas
+> [!WARNING]
+> The dataset will be updated periodically to keep up with newly digitized bindings and remove bindings that are no longer available for public access. This means that the dataset can change while your computations are in progress, which can lead to your analysis crashing or producing inconsistent results.
 
-Versions of the data set will also be made available as [`restic`](https://restic.net/) backups on [Allas](https://docs.csc.fi/data/Allas/introduction/). `restic` commands can be used to list old versions, and to extract either entire snapshots or single `.zip`s.
+Currently the only way to see if that has happened is to check the last edit time of the zip files by running `ls -l /scratch/project_2006633/nlf-harvester/zip/` on Puhti: if it is before your job started, your results have not been affected by an update.
 
-The retention policy of the previous versions is still open and the Allas versions of the data set have not yet been published.
+### Previous versions in Allas
 
-TODO:
-- allas bucket
-- restic quickstart
+Versions of the data set will also be made available as [`restic`](https://restic.net/) backups on [Allas](https://docs.csc.fi/data/Allas/introduction/). The retention policy of the previous versions is still open, so don't rely on old versions being available in the long term.
 
-## Versioning
-
-The dataset will be updated periodically to keep up with newly digitized bindings and remove bindings that are no longer available for public access. This means that the dataset can change while your computations are in progress, which can lead to your analysis crashing or producing inconsistent results. Currently the only way to see if that has happened is to check the last edit time of the zip files by running `ls -l /scratch/project_2006633/nlf-harvester/zip/` on Puhti: if it is before your job started, your results have not been affected by an update.
-
-Older versions of the data can be accessed by using `restic`, which also stores and displays timestamps for the archival of the previous dataset versions. The official way to reference old versions is the SHA-256 hash calculated by `restic` from the archive. The full hash is 256 bits long, but for referencing purposes, its 32-bit prefix is sufficient, and is represented by a 8-character string, like `9ed7c15f`.
+See [versionig.md](versioning.md) for more information about previous versions of the dataset and how to access them.
 
 
 ## Structure of the dataset
