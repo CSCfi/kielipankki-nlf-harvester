@@ -92,6 +92,9 @@ todo:
 
 ## Listing snapshots
 
+To see which older versions of the data set are available or to note the identifier of the version you have used in your research, you need to use `restic snapshots` command. It will produce an output that lists all available snapshots including their identifiers and date and time of initiating the snapshot creation.
+
+The command and its output can look like something like this:
 ```
 $ restic -r s3:https://a3s.fi/nlf-harvester-versioning snapshots --no-lock
 enter password for repository:
@@ -113,8 +116,59 @@ Later it will be made possible to use the snapshot IDs as a part of the URN of t
 
 ## Browsing the backups
 
-todo: how to mount (not on puhti)
+It is possible to browse the old versions of the data without extracting the backup if the repository is mounted on your local system.
 
+> [!WARNING]
+> Due to security reasons, users cannot create mounts on CSC supercomputers, so this will not work on Puhti.
+
+First you must create a directory in which the backups will be mounted, e.g.
+```
+$ mkdir example/backup-browsing
+```
+and then you can use `restic mount` to mount the repository there:
+```
+$ restic -r s3:https://a3s.fi/nlf-harvester-versioning mount example/backup-browsing --no-lock
+enter password for repository:
+repository c08c9567 opened (version 2, compression level auto)
+[0:09] 100.00%  109 / 109 index files loaded
+Now serving the repository at example/backup-browsing
+Use another terminal or tool to browse the contents of this folder.
+When finished, quit with Ctrl-c here or umount the mountpoint.
+```
+
+The terminal in which you executed the mount command will remain reserved as long as the mount is active, as restic will need to provide the content from the repository. If you open another terminal window, you will be able to browse the mounted repository and read files within.
+
+In the mount directory, there will be four directories:
+```
+$ ls example/backup-browsing/
+hosts  ids  snapshots  tags
+```
+Out of these, `hosts` is not interesting (as the repository only contains backups from one host). The snapshots in the repository are currently not tagged, so `tags` will be empty. The other two directories, `ids` and `snapshots` offer two ways of browsing specific snapshots: `ids` will offer each snapshhot in a directory whose name is the ID of the snapshot (e.g. `ids/2f8df9e7`) while `snapshots` organizes the snapshots by their creation timestamp (e.g. `snapshots/2023-11-29T15:24:12+02:00`). The `snapshots` directory also offers a handy symbolic link `latest` which leads to the newest snapshot.  The same files are available through either of these routes.
+
+Each snapshot directory contains the full directory tree from root up to the individual files, so for example the zip containing 18-prefixed bindings in snapshot 2f8df9e7 can be found in `ids/2f8df9e7/scratch/project_2006633/nlf-harvester/targets/col-861_18.zip`.
+
+The mounted repository can be browsed and the files read using the normal command line tools or even by browsing in a graphical file browser. For example:
+```
+$ cd example/backup-browsing/ids/2f8df9e7/scratch/project_2006633/nlf-harvester/targets/
+$ ls
+col-861_10.zip  col-861_13.zip  col-861_16.zip  col-861_19.zip  col-861_4.zip  col-861_7.zip
+col-861_11.zip  col-861_14.zip  col-861_17.zip  col-861_2.zip   col-861_5.zip  col-861_8.zip
+col-861_12.zip  col-861_15.zip  col-861_18.zip  col-861_3.zip   col-861_6.zip  col-861_9.zip
+$ unzip -l col-861_18.zip  | head
+Archive:  col-861_18.zip
+  Length      Date    Time    Name
+---------  ---------- -----   ----
+    52705  2023-11-13 20:29   ./1/18/181/1816/18165/18165/mets/18165_METS.xml
+   403607  2023-11-13 20:29   ./1/18/181/1816/18165/18165/alto/00001.xml
+   929380  2023-11-13 20:29   ./1/18/181/1816/18165/18165/alto/00002.xml
+   852434  2023-11-13 20:29   ./1/18/181/1816/18165/18165/alto/00003.xml
+   485330  2023-11-13 20:29   ./1/18/181/1816/18165/18165/alto/00004.xml
+  2934918  2023-11-13 20:29   ./1/18/181/1816/18165/18165/access_img/pr-00001.jp2
+  3566746  2023-11-13 20:29   ./1/18/181/1816/18165/18165/access_img/pr-00002.jp2
+$ unzip -j col-861_18.zip ./1/18/181/1816/18165/18165/mets/18165_METS.xml -d ~/example/extracted
+Archive:  col-861_18.zip
+  inflating: /home/ajarven/example/extracted/18165_METS.xml
+```
 
 ## Extracting chosen files from the backup
 
