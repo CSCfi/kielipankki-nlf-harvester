@@ -17,7 +17,7 @@ The intended purpose for [restic](https://restic.net/) is taking backups, but as
 
 ### Getting started in Puhti
 
-The "allas" module on Puhti comes with the restic software. It can be activated with i
+The "allas" module on Puhti comes with the restic software. It can be activated with
 ```
 $ module load allas
 ```
