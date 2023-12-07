@@ -61,16 +61,16 @@ To shorten the commands and make them more readable, you can also provide the va
 
 The former requires the values to be present in the files as described in [values via files](#values-via-files). After that, you can set the environment variables
 ```
-export RESTIC_REPOSITORY_FILE="/users/yourusername/example/restic_repo.txt"
-export RESTIC_PASSWORD_FILE="/users/yourusername/example/restic_password.txt"
+$ export RESTIC_REPOSITORY_FILE="/users/yourusername/example/restic_repo.txt"
+$ export RESTIC_PASSWORD_FILE="/users/yourusername/example/restic_password.txt"
 ```
 and run restic commands without providing them again, e.g. `restic snapshots --no-lock`.
 
 Another option is to set the repository and password directly, without having them in a file:
 ```
-export RESTIC_REPOSITORY="s3:https://a3s.fi/nlf-harvester-versioning"
-export RESTIC_PASSWORD="nlf-data-at-csc"
-``
+$ export RESTIC_REPOSITORY="s3:https://a3s.fi/nlf-harvester-versioning"
+$ export RESTIC_PASSWORD="nlf-data-at-csc"
+```
 
 ### Common problems
 
