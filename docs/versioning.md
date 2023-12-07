@@ -24,19 +24,12 @@ $ module load allas
 
 The output will suggest setting up connection to Allas, but it is not necessary for accessing these backups as they are public and thus don't require authentication.
 
-You can verify that the module has been successfully loaded by checking that
-```
-$ restic version
-```
+You can verify that the module has been successfully loaded by checking that `restic version`
 reports the currently installed version.
 
 ### Getting started on another Linux machine
 
-Restic is available for a variety of Linux distributions and on macOS. See [official installation instructions](https://restic.readthedocs.io/en/latest/020_installation.html) for more information. You can verify the installation by checking that
-```
-$ restic version
-```
-reports the currently installed version.
+Restic is available for a variety of Linux distributions and on macOS. See [official installation instructions](https://restic.readthedocs.io/en/latest/020_installation.html) for more information. You can verify the installation by checking that `restic version` reports the currently installed version.
 
 ### Providing the repository URL and credentials
 
