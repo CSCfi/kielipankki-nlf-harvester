@@ -118,7 +118,7 @@ Later it will be made possible to use the snapshot IDs as a part of the URN of t
 
 It is possible to browse the old versions of the data without extracting the backup if the repository is mounted on your local system.
 
-> [!WARNING]
+> [!NOTE]
 > Due to security reasons, users cannot create mounts on CSC supercomputers, so this will not work on Puhti.
 
 First you must create a directory in which the backups will be mounted, e.g.
