@@ -13,7 +13,10 @@ The backups are stored in an [Allas](https://docs.csc.fi/data/Allas/introduction
 The intended purpose for [restic](https://restic.net/) is taking backups, but as it does incremental backups with unique identifiers for each backup and is easily available on Puhti, it was chosen as the tool to use for versioning the data set.
 
 > [!NOTE]
-> The Allas bucket is read-only for users, so you always need to use the `--no-lock` flag to prevent restic trying to create a lock file in it.
+> The Allas bucket is read-only for users, so you always need to use the `--no-lock` flag with this data set to prevent restic trying to create a lock file in the bucket.
+
+This guide will not cover all functionality restic offers. For more information, see [the official document](https://restic.readthedocs.io). You can also get information about available commands and flags by running `restic --help` in command line, and more detailed information about a specific command with `restic [command] --help`, e.g. `restic restore --help`.
+
 
 ### Getting started in Puhti
 
