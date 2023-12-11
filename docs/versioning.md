@@ -195,4 +195,9 @@ Summary: Restored 5 / 1 files/dirs (3.866 GiB / 3.866 GiB) in 30:42
 ## Extracting the whole backup
 
 > [!WARNING]
-> The data set is very large (over 10 TB), so ensure you have enough storage space available
+> The data set is very large (order of 10 TB), so ensure you have enough storage space available!
+
+Invoking `restore` without providing any inclusion or exclusion criteria will restore the whole backup. For example getting the full version `2f8df9e7` to `example/restic-restore/` can be achieved with
+```
+$ restic restore 2f8df9e7 -t example/restic-restore/ --no-lock
+```
