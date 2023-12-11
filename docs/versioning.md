@@ -173,10 +173,24 @@ Archive:  col-861_18.zip
   inflating: /home/ajarven/example/extracted/18165_METS.xml
 ```
 
-## Extracting chosen files from the backup
+## Downloading chosen files from the backup
 
-todo
+> [!WARNING]
+> Due to network topology and restic network usage pattern, extracting the backup from Allas to Puhti is slow and not recommended at the time. Performance on LUMI will be benchmarked and it might provide a viable alternative.
 
+If you already know which individual file(s) you need, you can extract them using `restic restore`. You need to provide snapshot identifier (e.g. `2f8df9e7` or `latest`) a destination directory using the `-t` or `--target` flag, and one or more files or patterns to include (`-i`/`--include`) or exclude (`-e`/`--exclude`). If you use `--include`, everything else is automatically excluded.
+
+Restoring a single zip from version 2f8df9e7 to a given directory:
+```
+$ restic restore latest -i col-861_16.zip -t example/restic-restore/ --no-lock
+repository c08c9567 opened (version 2, compression level auto)
+[0:11] 100.00%  109 / 109 index files loaded
+restoring <Snapshot 2f8df9e7 of [/scratch/project_2006633/nlf-harvester/targets] at 2023-11-29 15:24:12.699553873 +0200 EET by robot_2006633_puhti@puhti-login12.bullx> to example/restic-restore/
+Summary: Restored 5 / 1 files/dirs (3.866 GiB / 3.866 GiB) in 30:42
+```
+
+> [!NOTE]
+> When using `restore`, restic will restore the full directory structure leading to the selected file(s). For example in the above example, the acual zip file will be found in `tmp/restic-restore/scratch/project_2006633/nlf-harvester/targets/col-861_16.zip`
 
 ## Extracting the whole backup
 
