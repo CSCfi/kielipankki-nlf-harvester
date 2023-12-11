@@ -48,14 +48,3 @@ With coverage:
 ```
 python -m pytest --cov=harvester
 ```
-
-## Generating Documentation
-The module supports creating documentation from docstrings using Sphinx. The
-generated docs are very rudimentary at this point, but they can be generated as
-follows:
-```
-sphinx-apidoc -o docs/ harvester
-cd docs
-make html
-```
-Afterwards the documentation can be viewed from ``docs/_build/index.html``.
