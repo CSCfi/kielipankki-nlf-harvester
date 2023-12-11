@@ -6,9 +6,6 @@
 - Metadata comes as **[METS](https://en.wikipedia.org/wiki/Metadata_Encoding_and_Transmission_Standard)**, text and layout as **[ALTO](https://en.wikipedia.org/wiki/Analyzed_Layout_and_Text_Object)**, and page scans as **[JPG 2000](https://en.wikipedia.org/wiki/JPEG_2000)** files
 - The dataset is currently based on [collection 861](https://digi.kansalliskirjasto.fi/collections?id=861&set_language=en) at the NLF.
 
-TODO: document the technical stuff that can affect completeness of the data set:
-- we download files listed under USE "Images" or "reference" and their corresponding ALTOs
-- how to match the image files to the metadata in METS and that this is not easy for ALTOs :---)
 
 ## Dataset size
 
@@ -19,6 +16,15 @@ Approximate figures as of 2023:
 - **~4M pages**
 
 - **~10 TB**
+
+## Technical limitations
+
+The data set is downloaded based on combined metadata from [the National Library of Finland OAI-PMH interface](https://wiki-emerita.it.helsinki.fi/display/Comhis/Interfaces+of+digi.kansalliskirjasto.fi#Interfacesofdigi.kansalliskirjasto.fi-OAI-PMH) (lists of bindings) and [METS](https://www.loc.gov/standards/mets/) files for each binding (number of pages, file formats). If for some reason the METS for a binding is not downloadable at the time of harvesting, it or any pages from the binding will not be present in the data set. Similarly, if any of the pages in either ALTO or image format are not downloadable from digi.kansalliskirjasto.fi, either temporarily or permanently, a binding can lack some files.
+
+The METS files are also not 1-to-1 match to the public data. Currently we attempt to download all image files whose `fileGrp`'s `USE` is either `Images` or `reference` and `ID` is `IMGGRP` or `ACIMGGRP`. Both available and unavailable ALTO files look the same in the METS, so currently they are downloaded based on the access image page numbers. The scanned page files on the file system can be matched to their METS metadata by matching the number in file name to the `SEQ` attribute in the corresponding `file` element in METS. If you suspect that some data is missing, please contact [the Language Bank of Finland](https://www.kielipankki.fi/support/contact-us/).
+
+At the moment, the harvesting does not automatically produce a list of files that were not available for download, but it will be added later.
+
 
 ## Accessing the dataset
 
