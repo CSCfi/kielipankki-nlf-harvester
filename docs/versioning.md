@@ -77,6 +77,8 @@ $ export RESTIC_PASSWORD="nlf-data-at-csc"
 
 ### Common problems
 
+#### Access denied
+
 If you get `client.PutObject: Access Denied` when you try to access a repository using the correct password, you are either using a command that alters the data in the repository (e.g. trying to back up new data or remove old snapshots) or have forgotten to use the `--no-lock` flag. The solution is to stick to read-only operations (e.g. `snapshots`, `mount` and `restore`) and to always add the `--no-lock` flag.
 
 The error message in question can look like something like this:
@@ -88,9 +90,11 @@ Save(<lock/b46701cca0>) returned error, retrying after 318.869268ms: client.PutO
 ```
 As the output suggests, restic will automatically retry after a while. You can stop the retry loop with ctrl-c.
 
+#### Slowness
 
-todo:
-- perf on Puhti (does changing tmpdir/cachedir help? interactive session with more cpu?)
+The repository is big, so it is normal that operations do take some time: seconds for a listing directory contents in a mounted repository, up to a minute for listing snapshots, tens of minutes to multiple hours for fetching a single zip (depending on size). If things seem slower than they should, some of the following might be the reason:
+- Using Puhti or Mahti whose network connection is not well suited for fetching restic backups from Allas: LUMI might offer better performance
+- Unreliable or slow connection, e.g. unreliable wifi
 
 
 ## Listing snapshots
