@@ -15,7 +15,7 @@ The intended purpose for [restic](https://restic.net/) is taking backups, but as
 > [!NOTE]
 > The Allas bucket is read-only for users, so you always need to use the `--no-lock` flag with this data set to prevent restic trying to create a lock file in the bucket.
 
-This guide will not cover all functionality restic offers. For more information, see [the official document](https://restic.readthedocs.io). You can also get information about available commands and flags by running `restic --help` in command line, and more detailed information about a specific command with `restic [command] --help`, e.g. `restic restore --help`.
+This guide will not cover all functionality restic offers. For more information, see [the official documentation](https://restic.readthedocs.io). You can also get information about available commands and flags by running `restic --help` in command line, and more detailed information about a specific command with `restic [command] --help`, e.g. `restic restore --help`.
 
 
 ### Getting started in Puhti
