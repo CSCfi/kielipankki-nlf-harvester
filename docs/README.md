@@ -23,7 +23,7 @@ The data set is downloaded based on combined metadata from [the National Library
 
 The METS files are also not 1-to-1 match to the public data. Currently we attempt to download all image files whose `fileGrp`'s `USE` is either `Images` or `reference` and `ID` is `IMGGRP` or `ACIMGGRP`. Both available and unavailable ALTO files look the same in the METS, so currently they are downloaded based on the access image page numbers. The scanned page files on the file system can be matched to their METS metadata by matching the number in file name to the `SEQ` attribute in the corresponding `file` element in METS. If you suspect that some data is missing, please contact [the Language Bank of Finland](https://www.kielipankki.fi/support/contact-us/).
 
-At the moment, the harvesting does not automatically produce a list of files that were not available for download, but it will be added later.
+At the moment, the harvesting does not automatically produce a list of files that were not available for download, but one will be made available later.
 
 
 ## Accessing the dataset
@@ -55,7 +55,7 @@ Currently the only way to see if that has happened is to check the last edit tim
 
 Versions of the data set will also be made available as [`restic`](https://restic.net/) backups on [Allas](https://docs.csc.fi/data/Allas/introduction/). The retention policy of the previous versions is still open, so don't rely on old versions being available in the long term.
 
-See [versionig.md](versioning.md) for more information about previous versions of the dataset and how to access them.
+See [versioning.md](versioning.md) for more information about previous versions of the dataset and how to access them.
 
 
 ## Structure of the dataset
