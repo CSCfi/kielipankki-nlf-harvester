@@ -32,11 +32,6 @@ At the moment, the harvesting does not automatically produce a list of files tha
 
 For immediate access on the shared file system, the newest dataset is kept in the directory `/scratch/project_2006633/nlf-harvester/zip/`. That directory should be accessible to all users on Puhti.
 
-> [!NOTE]
-> The RedHat version of `unzip` (installed on CSC supercomputers) is affected by a bug that causes error messages such as `error: End-of-centdir-64 signature not where expected (prepended bytes?)` and `error: not enough memory for bomb detection` to be displayed.
->
-> On Puhti, you can run `module load unzip/6.0-46` to enable a newer version of `unzip` that is not affected by the bug. This must be done separately for each session in which you handle big zip files.
-
 The [recommended way](https://docs.csc.fi/computing/disk/) to process the data on Puhti is to use a suitable compute node with a SSD drive and extract parts of it to the SSD drive. On interactive compute nodes (launched with `sinteractive`), this is `$TMPDIR`, and for batch jobs, this is `$LOCAL_SCRATCH`.
 
 For example, the following command will extract binding `1416885` into `$TMPDIR`:
