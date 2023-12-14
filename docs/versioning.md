@@ -8,6 +8,25 @@ Older versions of the data set are stored in Allas and can be accessed by using 
 
 The backups are stored in an [Allas](https://docs.csc.fi/data/Allas/introduction/) bucket called `nlf-harvester-versioning`. The password for the backup repository is `nlf-data-at-csc`.
 
+## Cheatsheet
+
+Setting the necessary configuration as environment variables:
+```
+$ export RESTIC_REPOSITORY="s3:https://a3s.fi/nlf-harvester-versioning"
+$ export RESTIC_PASSWORD="nlf-data-at-csc"
+```
+
+List snapshots:
+```
+$ restic snapshots --no-cache
+```
+
+Restore a single file into a given directory:
+```
+$ restic restore latest -i col-861_16.zip -t example/restic-restore/ --no-lock
+```
+
+
 ## Restic basics
 
 The intended purpose for [restic](https://restic.net/) is taking backups, but as it does incremental backups with unique identifiers for each backup and is easily available on Puhti, it was chosen as the tool to use for versioning the data set.
