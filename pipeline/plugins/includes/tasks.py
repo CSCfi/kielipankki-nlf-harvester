@@ -67,7 +67,6 @@ def download_set(
     initial_download,
     pathdict,
 ):
-
     bindings = utils.read_bindings(pathdict["BINDING_LIST_DIR"], set_id)
 
     if initial_download:
@@ -86,7 +85,6 @@ def download_set(
 
             @task_group(group_id=f"download_subset_{set_id}_{prefix}".rstrip("_"))
             def download_subset(subset):
-
                 if prefix:
                     subset_base_name = f"{set_id}_{prefix}"
                 else:
@@ -146,6 +144,30 @@ def clear_temporary_directory(ssh_conn_id, tmpdir_root):
     ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
     with ssh_hook.get_conn() as ssh_client:
         ssh_client.exec_command(f"rm -r {tmpdir_root}/*")
+
+
+@task(task_id="publish_to_users")
+def publish_to_users(ssh_conn_id, source, destination):
+    """
+    Publish the data from `source` for user access in `destination`.
+
+    To ensure that the change happens as fast as possible from the perspective of our
+    end users and that they won't see halfway-written files, we do the publishing as a
+    rename (`mv`) operation that is atomic.
+
+    NB: The possibility of new files appearing or old ones being removed (e.g.
+    2-prefixed bindings being split into 20, 21, ... 29 or vice versa due to addition or
+    removal of bindings) is not handled: if that happens, the old file(s) will remain in
+    the destination directory.
+    """
+    ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
+    with ssh_hook.get_conn() as ssh_client:
+        sftp_client = ssh_client.open_sftp()
+
+        for filename in sftp_client.listdir(str(source)):
+            source_filename = source / filename
+            destination_filename = destination / filename
+            sftp_client.posix_rename(source_filename, destination_filename)
 
 
 @task(task_id="create_restic_snapshot", trigger_rule="all_done")

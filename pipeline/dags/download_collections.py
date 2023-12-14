@@ -16,6 +16,7 @@ from includes.tasks import (
     download_set,
     clear_temporary_directory,
     create_restic_snapshot,
+    publish_to_users,
 )
 from harvester.pmh_interface import PMH_API
 
@@ -47,7 +48,6 @@ api = PMH_API(url=http_conn.host)
 
 
 for col in COLLECTIONS:
-
     current_dag_id = f"subset_download_{col['id']}"
 
     @dag(
@@ -61,6 +61,9 @@ for col in COLLECTIONS:
         begin_download = EmptyOperator(task_id="begin_download")
 
         cancel_pipeline = EmptyOperator(task_id="cancel_pipeline")
+
+        zip_creation_dir = pathdict["OUTPUT_DIR"] / "targets"
+        published_data_dir = pathdict["OUTPUT_DIR"] / "zip"
 
         check_if_download_should_begin(
             set_id=col["id"],
@@ -82,10 +85,15 @@ for col in COLLECTIONS:
                 pathdict=pathdict,
             )
             >> clear_temporary_directory(SSH_CONN_ID, pathdict["TMPDIR_ROOT"])
+            >> publish_to_users(
+                ssh_conn_id=SSH_CONN_ID,
+                source=zip_creation_dir,
+                destination=published_data_dir,
+            )
             >> create_restic_snapshot(
                 SSH_CONN_ID,
                 pathdict["EXTRA_BIN_DIR"] / "create_snapshot.sh",
-                pathdict["OUTPUT_DIR"] / "targets",
+                published_data_dir,
             )
         )
 
