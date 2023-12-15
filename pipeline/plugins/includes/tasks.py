@@ -69,8 +69,10 @@ def download_set(
 ):
     bindings = utils.read_bindings(pathdict["BINDING_LIST_DIR"], set_id)
 
+    prefixes = [str(i) for i in range(10, 20)] + [str(i) for i in range(2, 10)]
+
     if initial_download:
-        subset_split = utils.assign_bindings_to_subsets(bindings, subset_size)
+        subset_split = utils.assign_bindings_to_subsets(bindings, prefixes)
         utils.save_subset_split(subset_split, pathdict["SUBSET_SPLIT_DIR"], set_id)
 
     else:
