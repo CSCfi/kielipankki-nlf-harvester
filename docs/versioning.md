@@ -128,6 +128,11 @@ s3:https://a3s.fi/nlf-harvester-versioning
 To get rid of it, you need to clear the other credentials.
 
 
+#### Unsupported repository version
+
+The repository format has been improved when the software has been updated, so older versions of restic are not compatible with new repositories. Trying to access the repository with too old restic will produce an error message stating that the repository version is unsupported. To get rid of the error, you need to update your restic installation. This can usually be done with `restic self-update` command.
+
+
 ## Listing snapshots
 
 To see which older versions of the data set are available or to note the identifier of the version you have used in your research, you need to use `restic snapshots` command. It will produce an output that lists all available snapshots including their identifiers and date and time of initiating the snapshot creation.
