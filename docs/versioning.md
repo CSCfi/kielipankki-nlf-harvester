@@ -116,6 +116,18 @@ The repository is big, so it is normal that operations do take some time: second
 - Unreliable or slow connection, e.g. unreliable wifi
 
 
+#### Access key ID does not exist
+
+If you have other S3 credentials available on your system (e.g. AWS or MINIO credentials files or environment variables), restic can erroneously try to use them. This can result in the following error message:
+```
+Fatal: unable to open config file: Stat: The access key ID you provided does not exist in our records.
+Is there a repository at the following location?
+s3:https://a3s.fi/nlf-harvester-versioning
+```
+
+To get rid of it, you need to clear the other credentials.
+
+
 ## Listing snapshots
 
 To see which older versions of the data set are available or to note the identifier of the version you have used in your research, you need to use `restic snapshots` command. It will produce an output that lists all available snapshots including their identifiers and date and time of initiating the snapshot creation.
