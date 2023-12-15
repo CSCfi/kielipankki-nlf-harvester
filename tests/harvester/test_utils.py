@@ -69,22 +69,30 @@ def test_binding_download_location():
     assert dir_structure_set_depth == "1/12/123/123456"
 
 
-def test_assign_bindings_to_subsets():
+@pytest.mark.parametrize(
+    "prefixes",
+    [
+        [str(i) for i in range(1, 10)],
+        [str(i) for i in list(range(1, 4)) + list(range(40, 50)) + list(range(5, 9))],
+    ],
+)
+def test_assign_bindings_to_subsets(prefixes):
     """
-    Test that bindings are assigned to subsets correctly,
-    the correct number of subsets are created.
+    Test assigning bindings to subsets
+
+    We verify that there is the same number of subsets as there are prefixes, and that
+    each binding in a subset has binding id that starts with the corresponding prefix.
+    This is done for a simple set of prefixes (1, 2, ..., 9) and a more complex one with
+    varying prefix length (1, 2, 3, 40, 51, ..., 49, 5, ...9).
     """
     with open("tests/data/test_col_bindings", "r") as f:
         bindings = f.read().splitlines()
 
-    subsets_1 = utils.assign_bindings_to_subsets(bindings, 1000)
-    assert len(subsets_1) == 1
-    assert subsets_1 == {"": bindings}
+    subsets = utils.assign_bindings_to_subsets(bindings, prefixes)
 
-    subsets_2 = utils.assign_bindings_to_subsets(bindings, 300)
-    assert len(subsets_2) == 10
+    assert len(subsets.keys()) == len(prefixes)
 
-    for prefix, bindings in subsets_2.items():
+    for prefix, bindings in subsets.items():
         for binding in bindings:
             assert utils.binding_id_from_dc(binding).startswith(prefix)
 

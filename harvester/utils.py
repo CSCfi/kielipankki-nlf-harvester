@@ -122,22 +122,15 @@ def bindings_with_prefix(bindings, prefix):
     ]
 
 
-def assign_bindings_to_subsets(bindings, max_bindings_per_subset, shared_prefix=""):
+def assign_bindings_to_subsets(binding_dc_identifiers, prefixes):
     """
     Split a list of bindings into subsets, each containing no more than
     max_bindings_per_subset bindings.
     """
-    if len(bindings) <= max_bindings_per_subset:
-        return {shared_prefix: bindings}
-    subsets = {}
-    for i in range(10):
-        prefix = shared_prefix + str(i)
-        prefixed_bindings = bindings_with_prefix(bindings, prefix)
-        subsets.update(
-            assign_bindings_to_subsets(
-                prefixed_bindings, max_bindings_per_subset, prefix
-            )
-        )
+    subsets = {prefix: [] for prefix in prefixes}
+    for dc_identifier in binding_dc_identifiers:
+        prefix = subset_for_binding(dc_identifier, prefixes)
+        subsets[prefix].append(dc_identifier)
     return subsets
 
 
