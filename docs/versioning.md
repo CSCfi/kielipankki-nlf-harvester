@@ -18,7 +18,7 @@ $ export RESTIC_PASSWORD="nlf-data-at-csc"
 
 List snapshots:
 ```
-$ restic snapshots --no-cache
+$ restic snapshots --no-cache --no-lock
 ```
 
 Restore a single file into a given directory:
