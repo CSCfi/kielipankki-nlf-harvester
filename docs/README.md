@@ -1,4 +1,5 @@
 # National Library of Finland Dataset @ CSC
+Persistent Identifier of this document (to bookmark): [urn:nbn:fi:lb-202311261](https://urn.fi/urn:nbn:fi:lb-202311261)
 
 - Out-of-copyright **newspapers**, **periodicals** and eventually **everything since 1771**.
 - Comes with **page scans** and **OCRed text**.
