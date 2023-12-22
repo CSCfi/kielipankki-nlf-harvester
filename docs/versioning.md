@@ -10,6 +10,11 @@ The backups are stored in an [Allas](https://docs.csc.fi/data/Allas/introduction
 
 ## Cheatsheet
 
+On Puhti you need the `allas` module:
+```
+$ module load allas
+```
+
 Setting the necessary configuration as environment variables:
 ```
 $ export RESTIC_REPOSITORY="s3:https://a3s.fi/nlf-harvester-versioning"
@@ -18,12 +23,12 @@ $ export RESTIC_PASSWORD="nlf-data-at-csc"
 
 List snapshots:
 ```
-$ restic snapshots --no-cache --no-lock
+$ restic snapshots --no-lock
 ```
 
-Restore a single file into a given directory:
+Restore a single file from a specific snapshot into a [fast temporary disk](https://docs.csc.fi/computing/disk/#temporary-local-disk-areas) on Puhti:
 ```
-$ restic restore latest -i col-861_16.zip -t example/restic-restore/ --no-lock
+$ restic restore 6fd4a7e4 -i col-861_16.zip -t $TMPDIR/example-directory/ --no-lock
 ```
 
 
@@ -112,8 +117,11 @@ As the output suggests, restic will automatically retry after a while. You can s
 #### Slowness
 
 The repository is big, so it is normal that operations do take some time: seconds for a listing directory contents in a mounted repository, up to a minute for listing snapshots, tens of minutes to multiple hours for fetching a single zip (depending on size). If things seem slower than they should, some of the following might be the reason:
-- Using Puhti or Mahti whose network connection is not well suited for fetching restic backups from Allas: LUMI might offer better performance
 - Unreliable or slow connection, e.g. unreliable wifi
+- Not enough CPU available for fast de-encryption and decompression
+- Using `mount` or `dump` instead of `restore` when fetching large files
+
+If doing heavy work against the repository is slow on your machine, you can likely improve performance by using CSC's environments such as Puhti.
 
 
 #### Access key ID does not exist
@@ -215,22 +223,22 @@ Archive:  col-861_18.zip
 
 ## Downloading chosen files from the backup
 
-> [!WARNING]
-> Due to network topology and restic network usage pattern, extracting the backup from Allas to Puhti is slow and not recommended at the time. Performance on LUMI will be benchmarked and it might provide a viable alternative.
-
 If you already know which individual file(s) you need, you can extract them using `restic restore`. You need to provide snapshot identifier (e.g. `2f8df9e7` or `latest`) a destination directory using the `-t` or `--target` flag, and one or more files or patterns to include (`-i`/`--include`) or exclude (`-e`/`--exclude`). If you use `--include`, everything else is automatically excluded.
+
+> [!NOTE]
+> When using `restore`, restic will restore the full directory structure leading to the selected file(s). For example in the above example, the acual zip file will be found in `example/restic-restore/scratch/project_2006633/nlf-harvester/targets/col-861_16.zip`
 
 Restoring a single zip from version 2f8df9e7 to a given directory:
 ```
-$ restic restore latest -i col-861_16.zip -t example/restic-restore/ --no-lock
+$ restic restore 2f8df9e7 -i col-861_16.zip -t example/restic-restore/ --no-lock
 repository c08c9567 opened (version 2, compression level auto)
 [0:11] 100.00%  109 / 109 index files loaded
 restoring <Snapshot 2f8df9e7 of [/scratch/project_2006633/nlf-harvester/targets] at 2023-11-29 15:24:12.699553873 +0200 EET by robot_2006633_puhti@puhti-login12.bullx> to example/restic-restore/
 Summary: Restored 5 / 1 files/dirs (3.866 GiB / 3.866 GiB) in 30:42
 ```
 
-> [!NOTE]
-> When using `restore`, restic will restore the full directory structure leading to the selected file(s). For example in the above example, the acual zip file will be found in `tmp/restic-restore/scratch/project_2006633/nlf-harvester/targets/col-861_16.zip`
+> [!TIP]
+> On Puhti, you have two options for saving the data: [scratch](https://docs.csc.fi/computing/disk/#scratch-directory) and [temporary disk](https://docs.csc.fi/computing/disk/#temporary-local-disk-areas). Reading and writing from scratch (e.g. `/scratch/project_1234`) is slower but more quota is available. Reading from `$TMPDIR`, on the other hand, is fast, but storage space is more limited. See e.g. [Using CSC environment efficiently course material on disk areas](https://csc-training.github.io/csc-env-eff/#3-disk-areas) for more information.
 
 ## Extracting the whole backup
 
