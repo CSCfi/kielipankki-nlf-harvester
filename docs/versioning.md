@@ -148,13 +148,13 @@ To see which older versions of the data set are available or to note the identif
 The command and its output can look like something like this:
 ```
 $ restic -r s3:https://a3s.fi/nlf-harvester-versioning snapshots --no-lock
-enter password for repository:
-repository c08c9567 opened (version 2, compression level auto)
+repository c08c9567 opened (repository version 2) successfully, password is correct
 ID        Time                 Host                 Tags        Paths
 --------------------------------------------------------------------------------------------------------------
 2f8df9e7  2023-11-29 15:24:12  puhti-login12.bullx              /scratch/project_2006633/nlf-harvester/targets
+6fd4a7e4  2023-12-17 22:18:59  puhti-login12.bullx              /scratch/project_2006633/nlf-harvester/targets
 --------------------------------------------------------------------------------------------------------------
-1 snapshots
+2 snapshots
 ```
 
 
