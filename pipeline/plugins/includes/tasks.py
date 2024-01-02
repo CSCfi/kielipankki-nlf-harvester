@@ -169,7 +169,7 @@ def publish_to_users(ssh_conn_id, source, destination):
         for filename in sftp_client.listdir(str(source)):
             source_filename = source / filename
             destination_filename = destination / filename
-            sftp_client.posix_rename(source_filename, destination_filename)
+            sftp_client.posix_rename(str(source_filename), str(destination_filename))
 
 
 @task(task_id="create_restic_snapshot", trigger_rule="all_done")
