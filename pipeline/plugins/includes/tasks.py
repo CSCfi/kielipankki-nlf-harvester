@@ -155,7 +155,8 @@ def publish_to_users(ssh_conn_id, source, destination):
 
     To ensure that the change happens as fast as possible from the perspective of our
     end users and that they won't see halfway-written files, we do the publishing as a
-    rename (`mv`) operation that is atomic.
+    rename (`mv`) operation that is atomic. If the destination directory does not exist
+    yet, it is created.
 
     NB: The possibility of new files appearing or old ones being removed (e.g.
     2-prefixed bindings being split into 20, 21, ... 29 or vice versa due to addition or
@@ -165,6 +166,8 @@ def publish_to_users(ssh_conn_id, source, destination):
     ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
     with ssh_hook.get_conn() as ssh_client:
         sftp_client = ssh_client.open_sftp()
+
+        utils.make_intermediate_dirs(sftp_client, remote_directory=destination)
 
         for filename in sftp_client.listdir(str(source)):
             source_filename = source / filename
