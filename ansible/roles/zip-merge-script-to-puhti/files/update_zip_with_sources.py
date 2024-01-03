@@ -43,7 +43,7 @@ def update_zip_with_zip(target_zip_fileobj, source_zip_filepath, args):
                 logging.info(f"Existing path {z_info.filename} overwritten by source")
                 continue
             with z_obj.open(z_info) as z_fobj:
-                args.paths_archived.append(z_info.filename)
+                args.paths_archived.add(z_info.filename)
                 if pathlib.Path(z_info.filename).suffix in args.no_compress:
                     target_zip_fileobj.writestr(
                         z_info.filename,
@@ -51,7 +51,7 @@ def update_zip_with_zip(target_zip_fileobj, source_zip_filepath, args):
                         compress_type=ZIP_STORED,
                     )
                 else:
-                    zip_fileobj.writestr(z_info.filename, z_fobj.read())
+                    target_zip_fileobj.writestr(z_info.filename, z_fobj.read())
 
 
 def update_zip_with_targets(args):
@@ -74,6 +74,8 @@ def update_zip_with_targets(args):
         for sourcepath in args.sourcepaths:
             if sourcepath.suffix == ".tar":
                 update_zip_with_tar(zipfile, sourcepath, args)
+            elif sourcepath.suffix == ".zip":
+                update_zip_with_zip(zipfile, sourcepath, args)
             else:
                 print(
                     f"Warning: tried to update zip with unknown format {sourcepath}",
@@ -120,7 +122,7 @@ if __name__ == "__main__":
             args.sourcepaths += [
                 pathlib.Path(line.strip()) for line in open(args.sourcelist)
             ]
-    if args.dir.is_dir():
+    if args.dir:
         args.sourcepaths += [path for path in args.dir.iterdir() if path.is_file()]
 
     args.no_compress = set(args.no_compress.split(":"))
