@@ -54,13 +54,13 @@ class CreateConnectionOperator(BaseOperator):
 class StowBindingBatchOperator(BaseOperator):
     """
     Download a batch of bindings, typically to a faster smaller drive, make a
-    .tar file typically in a slower bigger drive, and delete the downloaded
+    .zip file typically in a slower bigger drive, and delete the downloaded
     files.
 
     :param batch_with_index: tuple of (list of DC identifiers, batch index)
     :param ssh_conn_id: SSH connection id
     :param tmp_download_directory: Root of the fast temporary directory (containing batch directories)
-    :param tar_directory: Root of the directory for tar files
+    :param intermediate_zip_directory: Root of the directory for intermediate zip files
     :param api: OAI-PMH api
     """
 
@@ -69,7 +69,7 @@ class StowBindingBatchOperator(BaseOperator):
         batch_with_index,
         ssh_conn_id,
         tmp_download_directory,
-        tar_directory,
+        intermediate_zip_directory,
         api,
         **kwargs,
     ):
@@ -77,18 +77,18 @@ class StowBindingBatchOperator(BaseOperator):
         self.batch_with_index = batch_with_index
         self.ssh_conn_id = ssh_conn_id
         self.tmp_download_directory = tmp_download_directory
-        self.tar_directory = tar_directory
+        self.zip_directory = intermediate_zip_directory
         self.api = api
         self.mark_failed = False
 
-    def create_tar_archive(self, ssh_client, target_file, source_dir):
+    def create_zip_archive(self, ssh_client, target_file, source_dir):
         """
-        Create tar file target_file out of contents of source_dir.
+        Create zip file target_file out of contents of source_dir.
 
-        :return: Exit status from tar
+        :return: Exit status from zip
         """
         _, stdout, _ = ssh_client.exec_command(
-            f"tar --create --file {target_file} --directory={source_dir} ."
+            f"cd {source_dir}; zip --suffixes .jpg:.jpeg:.jp2 --recurse-paths {target_file}"
         )
 
         return stdout.channel.recv_exit_status()
@@ -157,7 +157,7 @@ class StowBindingBatchOperator(BaseOperator):
                 )
             if context["task_instance"].try_number < 3:
                 # If we're not on our third try, we'll fail this batch before
-                # tar creation. If we *are* on our third task, create tar
+                # zip creation. If we *are* on our third task, create zip
                 # anyway, succeed in the task, and log failures.
                 self.mark_failed = True
             else:
@@ -231,13 +231,13 @@ class StowBindingBatchOperator(BaseOperator):
                 raise DownloadBatchError
 
             if (
-                self.create_tar_archive(
-                    ssh_client, f"{self.tar_directory}/{batch_num}.tar", f"{batch_root}"
+                self.create_zip_archive(
+                    ssh_client, f"{self.zip_directory}/{batch_num}.zip", f"{batch_root}"
                 )
                 != 0
             ):
                 self.log.error(
-                    f"Failed to create tar file for batch {batch_num} from tmp to destination failed"
+                    f"Failed to create zip file for batch {batch_num} from tmp to destination failed"
                 )
 
             if self.rmtree(ssh_client, f"{batch_root}") != 0:
