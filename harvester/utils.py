@@ -204,3 +204,20 @@ def remote_file_exists(sftp_client, path):
         if file_size > 0:
             return True
     return False
+
+
+def ssh_execute(self, ssh_client, command):
+    """
+    Run the given command and raise OSError if exit code is nonzero
+    """
+    _, stdout, stderr = ssh_client.exec_command(command)
+
+    exit_code = stdout.channel.recv_exit_status()
+    if exit_code != 0:
+        error_message = "\n".join(stderr.readlines())
+        raise OSError(
+            f"Command {command} failed (exit code {exit_code}). Stderr output:\n"
+            f"{error_message}"
+        )
+
+
