@@ -344,8 +344,10 @@ class CreateTargetOperator(BaseOperator):
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
             with ssh_client.open_sftp() as sftp_client:
-                zip_creation_cmd = f"module load libzip; zipmerge -k {self.target_path} {self.data_source/*}"
-                self.log.info("Merging intermediate zips into %s on Puhti", self.target_path)
+                zip_creation_cmd = f"module load libzip; zipmerge -k {self.target_path} {self.data_source/'*'}"
+                self.log.info(
+                    "Merging intermediate zips into %s on Puhti", self.target_path
+                )
                 self.ssh_execute_and_raise(
                     ssh_client,
                     zip_creation_cmd,
