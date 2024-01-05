@@ -250,17 +250,16 @@ class PrepareDownloadLocationOperator(BaseOperator):
 
     This consists of:
     - creating the destination directories if they do not exist
-    - listing the contents of the previous corresponding target into a text
-      file if one is found in the given ``old_target_path``
+    - copying the old target to the target directory if we are updating
 
     :param ssh_conn_id: SSH connection id
     :param old_target_path: Path of the corresponding target created
-                           during the previous download.
+                            during the previous download, if updating.
     :type old_target_path: :class:`pathlib.Path`
+    :param new_target_path: Path for new target, if updating
+    :type new_target_path: :class:`pathlib.Path`
     :param ensure_dirs: Directories needed for the download.
     :type ensure_dirs: :type: iterable of :class:`pathlib.Path`
-    :param extra_bin_dir: Path for binaries on remote machine
-    :type extra_bin_dir: :class:`pathlib.Path`
 
     """
 
@@ -268,15 +267,15 @@ class PrepareDownloadLocationOperator(BaseOperator):
         self,
         ssh_conn_id,
         old_target_path,
+        new_target_path,
         ensure_dirs,
-        extra_bin_dir,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.ssh_conn_id = ssh_conn_id
         self.old_target_path = old_target_path
+        self.new_target_path = new_target_path
         self.ensure_dirs = ensure_dirs
-        self.extra_bin_dir = extra_bin_dir
 
     def create_directory(self, sftp_client, path):
         """
@@ -293,7 +292,10 @@ class PrepareDownloadLocationOperator(BaseOperator):
             sftp_client = ssh_client.open_sftp()
             for dirpath in self.ensure_dirs:
                 self.create_directory(sftp_client, dirpath)
-
+            if self.old_target_path and self.new_target_path:
+                assert not utils.remote_file_exists(sftp_client, self.new_target_path)
+                target_copy_command = f'cp {self.old_target_path} {self.new_target_path}'
+                utils.ssh_execute(ssh_client, target_copy_command)
 
 class CreateTargetOperator(BaseOperator):
     """
