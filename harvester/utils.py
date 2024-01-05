@@ -152,10 +152,11 @@ def assign_update_bindings_to_subsets(bindings, subset_split_file):
     """
     with open(subset_split_file, "r") as json_file:
         subset_split = json.load(json_file)
+    existing_subsets = {}
     for dc_identifier in bindings:
         subset = subset_for_binding(dc_identifier, subset_split)
-        subset_split[subset].append(dc_identifier)
-    return subset_split
+        existing_subsets.setdefault(subset, []).append(dc_identifier)
+    return existing_subsets
 
 
 def read_bindings(binding_list_dir, set_id):
