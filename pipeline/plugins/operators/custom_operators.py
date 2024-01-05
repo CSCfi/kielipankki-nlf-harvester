@@ -294,7 +294,9 @@ class PrepareDownloadLocationOperator(BaseOperator):
                 self.create_directory(sftp_client, dirpath)
             if self.old_target_path and self.new_target_path:
                 assert not utils.remote_file_exists(sftp_client, self.new_target_path)
-                target_copy_command = f'cp {self.old_target_path} {self.new_target_path}'
+                target_copy_command = (
+                    f"cp {self.old_target_path} {self.new_target_path}"
+                )
                 utils.ssh_execute(ssh_client, target_copy_command)
 
 class CreateTargetOperator(BaseOperator):
