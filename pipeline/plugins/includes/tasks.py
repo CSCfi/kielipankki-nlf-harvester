@@ -97,24 +97,32 @@ def download_set(
                     pathdict["OUTPUT_DIR"] / "targets" / (subset_base_name + ".zip")
                 )
                 target_directory = pathdict["OUTPUT_DIR"] / "targets"
-                tar_directory = pathdict["OUTPUT_DIR"] / "tar" / subset_base_name
+                intermediate_zip_directory = (
+                    pathdict["OUTPUT_DIR"] / "intermediate_zip" / subset_base_name
+                )
+                published_zip_path = (
+                    pathdict["OUTPUT_DIR"] / "zip" / (subset_base_name + ".zip")
+                )
 
                 prepare_download_location = PrepareDownloadLocationOperator(
                     task_id=f"prepare_download_location_{subset_base_name}",
                     trigger_rule="none_skipped",
                     ssh_conn_id=ssh_conn_id,
-                    ensure_dirs=[file_download_dir, tar_directory, target_directory],
-                    old_target_path=target_path,
-                    extra_bin_dir=pathdict["EXTRA_BIN_DIR"],
+                    ensure_dirs=[
+                        file_download_dir,
+                        intermediate_zip_directory,
+                        target_directory,
+                    ],
+                    old_target_path=(None if initial_download else published_zip_path),
+                    new_target_path=(None if initial_download else target_path),
                 )
 
                 create_target = CreateTargetOperator(
                     task_id=f"create_target_{subset_base_name}",
                     trigger_rule="none_skipped",
                     ssh_conn_id=ssh_conn_id,
-                    data_source=tar_directory,
+                    data_source=intermediate_zip_directory,
                     target_path=target_path,
-                    extra_bin_dir=pathdict["EXTRA_BIN_DIR"],
                 )
 
                 (
@@ -125,7 +133,7 @@ def download_set(
                         ssh_conn_id=ssh_conn_id,
                         tmp_download_directory=pathdict["TMPDIR_ROOT"]
                         / subset_base_name,
-                        tar_directory=tar_directory,
+                        intermediate_zip_directory=intermediate_zip_directory,
                         api=api,
                     ).expand(
                         batch_with_index=utils.split_into_download_batches(
