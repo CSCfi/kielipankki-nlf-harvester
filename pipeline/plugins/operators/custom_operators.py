@@ -301,17 +301,15 @@ class CreateTargetOperator(BaseOperator):
     """
     Create a final distribution target of the given source data.
 
-    The target file is first created as a temporary file with the suffix .tmp, and
-    if the creation is successful, moved into the final location,
-    overwriting what was possibly already there.
+    The target file is first created/updated in targets/. If everything
+    is successful, it's finally moved in another operation to the final
+    location in zip/, overwriting what was possibly already there.
 
     :param ssh_conn_id: SSH connection id
-    :param data_source: Path to the directory that contains the .tar files
+    :param data_source: Path to the directory that contains the intermediate .zip files
     :type data_source: :class:`pathlib.Path`
     :param target_path: Path to which the newly-created target is written.
     :type target_path: :class:`pathlib.Path`
-    :param target_path: Path for binaries on remote machine
-    :type taret_path: :class:`pathlib.Path`
     """
 
     def __init__(
@@ -319,14 +317,12 @@ class CreateTargetOperator(BaseOperator):
         ssh_conn_id,
         data_source,
         target_path,
-        extra_bin_dir,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.ssh_conn_id = ssh_conn_id
         self.data_source = data_source
         self.target_path = target_path
-        self.extra_bin_dir = extra_bin_dir
 
     def ssh_execute_and_raise(self, ssh_client, command):
         """
@@ -345,27 +341,18 @@ class CreateTargetOperator(BaseOperator):
             )
 
     def execute(self, context):
-        tmp_target_path = self.target_path.with_suffix(".zip.tmp")
-
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
             with ssh_client.open_sftp() as sftp_client:
-                zip_creation_cmd = f"python3 {self.extra_bin_dir/'update_zip_with_sources.py'} {tmp_target_path} --dir {self.data_source}"
-                self.log.info("Creating temporary zip in %s on Puhti", tmp_target_path)
+                zip_creation_cmd = f"module load libzip; zipmerge -k {self.target_path} {self.data_source/*}"
+                self.log.info("Merging intermediate zips into %s on Puhti", self.target_path)
                 self.ssh_execute_and_raise(
                     ssh_client,
                     zip_creation_cmd,
                 )
 
                 self.log.info(
-                    "Moving temporary file %s to final location %s on Puhti",
-                    tmp_target_path,
-                    self.target_path,
-                )
-                sftp_client.posix_rename(str(tmp_target_path), str(self.target_path))
-
-                self.log.info(
-                    "Removing the source .tar tree %s",
+                    "Removing the intermediate .zip directory %s",
                     self.data_source,
                 )
                 self.ssh_execute_and_raise(ssh_client, f"rm -r {self.data_source}")
