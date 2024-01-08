@@ -128,7 +128,7 @@ def test_assign_update_bindings_to_subsets():
 
     assert subset_split["20"] == [bindings[0]]
     assert subset_split["21"] == [bindings[1]]
-    assert subset_split["22"] == []
+    assert "22" not in subset_split
     assert subset_split["3"] == [bindings[2]]
     assert subset_split["9"] == [bindings[3]]
 
