@@ -299,6 +299,7 @@ class PrepareDownloadLocationOperator(BaseOperator):
                 )
                 utils.ssh_execute(ssh_client, target_copy_command)
 
+
 class CreateTargetOperator(BaseOperator):
     """
     Create a final distribution target of the given source data.
