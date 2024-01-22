@@ -206,7 +206,7 @@ def remote_file_exists(sftp_client, path):
     return False
 
 
-def ssh_execute(self, ssh_client, command):
+def ssh_execute(ssh_client, command):
     """
     Run the given command and raise OSError if exit code is nonzero
     """
