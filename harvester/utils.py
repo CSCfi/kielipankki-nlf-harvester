@@ -219,5 +219,3 @@ def ssh_execute(ssh_client, command):
             f"Command {command} failed (exit code {exit_code}). Stderr output:\n"
             f"{error_message}"
         )
-
-
