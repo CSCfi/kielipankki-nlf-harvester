@@ -1,4 +1,0 @@
-- name: Install zip merging script in Puhti
-  ansible.builtin.copy:
-    src: ../files/update_zip_with_sources.py
-    dest: /projappl/project_2006633/local/bin/update_zip_with_sources.py
