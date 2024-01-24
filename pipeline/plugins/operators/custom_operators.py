@@ -304,9 +304,8 @@ class CreateTargetOperator(BaseOperator):
     """
     Create a final distribution target of the given source data.
 
-    The target file is first created/updated in targets/. If everything
-    is successful, it's finally moved in another operation to the final
-    location in zip/, overwriting what was possibly already there.
+    The target file is first created/updated in target_path. If everything
+    is successful, it's finally moved to the final location in the publish_to_users task.
 
     :param ssh_conn_id: SSH connection id
     :param data_source: Path to the directory that contains the intermediate .zip files
