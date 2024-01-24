@@ -345,22 +345,21 @@ class CreateTargetOperator(BaseOperator):
     def execute(self, context):
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
-            with ssh_client.open_sftp() as sftp_client:
-                # zipmerge -k will skip compression for files that were not compressed in the source zips
-                zip_creation_cmd = f'/bin/bash -lc ". /appl/profile/zz-csc-env.sh && module load libzip && zipmerge -k {self.target_path} {self.data_source/"*"}"'
-                self.log.info(
-                    "Merging intermediate zips into %s on Puhti", self.target_path
-                )
-                self.ssh_execute_and_raise(
-                    ssh_client,
-                    zip_creation_cmd,
-                )
+            # zipmerge -k will skip compression for files that were not compressed in the source zips
+            zip_creation_cmd = f'/bin/bash -lc ". /appl/profile/zz-csc-env.sh && module load libzip && zipmerge -k {self.target_path} {self.data_source/"*"}"'
+            self.log.info(
+                "Merging intermediate zips into %s on Puhti", self.target_path
+            )
+            self.ssh_execute_and_raise(
+                ssh_client,
+                zip_creation_cmd,
+            )
 
-                self.log.info(
-                    "Removing the intermediate .zip directory %s",
-                    self.data_source,
-                )
-                self.ssh_execute_and_raise(ssh_client, f"rm -r {self.data_source}")
+            self.log.info(
+                "Removing the intermediate .zip directory %s",
+                self.data_source,
+            )
+            self.ssh_execute_and_raise(ssh_client, f"rm -r {self.data_source}")
 
 
 class TargetCreationError(Exception):
