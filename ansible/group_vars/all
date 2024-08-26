@@ -1,6 +1,7 @@
 instance_name: 'harvester'
 vm_name_postfix: 'dev'
 pouta_instance_name: "{{ instance_name }}-{{ vm_name_postfix }}"
+network: "project_2006633"
 
 std_image: "Ubuntu-22.04"
 project_key: "kielipouta"
@@ -48,5 +49,7 @@ servers:
     flavor: standard.xxlarge
     key_name: "{{ project_key }}"
     security_groups: "{{ project_security_groups }}"
+    network: "{{ network }}"
     meta:
-      group: default
+      group: "{{ instance_name }}"
+      hostname: "{{ pouta_instance_name }}"

@@ -1,5 +1,5 @@
 - name: Create virtual machine on cPouta
-  hosts: localhost # The OpenStack Shade modules run by Shade on your local machine.
+  hosts: localhost
 
   roles:
     - role: kielipankki.common.create_instances
