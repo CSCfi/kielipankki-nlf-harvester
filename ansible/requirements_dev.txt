@@ -1,5 +1,4 @@
-python-openstackclient==3.14.3
-shade
+python-openstackclient
 ansible>=2.10
 dnspython
-openstacksdk<=0.98.999
+openstacksdk
