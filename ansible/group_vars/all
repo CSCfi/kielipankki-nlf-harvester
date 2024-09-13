@@ -44,7 +44,7 @@ authorized_users:
 servers:
   - name: "{{ pouta_instance_name }}"
     image: "{{ std_image }}"
-    flavor: standard.xxlarge
+    flavor: standard.large
     key_name: "{{ project_key }}"
     security_groups: "{{ project_security_groups }}"
     network: "{{ network }}"
