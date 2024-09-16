@@ -7,23 +7,15 @@
 
   vars:
     security_group_rules:
-      - name: ssh
-        protocol: tcp
-        port: 22
-        allowed_ips:
-          - "193.166.1.0/24" #CSC Office
-          - "193.166.2.0/24" #CSC Office
-          - "193.166.84.0/24" #CSC VPN
-          - "193.166.85.0/24" #CSC VPN
-
       - name: http
         protocol: tcp
         port: 80
         allowed_ips:
           - "193.166.1.0/24" #CSC Office
           - "193.166.2.0/24" #CSC Office
-          - "193.166.84.0/24" #CSC VPN
-          - "193.166.85.0/24" #CSC VPN
+          - "193.166.84.0/24" #CSC Cisco VPN
+          - "193.166.85.0/24" #CSC Cisco VPN
+          - "193.166.83.192/28" # CSC PaloAlto VPN Staff
 
 - name: Setup Puhti access for Airflow and install remote scripts
   hosts: puhti
