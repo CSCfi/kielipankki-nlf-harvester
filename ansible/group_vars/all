@@ -38,9 +38,7 @@ puhti_conn_conf:
 authorized_users:
   - ktegel
   - ajarven
-  - kaisakui
   - matthies
-  - helhotti
   - shardwic
 
 servers:
