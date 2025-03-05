@@ -3,11 +3,11 @@ all:
     localhost:
       ansible_connection: local
       ansible_python_interpreter: "{{ansible_playbook_python}}"
-      floating_ip: 86.50.229.214
+      floating_ip: 128.214.253.232
   children:
     airflow:
       hosts:
-        86.50.229.214:
+        128.214.253.232:
           ansible_user: ubuntu
           navbar_color: "#ff5800"
     puhti:
