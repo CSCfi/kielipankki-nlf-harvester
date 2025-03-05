@@ -38,6 +38,25 @@ def binding_ids(set_id, url):
 
 
 @cli.command
+@click.option(
+    "--url",
+    default="https://digi.kansalliskirjasto.fi/interfaces/OAI-PMH",
+    help="URL of the OAI-PMH API to be used",
+)
+def deleted_bindings(url):
+    """
+    Fetch all deleted bindings
+    """
+    # pylint does not understand that variables are inherited from the command
+    # group
+    # pylint: disable=undefined-variable
+    api = PMH_API(url)
+    ids = api.deleted_dc_identifiers()
+    for id_ in ids:
+        click.echo(id_)
+
+
+@cli.command
 @click.argument("mets_file_path")
 @click.argument(
     "collection_dc_identifier",

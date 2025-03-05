@@ -40,6 +40,33 @@ class PMH_API:
         for binding_id in binding_ids:
             yield f"https://digi.kansalliskirjasto.fi/sanomalehti/binding/{binding_id.identifier.rsplit(':')[-1]}"
 
+    def deleted_in_collection(self, set_id):
+        """ """
+        request_params = {"metadataPrefix": "oai_dc", "set": set_id}
+        bindings = self._sickle.ListRecords(**request_params)
+        for binding in bindings:
+            if binding.header.deleted:
+                print(binding.header.identifier)
+
+    def deleted_dc_identifiers(self, from_date=None):
+        """
+        Iterate over the DC identifiers of all records deleted since given date.
+
+        This is based on the special "deleted" collection, specified in
+        https://wiki.helsinki.fi/xwiki/bin/view/Comhis/Comhis/Interfaces%20of%20digi.kansalliskirjasto.fi/#HOAI-PMHandDeletedworks28new082F202329.
+        Note that this only covers records deleted since 2023-08-23: older records can
+        only be identified by iterating over the whole collection and seeing which
+        records have status="deleted" in their header.
+        """
+        request_params = {
+            "metadataPrefix": "oai_dc",
+            "set": "deleted",
+            "from": from_date,
+        }
+        bindings = self._sickle.ListIdentifiers(**request_params)
+        for binding in bindings:
+            yield binding.identifier
+
     def download_mets(self, dc_identifier, output_mets_file):
         """
         Download file from NLF to either remote or local directory.
