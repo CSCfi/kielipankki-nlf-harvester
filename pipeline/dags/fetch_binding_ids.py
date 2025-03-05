@@ -7,17 +7,11 @@ import os
 from pathlib import Path
 from sickle.oaiexceptions import NoRecordsMatch
 
-from airflow.models import DagRun
+from airflow.models import DagRun, Variable
 from airflow.hooks.base import BaseHook
 from airflow.decorators import task, task_group, dag
 from harvester.pmh_interface import PMH_API
 
-
-SET_IDS = [
-    "col-501",
-    "col-861",
-]
-BASE_PATH = Path("/home/ubuntu/binding_ids_all")
 HTTP_CONN_ID = "nlf_http_conn"
 INITIAL_DOWNLOAD = True
 
@@ -53,7 +47,9 @@ def fetch_bindings_dag():
         @task(task_id=f"save_ids_for_set")
         def save_ids_for_set(set_id):
 
-            folder_path = BASE_PATH / set_id.replace(":", "_")
+            folder_path = Path(
+                Variable.get("path_dict", deserialize_json=True)["BINDING_LIST_DIR"]
+            ) / set_id.replace(":", "_")
 
             if not os.path.isdir(folder_path):
                 os.makedirs(folder_path)
@@ -71,7 +67,11 @@ def fetch_bindings_dag():
                     except NoRecordsMatch:
                         print(f"No new bindings after date {last_run} for set {set_id}")
 
-        save_ids_for_set.expand(set_id=SET_IDS)
+        set_ids = [
+            collection["id"]
+            for collection in Variable.get("collections", deserialize_json=True)
+        ]
+        save_ids_for_set.expand(set_id=set_ids)
 
     save_ids()
 

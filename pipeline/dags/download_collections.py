@@ -10,6 +10,7 @@ from pathlib import Path
 from airflow.operators.empty import EmptyOperator
 from airflow.hooks.base import BaseHook
 from airflow.decorators import dag
+from airflow.models import Variable
 
 from includes.tasks import (
     check_if_download_should_begin,
@@ -20,21 +21,12 @@ from includes.tasks import (
 )
 from harvester.pmh_interface import PMH_API
 
-INITIAL_DOWNLOAD = True
+path_config = Variable.get("path_config", deserialize_json=True)
+for path_name in path_config:
+    path_config[path_name] = Path(path_config[path_name])
 
-pathdict = {
-    "OUTPUT_DIR": Path("/scratch/project_2006633/nlf-harvester"),
-    "TMPDIR_ROOT": Path("/local_scratch/robot_2006633_puhti/harvester"),
-    "EXTRA_BIN_DIR": Path("/projappl/project_2006633/local/bin"),
-    "SUBSET_SPLIT_DIR": Path("/home/ubuntu/subset_split/"),
-    "BINDING_LIST_DIR": Path("/home/ubuntu/binding_ids_all"),
-}
 SSH_CONN_ID = "puhti_conn"
 HTTP_CONN_ID = "nlf_http_conn"
-COLLECTIONS = [
-    #    {"id": "col-501", "subset_size": 1000},
-    {"id": "col-861", "subset_size": 100000},
-]
 
 default_args = {
     "owner": "Kielipankki",
@@ -47,7 +39,7 @@ http_conn = BaseHook.get_connection(HTTP_CONN_ID)
 api = PMH_API(url=http_conn.host)
 
 
-for col in COLLECTIONS:
+for col in Variable.get("collections", deserialize_json=True):
     current_dag_id = f"subset_download_{col['id']}"
 
     @dag(
@@ -62,12 +54,12 @@ for col in COLLECTIONS:
 
         cancel_pipeline = EmptyOperator(task_id="cancel_pipeline")
 
-        zip_creation_dir = pathdict["OUTPUT_DIR"] / "targets"
-        published_data_dir = pathdict["OUTPUT_DIR"] / "zip"
+        zip_creation_dir = path_config["OUTPUT_DIR"] / "targets"
+        published_data_dir = path_config["OUTPUT_DIR"] / "zip"
 
         check_if_download_should_begin(
             set_id=col["id"],
-            binding_list_dir=pathdict["BINDING_LIST_DIR"],
+            binding_list_dir=path_config["BINDING_LIST_DIR"],
             http_conn_id=HTTP_CONN_ID,
         ) >> [
             begin_download,
@@ -81,10 +73,10 @@ for col in COLLECTIONS:
                 subset_size=col["subset_size"],
                 api=api,
                 ssh_conn_id=SSH_CONN_ID,
-                initial_download=INITIAL_DOWNLOAD,
-                pathdict=pathdict,
+                initial_download=Variable.get("initial_download"),
+                path_config=path_config,
             )
-            >> clear_temporary_directory(SSH_CONN_ID, pathdict["TMPDIR_ROOT"])
+            >> clear_temporary_directory(SSH_CONN_ID, path_config["TMPDIR_ROOT"])
             >> publish_to_users(
                 ssh_conn_id=SSH_CONN_ID,
                 source=zip_creation_dir,
@@ -92,7 +84,7 @@ for col in COLLECTIONS:
             )
             >> create_restic_snapshot(
                 SSH_CONN_ID,
-                pathdict["EXTRA_BIN_DIR"] / "create_snapshot.sh",
+                path_config["EXTRA_BIN_DIR"] / "create_snapshot.sh",
                 published_data_dir,
             )
         )

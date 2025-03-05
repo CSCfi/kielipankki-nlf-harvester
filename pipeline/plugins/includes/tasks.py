@@ -65,19 +65,19 @@ def download_set(
     api,
     ssh_conn_id,
     initial_download,
-    pathdict,
+    path_config,
 ):
-    bindings = utils.read_bindings(pathdict["BINDING_LIST_DIR"], set_id)
+    bindings = utils.read_bindings(path_config["BINDING_LIST_DIR"], set_id)
 
     prefixes = [str(i) for i in range(10, 20)] + [str(i) for i in range(2, 10)]
 
     if initial_download:
         subset_split = utils.assign_bindings_to_subsets(bindings, prefixes)
-        utils.save_subset_split(subset_split, pathdict["SUBSET_SPLIT_DIR"], set_id)
+        utils.save_subset_split(subset_split, path_config["SUBSET_SPLIT_DIR"], set_id)
 
     else:
         subset_split = utils.assign_update_bindings_to_subsets(
-            bindings, pathdict["SUBSET_SPLIT_DIR"] / f"{set_id}_subsets.json"
+            bindings, path_config["SUBSET_SPLIT_DIR"] / f"{set_id}_subsets.json"
         )
 
     subset_downloads = []
@@ -92,16 +92,16 @@ def download_set(
                 else:
                     subset_base_name = set_id
 
-                file_download_dir = pathdict["TMPDIR_ROOT"] / subset_base_name
+                file_download_dir = path_config["TMPDIR_ROOT"] / subset_base_name
                 target_path = (
-                    pathdict["OUTPUT_DIR"] / "targets" / (subset_base_name + ".zip")
+                    path_config["OUTPUT_DIR"] / "targets" / (subset_base_name + ".zip")
                 )
-                target_directory = pathdict["OUTPUT_DIR"] / "targets"
+                target_directory = path_config["OUTPUT_DIR"] / "targets"
                 intermediate_zip_directory = (
-                    pathdict["OUTPUT_DIR"] / "intermediate_zip" / subset_base_name
+                    path_config["OUTPUT_DIR"] / "intermediate_zip" / subset_base_name
                 )
                 published_zip_path = (
-                    pathdict["OUTPUT_DIR"] / "zip" / (subset_base_name + ".zip")
+                    path_config["OUTPUT_DIR"] / "zip" / (subset_base_name + ".zip")
                 )
 
                 prepare_download_location = PrepareDownloadLocationOperator(
@@ -131,7 +131,7 @@ def download_set(
                         task_id="download_binding_batch",
                         trigger_rule="none_skipped",
                         ssh_conn_id=ssh_conn_id,
-                        tmp_download_directory=pathdict["TMPDIR_ROOT"]
+                        tmp_download_directory=path_config["TMPDIR_ROOT"]
                         / subset_base_name,
                         intermediate_zip_directory=intermediate_zip_directory,
                         api=api,
