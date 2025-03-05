@@ -70,6 +70,19 @@
     src: restic_env.yaml.j2
     dest: /home/ubuntu/restic_env.yaml
 
+- name: Copy Airflow variable file to remote
+  template:
+    src: airflow_variables.json.j2
+    dest: /home/ubuntu/airflow_variables.json
+  tags:
+    - dag-update
+
+- name: Register Airflow variables
+  ansible.builtin.command:
+    cmd: airflow variables import /home/ubuntu/airflow_variables.json
+  tags:
+    - dag-update
+
 - name: Add private key for connecting to Puhti
   ansible.builtin.copy:
     dest: "{{ puhti_robot_ssh_key_path }}"
