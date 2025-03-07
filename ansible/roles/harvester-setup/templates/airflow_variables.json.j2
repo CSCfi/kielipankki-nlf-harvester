@@ -8,6 +8,15 @@
       "BINDING_LIST_DIR": "{{ pipeline_binding_list_dir }}"
   },
   "collections": [
-    {"id": "col-861", "subset_size": 100000}
+  {% for item in harvested_collections -%}
+    {
+      "id": "{{ item.id }}",
+      "subset_size": {{ item.subset_size }}
+    }
+    {%- if not loop.last -%}
+      ,
+    {% endif -%}
+  {% endfor %}
+
   ]
 }
