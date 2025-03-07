@@ -34,8 +34,10 @@ $ source project_2006633-openrc.sh
 ## Run ansible playbook
 
 ```
-ansible-playbook -i inventories/dev harvesterPouta.yml
+ansible-playbook -i inventories/dev harvesterPouta.yml --extra-vars initial_download=true
 ```
+
+Adjust `initial_download` as needed (default is false for safe reprovisioning of the production environment).
 
 Have your `kielipouta` password and `Kielipankki-passwords` GPG key password at hand, they may need to be inputted during provisioning.
 
