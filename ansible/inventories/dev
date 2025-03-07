@@ -15,3 +15,5 @@ all:
         puhti.csc.fi:
           ansible_user: "{{ puhti_robot_user }}"
           ansible_password: "{{ puhti_robot_password }}"
+  vars:
+    pipeline_extra_bin_dir: "/projappl/{{ puhti_robot_user }}/local/bin/harvester-dev"

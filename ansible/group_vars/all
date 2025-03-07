@@ -22,6 +22,7 @@ airflow_lastname: "User"
 airflow_email: "ling-admin@listat.csc.fi"
 
 restic_repository: "s3:https://a3s.fi/nlf-harvester-versioning"
+pipeline_extra_bin_dir: "/projappl/project_2006633/local/bin"
 
 puhti_robot_user: "robot_2006633_puhti"
 puhti_robot_password: "{{ lookup('passwordstore', 'lb_passwords/airflow/robot_2006633_puhti') }}"

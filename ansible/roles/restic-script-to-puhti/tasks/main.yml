@@ -1,4 +1,4 @@
 - name: Make sure that restic script exists in Puhti
   ansible.builtin.copy:
     src: ../files/create_snapshot.sh
-    dest: /projappl/project_2006633/local/bin/create_snapshot.sh
+    dest: "{{ pipeline_extra_bin_dir }}/create_snapshot.sh"
