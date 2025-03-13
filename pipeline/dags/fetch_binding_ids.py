@@ -48,7 +48,7 @@ def fetch_bindings_dag():
         def save_ids_for_set(set_id):
 
             folder_path = Path(
-                Variable.get("path_dict", deserialize_json=True)["BINDING_LIST_DIR"]
+                Variable.get("path_config", deserialize_json=True)["BINDING_LIST_DIR"]
             ) / set_id.replace(":", "_")
 
             if not os.path.isdir(folder_path):
