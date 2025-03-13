@@ -20,5 +20,5 @@ all:
     harvested_collections:
       - id: col-861
         subset_size: 100000
-      - id: col-501
-        subset_size: 1000
+      - id: col-201
+        subset_size: 100
