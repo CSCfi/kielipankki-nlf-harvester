@@ -60,7 +60,7 @@ ansible-playbook harvesterPouta.yml -i inventories/dev --tags dag-update --extra
 
 ## Creating multiple dev instances
 
-If more than one development instance is in use simultaneously, they must be configured so that they won't overwrite each other's data in Puhti. This involves setting the following variables to non-default values (see production inventory for one way of doing this):
+If more than one development instance is in use simultaneously, they must be configured so that they won't overwrite each other's data in Puhti. This involves setting the following variables to non-default values (see production and dev inventories for one way of doing this):
 - `pipeline_extra_bin_dir`
 - `pipeline_output_dir`
 - `pipeline_tmpdir_root`
