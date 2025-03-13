@@ -1,6 +1,7 @@
 ---
 
 initial_download: "false"
+pipeline_task_retries: 1
 pipeline_output_dir: "/scratch/project_2006633/harvester-dev"
 pipeline_tmpdir_root: "/local_scratch/{{ puhti_robot_user }}/harvester-dev"
 pipeline_subset_split_dir: "/home/{{ ansible_user }}/subset_split"

@@ -32,7 +32,7 @@ default_args = {
     "owner": "Kielipankki",
     "start_date": "2023-05-22",
     "retry_delay": timedelta(minutes=5),
-    "retries": 3,
+    "retries": Variable.get("retries"),
 }
 
 http_conn = BaseHook.get_connection(HTTP_CONN_ID)

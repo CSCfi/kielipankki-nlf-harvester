@@ -19,7 +19,7 @@ default_args = {
     "owner": "Kielipankki",
     "start_date": "2022-10-01",
     "retry_delay": timedelta(minutes=5),
-    "retries": 3,
+    "retries": Variable.get("retries"),
 }
 
 
