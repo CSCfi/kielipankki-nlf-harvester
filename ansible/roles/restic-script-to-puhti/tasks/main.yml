@@ -1,3 +1,10 @@
+---
+
+- name: Create directory for restic script
+  ansible.builtin.file:
+    path: "{{ pipeline_extra_bin_dir }}"
+    state: directory
+
 - name: Make sure that restic script exists in Puhti
   ansible.builtin.copy:
     src: ../files/create_snapshot.sh
