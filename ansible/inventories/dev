@@ -16,7 +16,7 @@ all:
           ansible_user: "{{ puhti_robot_user }}"
           ansible_password: "{{ puhti_robot_password }}"
   vars:
-    pipeline_extra_bin_dir: "/projappl/{{ puhti_robot_user }}/local/bin/harvester-dev"
+    pipeline_extra_bin_dir: "/projappl/project_2006633/local/bin/harvester-dev"
     harvested_collections:
       - id: col-861
         subset_size: 100000
