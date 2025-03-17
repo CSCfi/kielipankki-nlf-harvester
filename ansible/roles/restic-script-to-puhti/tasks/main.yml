@@ -9,3 +9,45 @@
   ansible.builtin.copy:
     src: ../files/create_snapshot.sh
     dest: "{{ pipeline_extra_bin_dir }}/create_snapshot.sh"
+
+- name: Check if the restic repository exists already
+  ansible.builtin.shell: |
+    module load allas
+    restic snapshots --no-lock --json
+  delegate_to: puhti
+  environment:
+    AWS_SECRET_ACCESS_KEY: "{{ lookup('passwordstore', 'lb_passwords/airflow/aws_secret_access_key') }}"
+    AWS_ACCESS_KEY_ID: "{{ lookup('passwordstore', 'lb_passwords/airflow/aws_access_key_id') }}"
+    RESTIC_REPOSITORY: "{{ restic_repository }}"
+    RESTIC_PASSWORD: "{{ lookup('passwordstore', 'lb_passwords/airflow/restic_password') }}"
+  register: snapshot_list
+  failed_when:  # Sanity check that fails the task if we get an unexpected output
+    - not snapshot_list.stdout == "[]"  # repo exists, no snapshots
+    - 'not "\"paths\":[" in snapshot_list.stdout'  # repo exists, snapshot data reported
+    - not 'Is there a repository at the following location?' in snapshot_list.stderr  # no snapshot found
+    - "not 'Fatal: unable to open config file: Stat: The specified bucket does not exist.' in snapshot_list.stderr"  # no bucket
+  tags: rscript
+
+- name: Create bucket for restic repository if not already present
+  ansible.builtin.shell: |
+    module load allas
+    s3cmd mb s3://$BUCKET_NAME --host=a3s.fi --host-bucket='%(bucket)s.a3s.fi'
+  environment:
+    AWS_SECRET_ACCESS_KEY: "{{ lookup('passwordstore', 'lb_passwords/airflow/aws_secret_access_key') }}"
+    AWS_ACCESS_KEY_ID: "{{ lookup('passwordstore', 'lb_passwords/airflow/aws_access_key_id') }}"
+    BUCKET_NAME: "{{ restic_repository_bucket }}"
+  when: "'The specified bucket does not exist' in snapshot_list.stderr"
+  tags: rscript
+
+- name: Initiate a repository if not already present
+  ansible.builtin.shell: |
+      module load allas
+      restic init
+  delegate_to: puhti
+  environment:
+    AWS_SECRET_ACCESS_KEY: "{{ lookup('passwordstore', 'lb_passwords/airflow/aws_secret_access_key') }}"
+    AWS_ACCESS_KEY_ID: "{{ lookup('passwordstore', 'lb_passwords/airflow/aws_access_key_id') }}"
+    RESTIC_REPOSITORY: "{{ restic_repository }}"
+    RESTIC_PASSWORD: "{{ lookup('passwordstore', 'lb_passwords/airflow/restic_password') }}"
+  when: snapshot_list.rc != 0
+  tags: rscript
