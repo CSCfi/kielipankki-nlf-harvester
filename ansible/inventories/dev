@@ -22,3 +22,4 @@ all:
         subset_size: 100000
       - id: col-201
         subset_size: 100
+    restic_repository_bucket: harvester-versioning-dev

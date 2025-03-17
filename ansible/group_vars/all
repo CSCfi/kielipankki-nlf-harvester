@@ -21,7 +21,7 @@ airflow_firstname: "Kielipankki"
 airflow_lastname: "User"
 airflow_email: "ling-admin@listat.csc.fi"
 
-restic_repository: "s3:https://a3s.fi/nlf-harvester-versioning"
+restic_repository: "s3:https://a3s.fi/{{ restic_repository_bucket }}"
 
 puhti_robot_user: "robot_2006633_puhti"
 puhti_robot_password: "{{ lookup('passwordstore', 'lb_passwords/airflow/robot_2006633_puhti') }}"
