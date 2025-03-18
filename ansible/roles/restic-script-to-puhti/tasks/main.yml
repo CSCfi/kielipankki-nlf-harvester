@@ -26,7 +26,6 @@
     - 'not "\"paths\":[" in snapshot_list.stdout'  # repo exists, snapshot data reported
     - not 'Is there a repository at the following location?' in snapshot_list.stderr  # no snapshot found
     - "not 'Fatal: unable to open config file: Stat: The specified bucket does not exist.' in snapshot_list.stderr"  # no bucket
-  tags: rscript
 
 - name: Create bucket for restic repository if not already present
   ansible.builtin.shell: |
@@ -37,7 +36,6 @@
     AWS_ACCESS_KEY_ID: "{{ lookup('passwordstore', 'lb_passwords/airflow/aws_access_key_id') }}"
     BUCKET_NAME: "{{ restic_repository_bucket }}"
   when: "'The specified bucket does not exist' in snapshot_list.stderr"
-  tags: rscript
 
 - name: Initiate a repository if not already present
   ansible.builtin.shell: |
@@ -50,4 +48,3 @@
     RESTIC_REPOSITORY: "{{ restic_repository }}"
     RESTIC_PASSWORD: "{{ lookup('passwordstore', 'lb_passwords/airflow/restic_password') }}"
   when: snapshot_list.rc != 0
-  tags: rscript
