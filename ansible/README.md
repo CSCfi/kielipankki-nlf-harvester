@@ -65,3 +65,4 @@ If more than one development instance is in use simultaneously, they must be con
 - `pipeline_output_dir`
 - `pipeline_tmpdir_root`
 - `pipeline_extra_bin_dir`
+- `restic_repository_bucket`
