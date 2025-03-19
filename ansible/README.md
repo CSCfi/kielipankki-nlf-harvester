@@ -66,3 +66,10 @@ If more than one development instance is in use simultaneously, they must be con
 - `pipeline_tmpdir_root`
 - `pipeline_extra_bin_dir`
 - `restic_repository_bucket`
+
+
+### Publishing a Restic repository
+
+If a newly created repository needs to be made accessible without AWS access key and key id (e.g. for demo or testing purposes), it needs to be published. This can be done in [Pouta web interface](https://pouta.csc.fi) by under _Object storage_ > _Containers_ by choosing the correct bucket and ticking the box _Public access_. This allows accessing the repository e.g. from a local laptop that has Restic installed.
+
+Allowing truly public read-only access would also require manually adding a second, shareable, password for the repo using `restic key` command.
