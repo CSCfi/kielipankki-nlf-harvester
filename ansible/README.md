@@ -37,7 +37,7 @@ $ source project_2006633-openrc.sh
 ansible-playbook -i inventories/dev harvesterPouta.yml --extra-vars initial_download=true
 ```
 
-Adjust `initial_download` as needed (default is false for safe reprovisioning of the production environment).
+Adjust `initial_download` as needed (default is false for safe reprovisioning of the production environment). This can also be edited in the Airflow web GUI under variables. NB: The variable will not automatically flip to `false` when a collection is downloaded, allowing e.g. repeated full download testing or downloading different small collections from dev instances.
 
 Have your `kielipouta` password and `Kielipankki-passwords` GPG key password at hand, they may need to be inputted during provisioning.
 
