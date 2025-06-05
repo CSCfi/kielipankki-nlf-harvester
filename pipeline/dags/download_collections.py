@@ -5,6 +5,7 @@ assembled into targets, currently zip files.
 """
 
 from datetime import timedelta
+import distutils
 from pathlib import Path
 
 from airflow.operators.empty import EmptyOperator
@@ -73,7 +74,9 @@ for col in Variable.get("collections", deserialize_json=True):
                 subset_size=col["subset_size"],
                 api=api,
                 ssh_conn_id=SSH_CONN_ID,
-                initial_download=Variable.get("initial_download"),
+                initial_download=distutils.util.strtobool(
+                    Variable.get("initial_download")
+                ),
                 path_config=path_config,
             )
             >> clear_temporary_directory(SSH_CONN_ID, path_config["TMPDIR_ROOT"])
