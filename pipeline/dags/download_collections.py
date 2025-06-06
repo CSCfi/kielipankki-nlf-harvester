@@ -57,9 +57,6 @@ for col in Variable.get("collections", deserialize_json=True):
 
         zip_creation_dir = path_config["OUTPUT_DIR"] / "targets"
         published_data_dir = path_config["OUTPUT_DIR"] / "zip"
-        initial_download = (
-            True if Variable.get("initial_download").lower == "true" else False
-        )
 
         check_if_download_should_begin(
             set_id=col["id"],
@@ -77,7 +74,9 @@ for col in Variable.get("collections", deserialize_json=True):
                 subset_size=col["subset_size"],
                 api=api,
                 ssh_conn_id=SSH_CONN_ID,
-                initial_download=initial_download,
+                initial_download=Variable.get(
+                    "initial_download", deserialize_json=True
+                ),
                 path_config=path_config,
             )
             >> clear_temporary_directory(SSH_CONN_ID, path_config["TMPDIR_ROOT"])
