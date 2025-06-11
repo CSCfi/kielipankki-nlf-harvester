@@ -2,6 +2,9 @@
 Fetch data from an OAI-PMH API of the National Library of Finland
 """
 
+from datetime import datetime, timezone
+from dateutil import parser
+
 from sickle import Sickle
 import requests
 
@@ -39,6 +42,52 @@ class PMH_API:
         binding_ids = self._sickle.ListIdentifiers(**request_params)
         for binding_id in binding_ids:
             yield f"https://digi.kansalliskirjasto.fi/sanomalehti/binding/{binding_id.identifier.rsplit(':')[-1]}"
+
+    def deleted_dc_identifiers(self, set_id, from_date=None):
+        """
+        Iterate over the DC identifiers of bindings in a set marked as deleted.
+
+        The filtering is done manually from all deleted bindings instead of e.g. doing
+        ListIdentifiers since a specific date and filtering based on status="deleted",
+        because filtering based on date does not seem to work reliably for deleted
+        records.
+
+        :param set_id: Set (also known as collection) identifier
+        :param from_timestamp: Earliest time of deletion to consider: earlier deletions
+                               are ignored.
+        """
+        request_params = {"metadataPrefix": "qdc_finna", "set": "deleted"}
+        namespace = {"oai": "http://www.openarchives.org/OAI/2.0/"}
+        if from_date:
+            threshold_time = datetime.strptime(from_date, "%Y-%m-%d").replace(
+                tzinfo=timezone.utc
+            )
+        else:
+            threshold_time = None
+
+        for binding in self._sickle.ListRecords(**request_params):
+            identifier = binding.xml.xpath(
+                "./oai:header/oai:identifier/text()",
+                namespaces=namespace,
+            )[0]
+            sets = binding.xml.xpath(
+                "./oai:header/oai:setSpec/text()", namespaces=namespace
+            )
+
+            if set_id not in sets:
+                continue
+
+            if threshold_time:
+                deletion_datestamp = binding.xml.xpath(
+                    "./oai:header/oai:datestamp/text()",
+                    namespaces=namespace,
+                )[0]
+
+                deletion_time = parser.isoparse(deletion_datestamp)
+                if deletion_time < threshold_time:
+                    continue
+
+            yield identifier
 
     def download_mets(self, dc_identifier, output_mets_file):
         """
