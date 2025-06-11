@@ -2,4 +2,5 @@ AWS_SECRET_ACCESS_KEY: {{ lookup('passwordstore', 'lb_passwords/airflow/aws_secr
 AWS_ACCESS_KEY_ID: {{ lookup('passwordstore', 'lb_passwords/airflow/aws_access_key_id') }}
 RESTIC_REPOSITORY: {{ restic_repository }}
 RESTIC_PASSWORD: {{ lookup('passwordstore', 'lb_passwords/airflow/restic_password') }}
+RESTIC_PROGRESS_FPS: {{ restic_progress_fps }}
 RESTIC_PACK_SIZE: 128
