@@ -41,9 +41,9 @@ def fetch_bindings_dag():
     http_conn = BaseHook.get_connection(HTTP_CONN_ID)
     api = PMH_API(url=http_conn.host)
 
-    @task_group(group_id=f"save_bindings")
+    @task_group(group_id="save_bindings")
     def save_ids():
-        @task(task_id=f"save_ids_for_set")
+        @task(task_id="save_ids_for_set")
         def save_ids_for_set(set_id):
 
             folder_path = Path(
