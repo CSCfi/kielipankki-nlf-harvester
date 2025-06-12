@@ -54,17 +54,25 @@ def fetch_bindings_dag():
                 os.makedirs(folder_path)
             last_run = get_most_recent_dag_run(f"subset_download_{set_id}")
 
-            with open(f"{folder_path}/binding_ids_{date.today()}", "w") as file_obj:
+            with open(
+                f"{folder_path}/binding_ids_{date.today()}", "w"
+            ) as new_bindings_file, open(
+                "{folder_path}/deleted_binding_ids_{date.today()}", "w"
+            ) as deleted_bindings_file:
 
                 if Variable.get("initial_download", deserialize_json=True):
                     for item in api.dc_identifiers(set_id):
-                        file_obj.write(item + "\n")
+                        new_bindings_file.write(item + "\n")
+                    for item in api.deleted_dc_identifiers(set_id):
+                        deleted_bindings_file.write(item + "\n")
                 else:
                     try:
                         for item in api.dc_identifiers(set_id, from_date=last_run):
-                            file_obj.write(item + "\n")
+                            new_bindings_file.write(item + "\n")
                     except NoRecordsMatch:
                         print(f"No new bindings after date {last_run} for set {set_id}")
+                    for item in api.deleted_dc_identifiers(set_id, from_date=last_run):
+                        deleted_bindings_file.write(item + "\n")
 
         set_ids = [
             collection["id"]
