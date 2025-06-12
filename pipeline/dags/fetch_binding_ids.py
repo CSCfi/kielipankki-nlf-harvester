@@ -52,27 +52,29 @@ def fetch_bindings_dag():
 
             if not os.path.isdir(folder_path):
                 os.makedirs(folder_path)
-            last_run = get_most_recent_dag_run(f"subset_download_{set_id}")
+
+            if Variable.get("initial_download", deserialize_json=True):
+                last_run = None
+                print("Fetching all bindings for collection {set_id}")
+            else:
+                last_run = get_most_recent_dag_run(f"subset_download_{set_id}")
+                print(f"Fetching bindings for collection {set_id} since {last_run}")
 
             with open(
                 f"{folder_path}/binding_ids_{date.today()}", "w"
-            ) as new_bindings_file, open(
-                "{folder_path}/deleted_binding_ids_{date.today()}", "w"
-            ) as deleted_bindings_file:
+            ) as new_bindings_file:
 
-                if Variable.get("initial_download", deserialize_json=True):
-                    for item in api.dc_identifiers(set_id):
+                try:
+                    for item in api.dc_identifiers(set_id, from_date=last_run):
                         new_bindings_file.write(item + "\n")
-                    for item in api.deleted_dc_identifiers(set_id):
-                        deleted_bindings_file.write(item + "\n")
-                else:
-                    try:
-                        for item in api.dc_identifiers(set_id, from_date=last_run):
-                            new_bindings_file.write(item + "\n")
-                    except NoRecordsMatch:
-                        print(f"No new bindings after date {last_run} for set {set_id}")
-                    for item in api.deleted_dc_identifiers(set_id, from_date=last_run):
-                        deleted_bindings_file.write(item + "\n")
+                except NoRecordsMatch:
+                    print(f"No new bindings after date {last_run} for set {set_id}")
+
+            with open(
+                f"{folder_path}/deleted_binding_ids_{date.today()}", "w"
+            ) as deleted_bindings_file:
+                for item in api.deleted_dc_identifiers(set_id, from_date=last_run):
+                    deleted_bindings_file.write(item + "\n")
 
         set_ids = [
             collection["id"]
