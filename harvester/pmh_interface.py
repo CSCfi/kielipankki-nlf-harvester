@@ -87,7 +87,7 @@ class PMH_API:
                 if deletion_time < threshold_time:
                     continue
 
-            yield identifier
+            yield f"https://digi.kansalliskirjasto.fi/sanomalehti/binding/{identifier.rsplit(':')[-1]}"
 
     def download_mets(self, dc_identifier, output_mets_file):
         """

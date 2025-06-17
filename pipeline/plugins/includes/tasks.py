@@ -15,6 +15,7 @@ from operators.custom_operators import (
     PrepareDownloadLocationOperator,
     CreateTargetOperator,
     StowBindingBatchOperator,
+    RemoveDeletedBindingsOperator,
 )
 
 
@@ -40,7 +41,7 @@ def check_if_download_should_begin(set_id, binding_list_dir, http_conn_id):
     except RequestException:
         api_ok = False
 
-    bindings = utils.read_bindings(binding_list_dir, set_id)
+    bindings = utils.read_bindings(binding_list_dir, set_id, "binding_ids")
 
     if not bindings:
         print("No new bindings after previous download.")
@@ -67,17 +68,24 @@ def download_set(
     initial_download,
     path_config,
 ):
-    bindings = utils.read_bindings(path_config["BINDING_LIST_DIR"], set_id)
+    added_bindings = utils.read_bindings(
+        path_config["BINDING_LIST_DIR"], set_id, "binding_ids"
+    )
+    deleted_bindings = utils.read_bindings(
+        path_config["BINDING_LIST_DIR"], set_id, "deleted_binding_ids"
+    )
 
     prefixes = [str(i) for i in range(10, 20)] + [str(i) for i in range(2, 10)]
 
     if initial_download:
-        subset_split = utils.assign_bindings_to_subsets(bindings, prefixes)
+        subset_split = utils.assign_bindings_to_subsets(added_bindings, [], prefixes)
         utils.save_subset_split(subset_split, path_config["SUBSET_SPLIT_DIR"], set_id)
 
     else:
         subset_split = utils.assign_update_bindings_to_subsets(
-            bindings, path_config["SUBSET_SPLIT_DIR"] / f"{set_id}_subsets.json"
+            added_bindings,
+            deleted_bindings,
+            path_config["SUBSET_SPLIT_DIR"] / f"{set_id}_subsets.json",
         )
 
     subset_downloads = []
@@ -125,6 +133,13 @@ def download_set(
                     target_path=target_path,
                 )
 
+                remove_deleted_bindings = RemoveDeletedBindingsOperator(
+                    task_id=f"remove_deleted_bindings_{subset_base_name}",
+                    ssh_conn_id=ssh_conn_id,
+                    zip_path=target_path,
+                    deleted_bindings_list=subset_split[subset]["deleted"],
+                )
+
                 (
                     prepare_download_location
                     >> StowBindingBatchOperator.partial(
@@ -137,10 +152,11 @@ def download_set(
                         api=api,
                     ).expand(
                         batch_with_index=utils.split_into_download_batches(
-                            subset_split[subset]
+                            subset_split[subset]["added"]
                         )
                     )
                     >> create_target
+                    >> remove_deleted_bindings
                 )
 
             subset_download_tg = download_subset(prefix)

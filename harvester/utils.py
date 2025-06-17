@@ -122,15 +122,42 @@ def bindings_with_prefix(bindings, prefix):
     ]
 
 
-def assign_bindings_to_subsets(binding_dc_identifiers, prefixes):
+def assign_bindings_to_subsets(
+    added_binding_dc_identifiers, deleted_binding_dc_identifiers, prefixes
+):
     """
-    Split a list of bindings into subsets, each containing no more than
-    max_bindings_per_subset bindings.
+    Split a list of bindings into subsets based on their prefixes.
+
+    The resulting data structure is a dict with subset prefixes as keys, each having a
+    dict with lists of added and deleted bindings as values. E.g.
+    {
+        "1": {
+            "added": [
+                "https://digi.kansalliskirjasto.fi/sanomalehti/binding/11",
+                "https://digi.kansalliskirjasto.fi/sanomalehti/binding/12",
+            ],
+            "deleted": [],
+        },
+        "2": {
+            "added": [
+                "https://digi.kansalliskirjasto.fi/sanomalehti/binding/23",
+                "https://digi.kansalliskirjasto.fi/sanomalehti/binding/24",
+            ],
+            "deleted": [
+                "https://digi.kansalliskirjasto.fi/sanomalehti/binding/21",
+            ],
+        },
+    }
+
     """
-    subsets = {prefix: [] for prefix in prefixes}
-    for dc_identifier in binding_dc_identifiers:
+    subsets = {prefix: {"added": [], "deleted": []} for prefix in prefixes}
+    for dc_identifier in added_binding_dc_identifiers:
         prefix = subset_for_binding(dc_identifier, prefixes)
-        subsets[prefix].append(dc_identifier)
+        subsets[prefix]["added"].append(dc_identifier)
+    for dc_identifier in deleted_binding_dc_identifiers:
+        prefix = subset_for_binding(dc_identifier, prefixes)
+        subsets[prefix]["deleted"].append(dc_identifier)
+
     return subsets
 
 
@@ -145,33 +172,72 @@ def subset_for_binding(dc_identifier, subset_split):
     raise ValueError(f"No prefix found for binding {binding_id}")
 
 
-def assign_update_bindings_to_subsets(bindings, subset_split_file):
+def assign_update_bindings_to_subsets(
+    added_bindings, deleted_bindings, subset_split_file
+):
     """
     Assign an incoming list of new bindings into existing disk subsets
     based on their binding ID.
+
+    The resulting data structure is a dict with subset prefixes as keys, each having a
+    dict with lists of added and deleted bindings as values. E.g.
+    {
+        "1": {
+            "added": [
+                "https://digi.kansalliskirjasto.fi/sanomalehti/binding/11",
+                "https://digi.kansalliskirjasto.fi/sanomalehti/binding/12",
+            ],
+            "deleted": [],
+        },
+        "2": {
+            "added": [
+                "https://digi.kansalliskirjasto.fi/sanomalehti/binding/23",
+                "https://digi.kansalliskirjasto.fi/sanomalehti/binding/24",
+            ],
+            "deleted": [
+                "https://digi.kansalliskirjasto.fi/sanomalehti/binding/21",
+            ],
+        },
+    }
+
     """
     with open(subset_split_file, "r") as json_file:
         subset_split = json.load(json_file)
     existing_subsets = {}
-    for dc_identifier in bindings:
+    for dc_identifier in added_bindings:
         subset = subset_for_binding(dc_identifier, subset_split)
-        existing_subsets.setdefault(subset, []).append(dc_identifier)
+        existing_subsets.setdefault(subset, {"added": [], "deleted": []})[
+            "added"
+        ].append(dc_identifier)
+    for dc_identifier in deleted_bindings:
+        subset = subset_for_binding(dc_identifier, subset_split)
+        existing_subsets.setdefault(subset, {"added": [], "deleted": []})[
+            "deleted"
+        ].append(dc_identifier)
     return existing_subsets
 
 
-def read_bindings(binding_list_dir, set_id):
+def read_bindings(binding_list_dir, set_id, binding_file_prefix):
     """
     Read and return a list of bindings from the latest binding ID file.
+
+    These files are assumed to have paths in the following format:
+    {binding_list_dir}/{set_id}/{binding_file_prefix}_YYYY-MM-DD
+
+    This can mean e.g.
+    binding_ids_all/col-861/binding_ids_2025-06-12
     """
     try:
-        binding_id_files = [
+        binding_id_dates = [
             datetime.strptime(fname.split("_")[-1], "%Y-%m-%d").date()
             for fname in os.listdir(binding_list_dir / set_id)
         ]
     except FileNotFoundError:
         raise FileNotFoundError(f"No binding ID file found for set {set_id}")
-    latest = max(binding_id_files)
-    with open(binding_list_dir / set_id / f"binding_ids_{str(latest)}", "r") as f:
+    latest = max(binding_id_dates)
+    with open(
+        binding_list_dir / set_id / f"{binding_file_prefix}_{str(latest)}", "r"
+    ) as f:
         bindings = f.read().splitlines()
     return bindings
 
