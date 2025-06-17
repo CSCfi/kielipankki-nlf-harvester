@@ -1,0 +1,36 @@
+---
+
+# This playbook removes all data (on Puhti disk and in the Allas repo) and
+# reinitializes the repo.
+
+
+- name: Sanity check
+  hosts: localhost
+  vars:
+    production_inventory: "{{ lookup('file', 'inventories/prod') | from_yaml }}"
+  tasks:
+    - name: Prevent running against production
+      fail:
+        msg: "Looks like you are resetting production data. Please don't."
+      when:
+        - pipeline_output_dir | default(None) == production_inventory.all.vars.pipeline_output_dir or
+          restic_repository_bucket == production_inventory.all.vars.restic_repository_bucket
+
+- name: Reset the data
+  hosts: puhti
+  tasks:
+    - name: Delete and recreate the bucket + repo in Allas
+      ansible.builtin.shell: |
+        module load allas
+        s3cmd del --recursive --force s3://harvester-versioning-dev
+        s3cmd mb s3://harvester-versioning-dev --host=a3s.fi --host-bucket='%(bucket)s.a3s.fi'
+        restic init
+      environment:
+        AWS_SECRET_ACCESS_KEY: "{{ lookup('passwordstore', 'lb_passwords/airflow/aws_secret_access_key') }}"
+        AWS_ACCESS_KEY_ID: "{{ lookup('passwordstore', 'lb_passwords/airflow/aws_access_key_id') }}"
+        RESTIC_REPOSITORY: "{{ restic_repository }}"
+        RESTIC_PASSWORD: "{{ lookup('passwordstore', 'lb_passwords/airflow/restic_password') }}"
+    - name: Delete the data on Puhti
+      ansible.builtin.file:
+        path: "{{ pipeline_output_dir | default('/scratch/project_2006633/harvester-dev') }}"
+        state: absent
