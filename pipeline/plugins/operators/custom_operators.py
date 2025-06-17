@@ -362,6 +362,71 @@ class CreateTargetOperator(BaseOperator):
             self.ssh_execute_and_raise(ssh_client, f"rm -r {self.data_source}")
 
 
+class RemoveDeletedBindingsOperator(BaseOperator):
+    """ """
+
+    def __init__(
+        self,
+        ssh_conn_id,
+        zip_path,
+        deleted_bindings_list,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.ssh_conn_id = ssh_conn_id
+        self.zip_path = zip_path
+        self.deleted_binding_identifiers = [
+            utils.binding_id_from_dc(dc_identifier)
+            for dc_identifier in deleted_bindings_list
+        ]
+
+    def ssh_execute_and_raise(self, ssh_client, command):  # TODO copypaste
+        """
+        Run the given command and raise TargetCreationError on non-zero return value.
+        """
+        _, stdout, stderr = ssh_client.exec_command(command)
+
+        self.log.debug(stdout)
+
+        exit_code = stdout.channel.recv_exit_status()
+        if exit_code != 0:
+            error_message = "\n".join(stderr.readlines())
+            raise TargetCreationError(
+                f"Command {command} failed (exit code {exit_code}). Stderr output:\n"
+                f"{error_message}"
+            )
+
+    def execute(self, context):
+        ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
+
+        self.log.info(f"::group::Removing the following bindings from {self.zip_path}")
+        for deleted_binding in self.deleted_binding_identifiers:
+            self.log.info(deleted_binding)
+        self.log.info("::endgroup::")
+
+        deleted_binding_globs = [
+            utils.binding_download_location(binding_id) + "/*"
+            for binding_id in self.deleted_binding_identifiers
+        ]
+        self.log.info("::group::These correspond to the following subdirectories:")
+        for deleted_binding_directory in deleted_binding_globs:
+            self.log.info(deleted_binding_directory)
+        self.log.info("::endgroup::")
+
+        with ssh_hook.get_conn() as ssh_client:
+            cmd = (
+                '/bin/bash -lc ". /appl/profile/zz-csc-env.sh && '
+                "module load libzip && "
+                f'zip -d {self.zip_path} {" ".join(deleted_binding_globs)}"'
+            )
+            self.ssh_execute_and_raise(
+                ssh_client,
+                cmd,
+            )
+
+        self.log.info("Deletion complete")
+
+
 class TargetCreationError(Exception):
     """
     Error raised when an error occurs during the distribution creation/overwrite process

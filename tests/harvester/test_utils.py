@@ -76,9 +76,9 @@ def test_binding_download_location():
         [str(i) for i in list(range(1, 4)) + list(range(40, 50)) + list(range(5, 9))],
     ],
 )
-def test_assign_bindings_to_subsets(prefixes):
+def test_assign_added_bindings_to_subsets(prefixes):
     """
-    Test assigning bindings to subsets
+    Test assigning added bindings to subsets
 
     We verify that there is the same number of subsets as there are prefixes, and that
     each binding in a subset has binding id that starts with the corresponding prefix.
@@ -88,12 +88,40 @@ def test_assign_bindings_to_subsets(prefixes):
     with open("tests/data/test_col_bindings", "r") as f:
         bindings = f.read().splitlines()
 
-    subsets = utils.assign_bindings_to_subsets(bindings, prefixes)
+    subsets = utils.assign_bindings_to_subsets(
+        added_binding_dc_identifiers=bindings,
+        deleted_binding_dc_identifiers=[],
+        prefixes=prefixes,
+    )
 
     assert len(subsets.keys()) == len(prefixes)
 
     for prefix, bindings in subsets.items():
-        for binding in bindings:
+        for binding in bindings["added"]:
+            assert utils.binding_id_from_dc(binding).startswith(prefix)
+
+
+def test_assign_deleted_bindings_to_subsets():
+    """
+    Test assigning deleted bindings to subsets
+
+    We verify that there is the same number of subsets as there are prefixes, and that
+    each binding in a subset has binding id that starts with the corresponding prefix.
+    """
+    with open("tests/data/test_col_bindings", "r") as f:
+        bindings = f.read().splitlines()
+
+    prefixes = [str(i) for i in range(1, 10)]
+    subsets = utils.assign_bindings_to_subsets(
+        added_binding_dc_identifiers=[],
+        deleted_binding_dc_identifiers=bindings,
+        prefixes=prefixes,
+    )
+
+    assert len(subsets.keys()) == len(prefixes)
+
+    for prefix, bindings in subsets.items():
+        for binding in bindings["deleted"]:
             assert utils.binding_id_from_dc(binding).startswith(prefix)
 
 
@@ -123,21 +151,21 @@ def test_assign_update_bindings_to_subsets():
         bindings = f.read().splitlines()
 
     subset_split = utils.assign_update_bindings_to_subsets(
-        bindings, "tests/data/subset_split.json"
+        bindings, [], "tests/data/subset_split.json"
     )
 
-    assert subset_split["20"] == [bindings[0]]
-    assert subset_split["21"] == [bindings[1]]
+    assert subset_split["20"]["added"] == [bindings[0]]
+    assert subset_split["21"]["added"] == [bindings[1]]
     assert "22" not in subset_split
-    assert subset_split["3"] == [bindings[2]]
-    assert subset_split["9"] == [bindings[3]]
+    assert subset_split["3"]["added"] == [bindings[2]]
+    assert subset_split["9"]["added"] == [bindings[3]]
 
     small_subset_split = utils.assign_update_bindings_to_subsets(
-        bindings, "tests/data/small_subset_split.json"
+        bindings, [], "tests/data/small_subset_split.json"
     )
 
     assert len(small_subset_split) == 1
-    assert small_subset_split[""] == bindings
+    assert small_subset_split[""]["added"] == bindings
 
 
 def test_read_bindings(tmpdir):
@@ -151,10 +179,10 @@ def test_read_bindings(tmpdir):
             for binding in bindings:
                 f2.write(binding + "\n")
 
-    assert utils.read_bindings(tmpdir, "col-000") == bindings
+    assert utils.read_bindings(tmpdir, "col-000", "binding_ids") == bindings
 
     with pytest.raises(FileNotFoundError):
-        utils.read_bindings(tmpdir, "col-001")
+        utils.read_bindings(tmpdir, "col-001", "binding_ids")
 
 
 def test_save_subset_split(tmpdir):
@@ -165,7 +193,7 @@ def test_save_subset_split(tmpdir):
         bindings = f.read().splitlines()
 
     subset_split = utils.assign_update_bindings_to_subsets(
-        bindings, "tests/data/subset_split.json"
+        bindings, [], "tests/data/subset_split.json"
     )
     utils.save_subset_split(subset_split, tmpdir, "col-000")
     output_path = Path(tmpdir) / Path("col-000_subsets.json")
