@@ -38,6 +38,28 @@ def binding_ids(set_id, url):
 
 
 @cli.command
+@click.argument("set_id")
+@click.option(
+    "--from-date",
+    default=None,
+    help="Earliest time of deletion to consider, e.g. 2026-01-28",
+)
+@click.option(
+    "--url",
+    default="https://digi.kansalliskirjasto.fi/interfaces/OAI-PMH",
+    help="URL of the OAI-PMH API to be used",
+)
+def deleted_binding_ids(set_id, from_date, url):
+    """
+    Fetch deleted binding IDs in the given set since a given date.
+    """
+    api = PMH_API(url)
+    ids = api.deleted_dc_identifiers(set_id, from_date=from_date)
+    for id_ in ids:
+        click.echo(id_)
+
+
+@cli.command
 @click.argument("mets_file_path")
 @click.argument(
     "collection_dc_identifier",
