@@ -300,7 +300,62 @@ class PrepareDownloadLocationOperator(BaseOperator):
                 utils.ssh_execute(ssh_client, target_copy_command)
 
 
-class CreateTargetOperator(BaseOperator):
+class PuhtiSshOperator(BaseOperator):
+    """
+    Base class for operators that need to use Puhti like users do: load modules etc.
+    """
+
+    def __init__(self, ssh_conn_id, **kwargs):
+        super().__init__(**kwargs)
+        self.ssh_conn_id = ssh_conn_id
+
+    def execute(self, context):
+        raise NotImplementedError("Must be implemented in subclasses")
+
+    def ssh_execute_and_raise(self, ssh_client, command):
+        """
+        Run the given command and raise TargetCreationError on non-zero return value.
+        """
+        _, stdout, stderr = ssh_client.exec_command(command)
+
+        self.log.debug(stdout)
+
+        exit_code = stdout.channel.recv_exit_status()
+        if exit_code != 0:
+            error_message = "\n".join(stderr.readlines())
+            raise TargetCreationError(
+                f"Command {command} failed (exit code {exit_code}). Stderr output:\n"
+                f"{error_message}"
+            )
+
+    def run_in_login_shell(self, ssh_client, payload_command, modules=""):
+        """
+        Run a command on Puhti login shell as a human user would.
+
+        :param payload_command: Command to be run
+        :type payload_command: str
+        :param modules: Modules to be loaded, separated by space, e.g. "libzip allas"
+        :type modules: str
+
+        """
+        if modules:
+            modules_command = f"module load {modules} && "
+        else:
+            modules_command = ""
+
+        full_command = (
+            "/bin/bash -lc "
+            '"'
+            ". /appl/profile/zz-csc-env.sh && "
+            f"{modules_command}"
+            f"{payload_command}"
+            '"'
+        )
+
+        self.ssh_execute_and_raise(ssh_client, full_command)
+
+
+class CreateTargetOperator(PuhtiSshOperator):
     """
     Create a final distribution target of the given source data.
 
@@ -321,38 +376,22 @@ class CreateTargetOperator(BaseOperator):
         target_path,
         **kwargs,
     ):
-        super().__init__(**kwargs)
-        self.ssh_conn_id = ssh_conn_id
+        super().__init__(ssh_conn_id=ssh_conn_id, **kwargs)
         self.data_source = data_source
         self.target_path = target_path
-
-    def ssh_execute_and_raise(self, ssh_client, command):
-        """
-        Run the given command and raise TargetCreationError on non-zero return value.
-        """
-        _, stdout, stderr = ssh_client.exec_command(command)
-
-        self.log.debug(stdout)
-
-        exit_code = stdout.channel.recv_exit_status()
-        if exit_code != 0:
-            error_message = "\n".join(stderr.readlines())
-            raise TargetCreationError(
-                f"Command {command} failed (exit code {exit_code}). Stderr output:\n"
-                f"{error_message}"
-            )
 
     def execute(self, context):
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
-            # zipmerge -k will skip compression for files that were not compressed in the source zips
-            zip_creation_cmd = f'/bin/bash -lc ". /appl/profile/zz-csc-env.sh && module load libzip && zipmerge -k {self.target_path} {self.data_source/"*"}"'
             self.log.info(
                 "Merging intermediate zips into %s on Puhti", self.target_path
             )
-            self.ssh_execute_and_raise(
+
+            # zipmerge -k will skip compression for files that were not compressed in the source zips
+            self.run_in_login_shell(
                 ssh_client,
-                zip_creation_cmd,
+                f'zipmerge -k {self.target_path} {self.data_source/"*"}',
+                modules="libzip",
             )
 
             self.log.info(
@@ -362,7 +401,7 @@ class CreateTargetOperator(BaseOperator):
             self.ssh_execute_and_raise(ssh_client, f"rm -r {self.data_source}")
 
 
-class RemoveDeletedBindingsOperator(BaseOperator):
+class RemoveDeletedBindingsOperator(PuhtiSshOperator):
     """ """
 
     def __init__(
@@ -372,29 +411,12 @@ class RemoveDeletedBindingsOperator(BaseOperator):
         deleted_bindings_list,
         **kwargs,
     ):
-        super().__init__(**kwargs)
-        self.ssh_conn_id = ssh_conn_id
+        super().__init__(ssh_conn_id=ssh_conn_id, **kwargs)
         self.zip_path = zip_path
         self.deleted_binding_identifiers = [
             utils.binding_id_from_dc(dc_identifier)
             for dc_identifier in deleted_bindings_list
         ]
-
-    def ssh_execute_and_raise(self, ssh_client, command):  # TODO copypaste
-        """
-        Run the given command and raise TargetCreationError on non-zero return value.
-        """
-        _, stdout, stderr = ssh_client.exec_command(command)
-
-        self.log.debug(stdout)
-
-        exit_code = stdout.channel.recv_exit_status()
-        if exit_code != 0:
-            error_message = "\n".join(stderr.readlines())
-            raise TargetCreationError(
-                f"Command {command} failed (exit code {exit_code}). Stderr output:\n"
-                f"{error_message}"
-            )
 
     def execute(self, context):
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
@@ -414,14 +436,10 @@ class RemoveDeletedBindingsOperator(BaseOperator):
         self.log.info("::endgroup::")
 
         with ssh_hook.get_conn() as ssh_client:
-            cmd = (
-                '/bin/bash -lc ". /appl/profile/zz-csc-env.sh && '
-                "module load libzip && "
-                f'zip -d {self.zip_path} {" ".join(deleted_binding_globs)}"'
-            )
-            self.ssh_execute_and_raise(
+            self.run_in_login_shell(
                 ssh_client,
-                cmd,
+                f'zip -d {self.zip_path} {" ".join(deleted_binding_globs)}',
+                modules="libzip",
             )
 
         self.log.info("Deletion complete")
