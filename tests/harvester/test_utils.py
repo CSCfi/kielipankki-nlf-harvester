@@ -168,6 +168,37 @@ def test_assign_update_bindings_to_subsets():
     assert small_subset_split[""]["added"] == bindings
 
 
+def test_assign_update_bindings_to_subsets_add_and_del():
+    """
+    Test that added and deleted bindings go to their own lists.
+    """
+    added = [
+        "https://digi.kansalliskirjasto.fi/sanomalehti/binding/4463",
+        "https://digi.kansalliskirjasto.fi/sanomalehti/binding/4468",
+        "https://digi.kansalliskirjasto.fi/sanomalehti/binding/4469",
+        "https://digi.kansalliskirjasto.fi/sanomalehti/binding/4470",
+        "https://digi.kansalliskirjasto.fi/sanomalehti/binding/4472",
+        "https://digi.kansalliskirjasto.fi/sanomalehti/binding/4479",
+        "https://digi.kansalliskirjasto.fi/sanomalehti/binding/4480",
+        "https://digi.kansalliskirjasto.fi/sanomalehti/binding/4481",
+        "https://digi.kansalliskirjasto.fi/sanomalehti/binding/4482",
+        "https://digi.kansalliskirjasto.fi/sanomalehti/binding/4483",
+    ]
+    deleted = [
+        "https://digi.kansalliskirjasto.fi/sanomalehti/binding/4464",
+        "https://digi.kansalliskirjasto.fi/sanomalehti/binding/4465",
+    ]
+    subset_split = utils.assign_update_bindings_to_subsets(
+        added, deleted, "tests/data/subset_split.json"
+    )
+    assert len(subset_split["4"]["added"]) == 10
+    assert len(subset_split["4"]["deleted"]) == 2
+    assert (
+        "https://digi.kansalliskirjasto.fi/sanomalehti/binding/4464"
+        in subset_split["4"]["deleted"]
+    )
+
+
 def test_read_bindings(tmpdir):
     """
     Test that a list of bindings is read from file correctly.

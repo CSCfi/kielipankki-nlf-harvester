@@ -151,12 +151,13 @@ def assign_bindings_to_subsets(
 
     """
     subsets = {prefix: {"added": [], "deleted": []} for prefix in prefixes}
-    for dc_identifier in added_binding_dc_identifiers:
-        prefix = subset_for_binding(dc_identifier, prefixes)
-        subsets[prefix]["added"].append(dc_identifier)
-    for dc_identifier in deleted_binding_dc_identifiers:
-        prefix = subset_for_binding(dc_identifier, prefixes)
-        subsets[prefix]["deleted"].append(dc_identifier)
+    for identifiers, key_name in (
+        [added_binding_dc_identifiers, "added"],
+        [deleted_binding_dc_identifiers, "deleted"],
+    ):
+        for dc_identifier in identifiers:
+            prefix = subset_for_binding(dc_identifier, prefixes)
+            subsets[prefix][key_name].append(dc_identifier)
 
     return subsets
 
@@ -204,16 +205,15 @@ def assign_update_bindings_to_subsets(
     with open(subset_split_file, "r") as json_file:
         subset_split = json.load(json_file)
     existing_subsets = {}
-    for dc_identifier in added_bindings:
-        subset = subset_for_binding(dc_identifier, subset_split)
-        existing_subsets.setdefault(subset, {"added": [], "deleted": []})[
-            "added"
-        ].append(dc_identifier)
-    for dc_identifier in deleted_bindings:
-        subset = subset_for_binding(dc_identifier, subset_split)
-        existing_subsets.setdefault(subset, {"added": [], "deleted": []})[
-            "deleted"
-        ].append(dc_identifier)
+    for identifiers, key_name in (
+        [added_bindings, "added"],
+        [deleted_bindings, "deleted"],
+    ):
+        for dc_identifier in identifiers:
+            subset = subset_for_binding(dc_identifier, subset_split)
+            existing_subsets.setdefault(subset, {"added": [], "deleted": []})[
+                key_name
+            ].append(dc_identifier)
     return existing_subsets
 
 
