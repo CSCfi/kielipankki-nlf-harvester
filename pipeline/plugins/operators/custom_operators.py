@@ -419,6 +419,10 @@ class RemoveDeletedBindingsOperator(PuhtiSshOperator):
         ]
 
     def execute(self, context):
+        if not self.deleted_binding_identifiers:
+            self.log.info(f"No bindings to delete from {self.zip_path}")
+            return
+
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
 
         self.log.info(f"::group::Removing the following bindings from {self.zip_path}")
