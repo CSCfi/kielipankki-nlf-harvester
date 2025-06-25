@@ -106,6 +106,9 @@ def split_into_download_batches(bindings):
     Return a list of tuples, containing the batch itself and the batch index.
     """
     subset_size = len(bindings)
+    if subset_size == 0:
+        return [([], 0)]
+
     batch_size = calculate_batch_size(subset_size)
     batches = [bindings[i : i + batch_size] for i in range(0, subset_size, batch_size)]
     return list(zip(batches, range(len(batches))))
