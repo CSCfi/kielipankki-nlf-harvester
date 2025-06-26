@@ -357,10 +357,11 @@ class PuhtiSshOperator(BaseOperator):
 
 class CreateTargetOperator(PuhtiSshOperator):
     """
-    Create a final distribution target of the given source data.
+    Merge intermediate zips into a single distribution target.
 
     The target file is first created/updated in target_path. If everything
-    is successful, it's finally moved to the final location in the publish_to_users task.
+    is successful, it can be processed further and finally moved to the final location
+    in the publish_to_users task.
 
     :param ssh_conn_id: SSH connection id
     :param data_source: Path to the directory that contains the intermediate .zip files
