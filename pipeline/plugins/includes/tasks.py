@@ -41,10 +41,13 @@ def check_if_download_should_begin(set_id, binding_list_dir, http_conn_id):
     except RequestException:
         api_ok = False
 
-    bindings = utils.read_bindings(binding_list_dir, set_id, "binding_ids")
+    added_bindings = utils.read_bindings(binding_list_dir, set_id, "binding_ids")
+    deleted_bindings = utils.read_bindings(
+        binding_list_dir, set_id, "deleted_binding_ids"
+    )
 
-    if not bindings:
-        print("No new bindings after previous download.")
+    if not added_bindings and not deleted_bindings:
+        print("No new or deleted bindings after previous download.")
         return "cancel_pipeline"
     if not api_ok:
         dag_instance = newest_dag_run()
