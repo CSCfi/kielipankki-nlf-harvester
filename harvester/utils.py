@@ -231,15 +231,16 @@ def read_bindings(binding_list_dir, set_id, binding_file_prefix):
     binding_ids_all/col-861/binding_ids_2025-06-12
     """
     try:
-        binding_id_dates = [
+        binding_list_dates = [
             datetime.strptime(fname.split("_")[-1], "%Y-%m-%d").date()
             for fname in os.listdir(binding_list_dir / set_id)
         ]
     except FileNotFoundError:
         raise FileNotFoundError(f"No binding ID file found for set {set_id}")
-    latest = max(binding_id_dates)
+    latest_list_date = max(binding_list_dates)
     with open(
-        binding_list_dir / set_id / f"{binding_file_prefix}_{str(latest)}", "r"
+        binding_list_dir / set_id / f"{binding_file_prefix}_{str(latest_list_date)}",
+        "r",
     ) as f:
         bindings = f.read().splitlines()
     return bindings
