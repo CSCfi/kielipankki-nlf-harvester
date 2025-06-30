@@ -314,7 +314,7 @@ class PuhtiSshOperator(BaseOperator):
 
     def ssh_execute_and_raise(self, ssh_client, command):
         """
-        Run the given command and raise TargetCreationError on non-zero return value.
+        Run the given command and raise ShellCommandError on non-zero return value.
         """
         _, stdout, stderr = ssh_client.exec_command(command)
 
@@ -322,10 +322,11 @@ class PuhtiSshOperator(BaseOperator):
 
         exit_code = stdout.channel.recv_exit_status()
         if exit_code != 0:
-            error_message = "\n".join(stderr.readlines())
-            raise TargetCreationError(
-                f"Command {command} failed (exit code {exit_code}). Stderr output:\n"
-                f"{error_message}"
+            raise ShellCommandError(
+                exit_code=exit_code,
+                command=command,
+                stdout=stdout.read().decode("utf-8"),
+                stderr=stderr.read().decode("utf-8"),
             )
 
     def run_in_login_shell(self, ssh_client, payload_command, modules=""):
@@ -450,10 +451,24 @@ class RemoveDeletedBindingsOperator(PuhtiSshOperator):
         self.log.info("Deletion complete")
 
 
-class TargetCreationError(Exception):
+class ShellCommandError(Exception):
     """
-    Error raised when an error occurs during the distribution creation/overwrite process
+    Error raised when running a command via SSH fails
     """
+
+    def __init__(self, exit_code, command, stdout, stderr):
+        self.exit_code = exit_code
+        self.command = command
+        self.stdout = stdout
+        self.stderr = stderr
+
+        message = (
+            f"Command {self.command} failed (exit code {self.exit_code}).\n"
+            f"Stdout:\n{self.stdout}\n"
+            f"Stderr:\n{self.stderr}"
+        )
+
+        super().__init__(message)
 
 
 class DownloadBatchError(Exception):
