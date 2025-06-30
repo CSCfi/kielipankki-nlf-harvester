@@ -409,6 +409,10 @@ class RemoveDeletedBindingsOperator(PuhtiSshOperator):
 
     This does not affect old versions of the data set, but the deleted files will not be
     included in new zips any more.
+
+    It is not considered an error if some or all of the to-be-deleted bindings are not
+    found in the zip. This can happen e.g. when a binding is added and then removed
+    between our consecutive updates.
     """
 
     def __init__(
@@ -447,11 +451,17 @@ class RemoveDeletedBindingsOperator(PuhtiSshOperator):
         self.log.info("::endgroup::")
 
         with ssh_hook.get_conn() as ssh_client:
-            self.run_in_login_shell(
-                ssh_client,
-                f'zip -d {self.zip_path} {" ".join(deleted_binding_globs)}',
-                modules="libzip",
-            )
+            try:
+                self.run_in_login_shell(
+                    ssh_client,
+                    f'zip -d {self.zip_path} {" ".join(deleted_binding_globs)}',
+                    modules="libzip",
+                )
+            except ShellCommandError as e:
+                if e.exit_code == 12:
+                    self.log.info(
+                        f"None of the listed bindings were found in the zip: {e}"
+                    )
 
         self.log.info("Deletion complete")
 
