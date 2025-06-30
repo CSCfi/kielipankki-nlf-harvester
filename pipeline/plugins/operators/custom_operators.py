@@ -404,7 +404,12 @@ class CreateTargetOperator(PuhtiSshOperator):
 
 
 class RemoveDeletedBindingsOperator(PuhtiSshOperator):
-    """ """
+    """
+    Operatof for deleting files from our data set when they have been deleted at NLF.
+
+    This does not affect old versions of the data set, but the deleted files will not be
+    included in new zips any more.
+    """
 
     def __init__(
         self,
