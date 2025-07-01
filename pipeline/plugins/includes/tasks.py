@@ -128,14 +128,6 @@ def download_set(
                     new_target_path=(None if initial_download else target_path),
                 )
 
-                create_target = CreateTargetOperator(
-                    task_id=f"create_target_{subset_base_name}",
-                    trigger_rule="none_skipped",
-                    ssh_conn_id=ssh_conn_id,
-                    data_source=intermediate_zip_directory,
-                    target_path=target_path,
-                )
-
                 remove_deleted_bindings = RemoveDeletedBindingsOperator(
                     task_id=f"remove_deleted_bindings_{subset_base_name}",
                     ssh_conn_id=ssh_conn_id,
@@ -143,24 +135,35 @@ def download_set(
                     deleted_bindings_list=subset_split[subset]["deleted"],
                 )
 
-                (
-                    prepare_download_location
-                    >> StowBindingBatchOperator.partial(
-                        task_id="download_binding_batch",
+                if subset_split[subset]["added"]:
+                    create_target = CreateTargetOperator(
+                        task_id=f"create_target_{subset_base_name}",
                         trigger_rule="none_skipped",
                         ssh_conn_id=ssh_conn_id,
-                        tmp_download_directory=path_config["TMPDIR_ROOT"]
-                        / subset_base_name,
-                        intermediate_zip_directory=intermediate_zip_directory,
-                        api=api,
-                    ).expand(
-                        batch_with_index=utils.split_into_download_batches(
-                            subset_split[subset]["added"]
-                        )
+                        data_source=intermediate_zip_directory,
+                        target_path=target_path,
                     )
-                    >> create_target
-                    >> remove_deleted_bindings
-                )
+
+                    (
+                        prepare_download_location
+                        >> StowBindingBatchOperator.partial(
+                            task_id="download_binding_batch",
+                            trigger_rule="none_skipped",
+                            ssh_conn_id=ssh_conn_id,
+                            tmp_download_directory=path_config["TMPDIR_ROOT"]
+                            / subset_base_name,
+                            intermediate_zip_directory=intermediate_zip_directory,
+                            api=api,
+                        ).expand(
+                            batch_with_index=utils.split_into_download_batches(
+                                subset_split[subset]["added"]
+                            )
+                        )
+                        >> create_target
+                        >> remove_deleted_bindings
+                    )
+                else:
+                    (prepare_download_location >> remove_deleted_bindings)
 
             subset_download_tg = download_subset(prefix)
             if subset_downloads:
