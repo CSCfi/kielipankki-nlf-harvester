@@ -1,4 +1,5 @@
 from requests.exceptions import RequestException
+import zipfile
 
 from airflow.models import BaseOperator
 from airflow.providers.ssh.hooks.ssh import SSHHook
@@ -433,6 +434,33 @@ class RemoveDeletedBindingsOperator(PuhtiSshOperator):
             for dc_identifier in deleted_bindings_list
         ]
 
+    def empty_directories(self, all_entries):
+        """
+        Return a list of paths that correspond to empty directories.
+
+        The entries should be given as an iterable containing string representation of
+        the paths in the zip, similar to those reported by `unzip -l`. It is especially
+        important that directories in the listing have a trailing slash, as we rely on
+        that when differentiating files from directories.
+
+        The directories are identified on a O(n^2) single pass of inspecting each entry
+        in given list of entries in the zip to see whether there are files in that
+        directory or its subdirectories.
+
+        The returned paths are sorted so that the deeper directories always show up
+        first, e.g. "1/12/123" before "1/12" even if both of those can be deleted. This
+        should allow the deletions to be done smoothly and without wildcards.
+        """
+        files = [entry for entry in all_entries if not entry.endswith("/")]
+        directories = [entry for entry in all_entries if entry.endswith("/")]
+
+        empty_dirs = []
+        for d in directories:
+            if not any(entry != d and entry.startswith(d) for entry in files):
+                empty_dirs.append(d)
+
+        return list(reversed(sorted(empty_dirs)))
+
     def execute(self, context):
         if not self.deleted_binding_identifiers:
             self.log.info(f"No bindings to delete from {self.zip_path}")
@@ -466,6 +494,26 @@ class RemoveDeletedBindingsOperator(PuhtiSshOperator):
                     self.log.info(
                         f"None of the listed bindings were found in the zip: {e}"
                     )
+
+            sftp_client = ssh_client.open_sftp()
+            with zipfile.ZipFile(
+                sftp_client.open(str(self.zip_path), mode="r")
+            ) as zip_file:
+                all_entries = zip_file.namelist()
+
+            empty_dirs = self.empty_directories(all_entries)
+            if empty_dirs:
+
+                self.log.info("::group::Removing the following empty directories:")
+                for empty_dir in empty_dirs:
+                    self.log.info(empty_dir)
+                self.log.info("::endgroup::")
+
+                self.run_in_login_shell(
+                    ssh_client,
+                    f'zip -d {self.zip_path} {" ".join(empty_dirs)}',
+                    modules="libzip",
+                )
 
         self.log.info("Deletion complete")
 
