@@ -461,7 +461,7 @@ class RemoveDeletedBindingsOperator(PuhtiSshOperator):
 
         return list(reversed(sorted(empty_dirs)))
 
-    def delete_bindings(self, ssh_client):
+    def delete_bindings(self, ssh_client, zip_path):
         """
         Delete bindings that are listed in self.deleted_bindings_identifiers.
 
@@ -470,7 +470,7 @@ class RemoveDeletedBindingsOperator(PuhtiSshOperator):
         directories behind, if there are no other bindings that share the same binding
         ID prefix.
         """
-        self.log.info(f"::group::Removing the following bindings from {self.zip_path}")
+        self.log.info(f"::group::Removing the following bindings from {zip_path}")
         for deleted_binding in self.deleted_binding_identifiers:
             self.log.info(deleted_binding)
         self.log.info("::endgroup::")
@@ -487,22 +487,20 @@ class RemoveDeletedBindingsOperator(PuhtiSshOperator):
         try:
             self.run_in_login_shell(
                 ssh_client,
-                f'zip -d {self.zip_path} {" ".join(deleted_binding_globs)}',
+                f'zip -d {zip_path} {" ".join(deleted_binding_globs)}',
                 modules="libzip",
             )
         except ShellCommandError as e:
             if e.exit_code == 12:
                 self.log.info(f"None of the listed bindings were found in the zip: {e}")
 
-    def delete_empty_directories(self, ssh_client):
+    def delete_empty_directories(self, ssh_client, zip_path):
         """
         Scan the zip for empty directories and delete them.
         """
 
         sftp_client = ssh_client.open_sftp()
-        with zipfile.ZipFile(
-            sftp_client.open(str(self.zip_path), mode="r")
-        ) as zip_file:
+        with zipfile.ZipFile(sftp_client.open(str(zip_path), mode="r")) as zip_file:
             all_entries = zip_file.namelist()
 
         empty_dirs = self.empty_directories(all_entries)
@@ -524,11 +522,17 @@ class RemoveDeletedBindingsOperator(PuhtiSshOperator):
             self.log.info(f"No bindings to delete from {self.zip_path}")
             return
 
+        temp_zip_path = self.zip_path.with_name(f"{self.zip_path.name}.tmp")
+
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
-            self.delete_bindings(ssh_client)
+            ssh_client.exec_command(f"cp {self.zip_path} {temp_zip_path}")
 
-            self.delte_empty_directories(ssh_client)
+            self.delete_bindings(ssh_client, temp_zip_path)
+
+            self.delete_empty_directories(ssh_client, temp_zip_path)
+
+            ssh_client.exec_command(f"mv {temp_zip_path} {self.zip_path}")
 
         self.log.info("Deletion complete")
 
