@@ -22,7 +22,7 @@
     - name: Delete and recreate the bucket + repo in Allas
       ansible.builtin.shell: |
         module load allas
-        s3cmd del --recursive --force s3://harvester-versioning-dev
+        s3cmd del --recursive --force s3://harvester-versioning-dev --host=a3s.fi --host-bucket='%(bucket)s.a3s.fi'
         s3cmd mb s3://harvester-versioning-dev --host=a3s.fi --host-bucket='%(bucket)s.a3s.fi'
         restic init
       environment:
