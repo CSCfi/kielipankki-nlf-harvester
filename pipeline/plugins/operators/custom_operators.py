@@ -513,7 +513,7 @@ class RemoveDeletedBindingsOperator(PuhtiSshOperator):
 
             self.run_in_login_shell(
                 ssh_client,
-                f'zip -d {self.zip_path} {" ".join(empty_dirs)}',
+                f'zip -d {zip_path} {" ".join(empty_dirs)}',
                 modules="libzip",
             )
 
@@ -526,13 +526,17 @@ class RemoveDeletedBindingsOperator(PuhtiSshOperator):
 
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
-            ssh_client.exec_command(f"cp {self.zip_path} {temp_zip_path}")
+            self.ssh_execute_and_raise(
+                ssh_client, f"cp {self.zip_path} {temp_zip_path}"
+            )
 
             self.delete_bindings(ssh_client, temp_zip_path)
 
             self.delete_empty_directories(ssh_client, temp_zip_path)
 
-            ssh_client.exec_command(f"mv {temp_zip_path} {self.zip_path}")
+            self.ssh_execute_and_raise(
+                ssh_client, f"mv {temp_zip_path} {self.zip_path}"
+            )
 
         self.log.info("Deletion complete")
 
