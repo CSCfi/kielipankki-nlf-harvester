@@ -1,4 +1,5 @@
 from requests.exceptions import RequestException
+import zipfile
 
 from airflow.models import BaseOperator
 from airflow.providers.ssh.hooks.ssh import SSHHook
@@ -173,6 +174,10 @@ class StowBindingBatchOperator(BaseOperator):
         with ssh_hook.get_conn() as ssh_client:
             sftp_client = ssh_client.open_sftp()
             batch, batch_num = self.batch_with_index
+
+            if not batch:
+                self.log.info("No bindings to download")
+
             batch_root = self.tmp_download_directory / f"batch_{batch_num}"
             for dc_identifier in batch:
                 binding_id = utils.binding_id_from_dc(dc_identifier)
@@ -300,12 +305,69 @@ class PrepareDownloadLocationOperator(BaseOperator):
                 utils.ssh_execute(ssh_client, target_copy_command)
 
 
-class CreateTargetOperator(BaseOperator):
+class PuhtiSshOperator(BaseOperator):
     """
-    Create a final distribution target of the given source data.
+    Base class for operators that need to use Puhti like users do: load modules etc.
+    """
+
+    def __init__(self, ssh_conn_id, **kwargs):
+        super().__init__(**kwargs)
+        self.ssh_conn_id = ssh_conn_id
+
+    def execute(self, context):
+        raise NotImplementedError("Must be implemented in subclasses")
+
+    def ssh_execute_and_raise(self, ssh_client, command):
+        """
+        Run the given command and raise ShellCommandError on non-zero return value.
+        """
+        _, stdout, stderr = ssh_client.exec_command(command)
+
+        self.log.debug(stdout)
+
+        exit_code = stdout.channel.recv_exit_status()
+        if exit_code != 0:
+            raise ShellCommandError(
+                exit_code=exit_code,
+                command=command,
+                stdout=stdout.read().decode("utf-8"),
+                stderr=stderr.read().decode("utf-8"),
+            )
+
+    def run_in_login_shell(self, ssh_client, payload_command, modules=""):
+        """
+        Run a command on Puhti login shell as a human user would.
+
+        :param payload_command: Command to be run
+        :type payload_command: str
+        :param modules: Modules to be loaded, separated by space, e.g. "libzip allas"
+        :type modules: str
+
+        """
+        if modules:
+            modules_command = f"module load {modules} && "
+        else:
+            modules_command = ""
+
+        full_command = (
+            "/bin/bash -lc "
+            '"'
+            ". /appl/profile/zz-csc-env.sh && "
+            f"{modules_command}"
+            f"{payload_command}"
+            '"'
+        )
+
+        self.ssh_execute_and_raise(ssh_client, full_command)
+
+
+class CreateTargetOperator(PuhtiSshOperator):
+    """
+    Merge intermediate zips into a single distribution target.
 
     The target file is first created/updated in target_path. If everything
-    is successful, it's finally moved to the final location in the publish_to_users task.
+    is successful, it can be processed further and finally moved to the final location
+    in the publish_to_users task.
 
     :param ssh_conn_id: SSH connection id
     :param data_source: Path to the directory that contains the intermediate .zip files
@@ -321,38 +383,22 @@ class CreateTargetOperator(BaseOperator):
         target_path,
         **kwargs,
     ):
-        super().__init__(**kwargs)
-        self.ssh_conn_id = ssh_conn_id
+        super().__init__(ssh_conn_id=ssh_conn_id, **kwargs)
         self.data_source = data_source
         self.target_path = target_path
-
-    def ssh_execute_and_raise(self, ssh_client, command):
-        """
-        Run the given command and raise TargetCreationError on non-zero return value.
-        """
-        _, stdout, stderr = ssh_client.exec_command(command)
-
-        self.log.debug(stdout)
-
-        exit_code = stdout.channel.recv_exit_status()
-        if exit_code != 0:
-            error_message = "\n".join(stderr.readlines())
-            raise TargetCreationError(
-                f"Command {command} failed (exit code {exit_code}). Stderr output:\n"
-                f"{error_message}"
-            )
 
     def execute(self, context):
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
-            # zipmerge -k will skip compression for files that were not compressed in the source zips
-            zip_creation_cmd = f'/bin/bash -lc ". /appl/profile/zz-csc-env.sh && module load libzip && zipmerge -k {self.target_path} {self.data_source/"*"}"'
             self.log.info(
                 "Merging intermediate zips into %s on Puhti", self.target_path
             )
-            self.ssh_execute_and_raise(
+
+            # zipmerge -k will skip compression for files that were not compressed in the source zips
+            self.run_in_login_shell(
                 ssh_client,
-                zip_creation_cmd,
+                f'zipmerge -k {self.target_path} {self.data_source/"*"}',
+                modules="libzip",
             )
 
             self.log.info(
@@ -362,13 +408,154 @@ class CreateTargetOperator(BaseOperator):
             self.ssh_execute_and_raise(ssh_client, f"rm -r {self.data_source}")
 
 
-class TargetCreationError(Exception):
+class RemoveDeletedBindingsOperator(PuhtiSshOperator):
     """
-    Error raised when an error occurs during the distribution creation/overwrite process
+    Operatof for deleting files from our data set when they have been deleted at NLF.
+
+    This does not affect old versions of the data set, but the deleted files will not be
+    included in new zips any more.
+
+    It is not considered an error if some or all of the to-be-deleted bindings are not
+    found in the zip. This can happen e.g. when a binding is added and then removed
+    between our consecutive updates.
     """
 
+    def __init__(
+        self,
+        ssh_conn_id,
+        zip_path,
+        deleted_bindings_list,
+        **kwargs,
+    ):
+        super().__init__(ssh_conn_id=ssh_conn_id, **kwargs)
+        self.zip_path = zip_path
+        self.deleted_binding_identifiers = [
+            utils.binding_id_from_dc(dc_identifier)
+            for dc_identifier in deleted_bindings_list
+        ]
 
-class DownloadBatchError(Exception):
+    def empty_directories(self, all_entries):
+        """
+        Return a list of paths that correspond to empty directories.
+
+        The entries should be given as an iterable containing string representation of
+        the paths in the zip, similar to those reported by `unzip -l`. It is especially
+        important that directories in the listing have a trailing slash, as we rely on
+        that when differentiating files from directories.
+
+        The directories are identified on a O(n^2) single pass of inspecting each entry
+        in given list of entries in the zip to see whether there are files in that
+        directory or its subdirectories.
+
+        The returned paths are sorted so that the deeper directories always show up
+        first, e.g. "1/12/123" before "1/12" even if both of those can be deleted. This
+        should allow the deletions to be done smoothly and without wildcards.
+        """
+        files = [entry for entry in all_entries if not entry.endswith("/")]
+        directories = [entry for entry in all_entries if entry.endswith("/")]
+
+        empty_dirs = []
+        for d in directories:
+            if not any(entry != d and entry.startswith(d) for entry in files):
+                empty_dirs.append(d)
+
+        return list(reversed(sorted(empty_dirs)))
+
+    def delete_bindings(self, ssh_client, zip_path):
+        """
+        Delete bindings that are listed in self.deleted_bindings_identifiers.
+
+        This only deletes the binding directory and files within, e.g. for binding 123
+        we delete the directory 1/12/123/123 and everything within. This can leave empty
+        directories behind, if there are no other bindings that share the same binding
+        ID prefix.
+        """
+        self.log.info(f"::group::Removing the following bindings from {zip_path}")
+        for deleted_binding in self.deleted_binding_identifiers:
+            self.log.info(deleted_binding)
+        self.log.info("::endgroup::")
+
+        deleted_binding_globs = [
+            utils.binding_download_location(binding_id) + "/*"
+            for binding_id in self.deleted_binding_identifiers
+        ]
+        self.log.info("::group::These correspond to the following subdirectories:")
+        for deleted_binding_directory in deleted_binding_globs:
+            self.log.info(deleted_binding_directory)
+        self.log.info("::endgroup::")
+
+        try:
+            self.run_in_login_shell(
+                ssh_client,
+                f'zip -d {zip_path} {" ".join(deleted_binding_globs)}',
+                modules="libzip",
+            )
+        except ShellCommandError as e:
+            if e.exit_code == 12:
+                self.log.info(f"None of the listed bindings were found in the zip: {e}")
+
+    def delete_empty_directories(self, ssh_client, zip_path):
+        """
+        Scan the zip for empty directories and delete them.
+        """
+
+        sftp_client = ssh_client.open_sftp()
+        with zipfile.ZipFile(sftp_client.open(str(zip_path), mode="r")) as zip_file:
+            all_entries = zip_file.namelist()
+
+        empty_dirs = self.empty_directories(all_entries)
+        if empty_dirs:
+
+            self.log.info("::group::Removing the following empty directories:")
+            for empty_dir in empty_dirs:
+                self.log.info(empty_dir)
+            self.log.info("::endgroup::")
+
+            self.run_in_login_shell(
+                ssh_client,
+                f'zip -d {zip_path} {" ".join(empty_dirs)}',
+                modules="libzip",
+            )
+
+    def execute(self, context):
+        if not self.deleted_binding_identifiers:
+            self.log.info(f"No bindings to delete from {self.zip_path}")
+            return
+
+        temp_zip_path = self.zip_path.with_name(f"{self.zip_path.name}.tmp")
+
+        ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
+        with ssh_hook.get_conn() as ssh_client:
+            self.ssh_execute_and_raise(
+                ssh_client, f"cp {self.zip_path} {temp_zip_path}"
+            )
+
+            self.delete_bindings(ssh_client, temp_zip_path)
+
+            self.delete_empty_directories(ssh_client, temp_zip_path)
+
+            self.ssh_execute_and_raise(
+                ssh_client, f"mv {temp_zip_path} {self.zip_path}"
+            )
+
+        self.log.info("Deletion complete")
+
+
+class ShellCommandError(Exception):
     """
-    Error raised when an error occurs during the downloading and storing of a download batch
+    Error raised when running a command via SSH fails
     """
+
+    def __init__(self, exit_code, command, stdout, stderr):
+        self.exit_code = exit_code
+        self.command = command
+        self.stdout = stdout
+        self.stderr = stderr
+
+        message = (
+            f"Command {self.command} failed (exit code {self.exit_code}).\n"
+            f"Stdout:\n{self.stdout}\n"
+            f"Stderr:\n{self.stderr}"
+        )
+
+        super().__init__(message)
