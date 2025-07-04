@@ -461,13 +461,15 @@ class RemoveDeletedBindingsOperator(PuhtiSshOperator):
 
         return list(reversed(sorted(empty_dirs)))
 
-    def execute(self, context):
-        if not self.deleted_binding_identifiers:
-            self.log.info(f"No bindings to delete from {self.zip_path}")
-            return
+    def delete_bindings(self, ssh_client):
+        """
+        Delete bindings that are listed in self.deleted_bindings_identifiers.
 
-        ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
-
+        This only deletes the binding directory and files within, e.g. for binding 123
+        we delete the directory 1/12/123/123 and everything within. This can leave empty
+        directories behind, if there are no other bindings that share the same binding
+        ID prefix.
+        """
         self.log.info(f"::group::Removing the following bindings from {self.zip_path}")
         for deleted_binding in self.deleted_binding_identifiers:
             self.log.info(deleted_binding)
@@ -482,38 +484,51 @@ class RemoveDeletedBindingsOperator(PuhtiSshOperator):
             self.log.info(deleted_binding_directory)
         self.log.info("::endgroup::")
 
+        try:
+            self.run_in_login_shell(
+                ssh_client,
+                f'zip -d {self.zip_path} {" ".join(deleted_binding_globs)}',
+                modules="libzip",
+            )
+        except ShellCommandError as e:
+            if e.exit_code == 12:
+                self.log.info(f"None of the listed bindings were found in the zip: {e}")
+
+    def delete_empty_directories(self, ssh_client):
+        """
+        Scan the zip for empty directories and delete them.
+        """
+
+        sftp_client = ssh_client.open_sftp()
+        with zipfile.ZipFile(
+            sftp_client.open(str(self.zip_path), mode="r")
+        ) as zip_file:
+            all_entries = zip_file.namelist()
+
+        empty_dirs = self.empty_directories(all_entries)
+        if empty_dirs:
+
+            self.log.info("::group::Removing the following empty directories:")
+            for empty_dir in empty_dirs:
+                self.log.info(empty_dir)
+            self.log.info("::endgroup::")
+
+            self.run_in_login_shell(
+                ssh_client,
+                f'zip -d {self.zip_path} {" ".join(empty_dirs)}',
+                modules="libzip",
+            )
+
+    def execute(self, context):
+        if not self.deleted_binding_identifiers:
+            self.log.info(f"No bindings to delete from {self.zip_path}")
+            return
+
+        ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
-            try:
-                self.run_in_login_shell(
-                    ssh_client,
-                    f'zip -d {self.zip_path} {" ".join(deleted_binding_globs)}',
-                    modules="libzip",
-                )
-            except ShellCommandError as e:
-                if e.exit_code == 12:
-                    self.log.info(
-                        f"None of the listed bindings were found in the zip: {e}"
-                    )
+            self.delete_bindings(ssh_client)
 
-            sftp_client = ssh_client.open_sftp()
-            with zipfile.ZipFile(
-                sftp_client.open(str(self.zip_path), mode="r")
-            ) as zip_file:
-                all_entries = zip_file.namelist()
-
-            empty_dirs = self.empty_directories(all_entries)
-            if empty_dirs:
-
-                self.log.info("::group::Removing the following empty directories:")
-                for empty_dir in empty_dirs:
-                    self.log.info(empty_dir)
-                self.log.info("::endgroup::")
-
-                self.run_in_login_shell(
-                    ssh_client,
-                    f'zip -d {self.zip_path} {" ".join(empty_dirs)}',
-                    modules="libzip",
-                )
+            self.delte_empty_directories(ssh_client)
 
         self.log.info("Deletion complete")
 
