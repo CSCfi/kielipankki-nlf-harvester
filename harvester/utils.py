@@ -234,6 +234,7 @@ def read_bindings(binding_list_dir, set_id, binding_file_prefix):
         binding_list_dates = [
             datetime.strptime(fname.split("_")[-1], "%Y-%m-%d").date()
             for fname in os.listdir(binding_list_dir / set_id)
+            if not fname.endswith(".swp")
         ]
     except FileNotFoundError:
         raise FileNotFoundError(f"No binding ID file found for set {set_id}")
