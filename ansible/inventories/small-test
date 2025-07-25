@@ -11,8 +11,10 @@ all:
           flavor: standard.small
           key_name: "{{ project_key }}"
           security_groups: "{{ project_security_groups }}"
+          network: "{{ network }}"
           meta:
-            group: default
+            group: "{{ instance_name }}"
+            hostname: "{{ pouta_instance_name }}"
   children:
     airflow:
       hosts:
@@ -23,3 +25,10 @@ all:
       hosts:
         puhti.csc.fi:
           ansible_user: "{{ puhti_robot_user }}"
+  vars:
+    pipeline_extra_bin_dir: "/projappl/project_2006633/local/bin/harvester-smalltest"
+    harvested_collections:
+      - id: col-861
+        subset_size: 100000
+    restic_repository_bucket: harvester-versioning-smalltest
+    restic_progress_fps: 0.1
