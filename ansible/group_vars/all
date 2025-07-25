@@ -25,7 +25,6 @@ restic_repository: "s3:https://a3s.fi/{{ restic_repository_bucket }}"
 restic_progress_fps: 0.003333333  # One update every 5 minutes
 
 puhti_robot_user: "robot_2006633_puhti"
-puhti_robot_password: "{{ lookup('passwordstore', 'lb_passwords/airflow/robot_2006633_puhti') }}"
 puhti_robot_ssh_key_path: "/home/{{ ansible_user }}/.ssh/id_ed25519_robot_2006633_puhti"
 
 puhti_conn_conf:
