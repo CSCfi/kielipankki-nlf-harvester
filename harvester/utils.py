@@ -104,8 +104,8 @@ def split_into_download_batches(bindings):
     """
     Split a subset into download batches.
 
-    Return a list of tuples, containing the batch itself and the batch index. If there
-    are no bindings, returns None instead.
+    Return a list of tuples, containing the batch itself and the batch index. Raises a
+    ValueError if given list of bindings is empty.
     """
     subset_size = len(bindings)
 
