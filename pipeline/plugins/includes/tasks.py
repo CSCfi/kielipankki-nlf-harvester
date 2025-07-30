@@ -20,7 +20,7 @@ from operators.custom_operators import (
 
 
 @task.branch(task_id="check_if_download_should_begin")
-def check_if_download_should_begin(set_id, binding_list_dir, http_conn_id):
+def check_if_download_should_begin(set_id, binding_list_dir, http_conn_id, path_config):
     """
     Check if API is responding and if there are new bindings to download.
     If not, cancel pipeline.
@@ -41,9 +41,11 @@ def check_if_download_should_begin(set_id, binding_list_dir, http_conn_id):
     except RequestException:
         api_ok = False
 
-    added_bindings = utils.read_bindings(binding_list_dir, set_id, "binding_ids")
+    added_bindings = utils.read_bindings(
+        binding_list_dir, set_id, path_config["ADDED_BINDINGS_PREFIX"]
+    )
     deleted_bindings = utils.read_bindings(
-        binding_list_dir, set_id, "deleted_binding_ids"
+        binding_list_dir, set_id, path_config["DELETED_BINDINGS_PREFIX"]
     )
 
     if not added_bindings and not deleted_bindings:
@@ -72,10 +74,10 @@ def download_set(
     path_config,
 ):
     added_bindings = utils.read_bindings(
-        path_config["BINDING_LIST_DIR"], set_id, "binding_ids"
+        path_config["BINDING_LIST_DIR"], set_id, path_config["ADDED_BINDINGS_PREFIX"]
     )
     deleted_bindings = utils.read_bindings(
-        path_config["BINDING_LIST_DIR"], set_id, "deleted_binding_ids"
+        path_config["BINDING_LIST_DIR"], set_id, path_config["DELETED_BINDINGS_PREFIX"]
     )
 
     prefixes = [str(i) for i in range(10, 20)] + [str(i) for i in range(2, 10)]

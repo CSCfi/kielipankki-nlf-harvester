@@ -40,6 +40,7 @@ def fetch_bindings_dag():
 
     http_conn = BaseHook.get_connection(HTTP_CONN_ID)
     api = PMH_API(url=http_conn.host)
+    path_config = Variable.get("path_config", deserialize_json=True)
 
     @task_group(group_id="save_bindings")
     def save_ids():
@@ -61,7 +62,8 @@ def fetch_bindings_dag():
                 print(f"Fetching bindings for collection {set_id} since {last_run}")
 
             with open(
-                f"{folder_path}/binding_ids_{date.today()}", "w"
+                f"{folder_path}/{path_config['ADDED_BINDINGS_PREFIX']}_{date.today()}",
+                "w",
             ) as new_bindings_file:
 
                 try:
@@ -71,7 +73,12 @@ def fetch_bindings_dag():
                     print(f"No new bindings after date {last_run} for set {set_id}")
 
             with open(
-                f"{folder_path}/deleted_binding_ids_{date.today()}", "w"
+                (
+                    f"{folder_path}"
+                    "/"
+                    f"{path_config['DELETED_BINDINGS_PREFIX']}_{date.today()}"
+                ),
+                "w",
             ) as deleted_bindings_file:
                 for item in api.deleted_dc_identifiers(set_id, from_date=last_run):
                     deleted_bindings_file.write(item + "\n")
