@@ -6,7 +6,9 @@
       "TMPDIR_ROOT": "{{ pipeline_tmpdir_root }}",
       "EXTRA_BIN_DIR": "{{ pipeline_extra_bin_dir }}",
       "SUBSET_SPLIT_DIR": "{{ pipeline_subset_split_dir }}",
-      "BINDING_LIST_DIR": "{{ pipeline_binding_list_dir }}"
+      "BINDING_LIST_DIR": "{{ pipeline_binding_list_dir }}",
+      "ADDED_BINDINGS_PREFIX": "{{ pipeline_added_bindings_prefix }}",
+      "DELETED_BINDINGS_PREFIX": "{{ pipeline_deleted_bindings_prefix }}"
   },
   "collections": [
   {% for item in harvested_collections -%}

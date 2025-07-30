@@ -62,6 +62,7 @@ for col in Variable.get("collections", deserialize_json=True):
             set_id=col["id"],
             binding_list_dir=path_config["BINDING_LIST_DIR"],
             http_conn_id=HTTP_CONN_ID,
+            path_config=path_config,
         ) >> [
             begin_download,
             cancel_pipeline,

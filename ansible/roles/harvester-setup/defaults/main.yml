@@ -6,6 +6,8 @@ pipeline_output_dir: "/scratch/project_2006633/harvester-dev"
 pipeline_tmpdir_root: "/local_scratch/{{ puhti_robot_user }}/harvester-dev"
 pipeline_subset_split_dir: "/home/{{ ansible_user }}/subset_split"
 pipeline_binding_list_dir: "/home/{{ ansible_user }}/binding_ids_all"
+pipeline_added_bindings_prefix: "binding_ids"
+pipeline_deleted_bindings_prefix: "deleted_binding_ids"
 harvested_collections:
   - id: col-861
     subset_size: 100000
