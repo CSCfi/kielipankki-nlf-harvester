@@ -175,9 +175,6 @@ class StowBindingBatchOperator(BaseOperator):
             sftp_client = ssh_client.open_sftp()
             batch, batch_num = self.batch_with_index
 
-            if not batch:
-                self.log.info("No bindings to download")
-
             batch_root = self.tmp_download_directory / f"batch_{batch_num}"
             for dc_identifier in batch:
                 binding_id = utils.binding_id_from_dc(dc_identifier)
