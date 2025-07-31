@@ -83,14 +83,19 @@ def download_set(
     prefixes = [str(i) for i in range(10, 20)] + [str(i) for i in range(2, 10)]
 
     if initial_download:
-        subset_split = utils.assign_bindings_to_subsets(added_bindings, [], prefixes)
+        subset_split = utils.assign_bindings_to_subsets(
+            added_bindings_dc_identifiers=added_bindings,
+            deleted_bindings_dc_identifiers=[],
+            prefixes=prefixes,
+        )
         utils.save_subset_split(subset_split, path_config["SUBSET_SPLIT_DIR"], set_id)
 
     else:
         subset_split = utils.assign_update_bindings_to_subsets(
-            added_bindings,
-            deleted_bindings,
-            path_config["SUBSET_SPLIT_DIR"] / f"{set_id}_subsets.json",
+            added_bindings_dc_identifiers=added_bindings,
+            deleted_bindings_dc_identifiers=deleted_bindings,
+            subset_split_file=path_config["SUBSET_SPLIT_DIR"]
+            / f"{set_id}_subsets.json",
         )
 
     subset_downloads = []
