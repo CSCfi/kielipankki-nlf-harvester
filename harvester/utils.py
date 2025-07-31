@@ -177,7 +177,7 @@ def subset_for_binding(dc_identifier, subset_split):
 
 
 def assign_update_bindings_to_subsets(
-    added_bindings, deleted_bindings, subset_split_file
+    added_bindings_dc_identifiers, deleted_bindings_dc_identifiers, subset_split_file
 ):
     """
     Assign an incoming list of new bindings into existing disk subsets
@@ -209,8 +209,8 @@ def assign_update_bindings_to_subsets(
         subset_split = json.load(json_file)
     existing_subsets = {}
     for identifiers, key_name in (
-        [added_bindings, "added"],
-        [deleted_bindings, "deleted"],
+        [added_bindings_dc_identifiers, "added"],
+        [deleted_bindings_dc_identifiers, "deleted"],
     ):
         for dc_identifier in identifiers:
             subset = subset_for_binding(dc_identifier, subset_split)
