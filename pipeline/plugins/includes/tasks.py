@@ -161,6 +161,7 @@ def download_set(
                             / subset_base_name,
                             intermediate_zip_directory=intermediate_zip_directory,
                             api=api,
+                            retries=2,
                         ).expand(
                             batch_with_index=utils.split_into_download_batches(
                                 subset_split[subset]["added"]
@@ -210,6 +211,76 @@ def publish_to_users(ssh_conn_id, source, destination):
             source_filename = source / filename
             destination_filename = destination / filename
             sftp_client.posix_rename(str(source_filename), str(destination_filename))
+
+
+@task(task_id="generate_listings")
+def generate_listings(ssh_conn_id, set_id, published_data_dir):
+    """
+    The following listings in the listings directory are generated:
+      * bindings that were successfully added
+      * bindings that were supposed to be added, but failed
+      * bindings that were deleted
+      * bindings that were supposed to be deleted, but are still present
+    If a listing is empty, it is not generated.
+
+    """
+    added_binding_ids = set(
+        [
+            url.split("/")[-1]
+            for url in utils.read_bindings(
+                path_config["BINDING_LIST_DIR"],
+                set_id,
+                path_config["ADDED_BINDINGS_PREFIX"],
+            )
+        ]
+    )
+    deleted_binding_ids = set(
+        [
+            url.split("/")[-1]
+            for url in utils.read_bindings(
+                path_config["BINDING_LIST_DIR"],
+                set_id,
+                path_config["DELETED_BINDINGS_PREFIX"],
+            )
+        ]
+    )
+
+    ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
+    with ssh_hook.get_conn() as ssh_client:
+        _, stdout, stderr = ssh_client.exec_command(
+            'find {published_data_dir} -type f -name "*.zip" -exec unzip -l {} \; | grep -Po "[0-9]+(?=_METS)"'
+        )
+    binding_ids_with_mets_files = set(stdout.split("\n"))
+    binding_ids_added_successfully = added_binding_ids.intersection(
+        binding_ids_with_mets_files
+    )
+    binding_ids_failed_to_add = added_binding_ids.difference(
+        binding_ids_with_mets_files
+    )
+    binding_ids_deleted_successfully = deleted_binding_ids.difference(
+        binding_ids_with_mets_files
+    )
+    binding_ids_failed_to_delete = deleted_binding_ids.intersection(
+        binding_ids_with_mets_files
+    )
+
+    listings = [
+        ("added_bindings", binding_ids_added_successfully),
+        ("added_bindings_FAILED", binding_ids_failed_to_add),
+        ("deleted_bindings", binding_ids_deleted_successfully),
+        ("deleted_bindings_FAILED", binding_ids_failed_to_delete),
+    ]
+
+    listing_dir = path_config["OUTPUT_DIR"] / "listings" / date.today()
+    with ssh_hook.get_conn() as ssh_client:
+        _, stdout, stderr = ssh_client.exec_command(f"mkdir -p {listing_dir}")
+
+    for listing in listings:
+        if len(listing[1]) == 0:
+            continue
+        with open(listing_dir / listing[0], "w") as listing_file:
+            for _id in listing[1]:
+                listing_file.write(_id + "\n")
 
 
 @task(task_id="create_restic_snapshot", trigger_rule="all_done")
