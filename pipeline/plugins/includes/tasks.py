@@ -84,8 +84,8 @@ def download_set(
 
     if initial_download:
         subset_split = utils.assign_bindings_to_subsets(
-            added_bindings_dc_identifiers=added_bindings,
-            deleted_bindings_dc_identifiers=[],
+            added_binding_dc_identifiers=added_bindings,
+            deleted_binding_dc_identifiers=[],
             prefixes=prefixes,
         )
         utils.save_subset_split(subset_split, path_config["SUBSET_SPLIT_DIR"], set_id)
