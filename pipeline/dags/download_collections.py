@@ -19,6 +19,7 @@ from includes.tasks import (
     clear_temporary_directory,
     create_restic_snapshot,
     publish_to_users,
+    generate_listings,
 )
 from harvester.pmh_interface import PMH_API
 
@@ -85,6 +86,11 @@ for col in Variable.get("collections", deserialize_json=True):
                 ssh_conn_id=SSH_CONN_ID,
                 source=zip_creation_dir,
                 destination=published_data_dir,
+            )
+            >> generate_listings(
+                ssh_conn_id=SSH_CONN_ID,
+                set_id=col["id"],
+                published_data_dir=published_data_dir,
             )
             >> create_restic_snapshot(
                 SSH_CONN_ID,
