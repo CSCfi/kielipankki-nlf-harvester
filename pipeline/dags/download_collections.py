@@ -91,6 +91,7 @@ for col in Variable.get("collections", deserialize_json=True):
                 ssh_conn_id=SSH_CONN_ID,
                 set_id=col["id"],
                 published_data_dir=published_data_dir,
+                path_config=path_config,
             )
             >> create_restic_snapshot(
                 SSH_CONN_ID,
