@@ -271,16 +271,32 @@ def generate_listings(ssh_conn_id, set_id, published_data_dir, path_config):
         ("deleted_bindings_FAILED", binding_ids_failed_to_delete),
     ]
 
-    listing_dir = path_config["OUTPUT_DIR"] / "listings" / date.today()
+    if all([len(listing[1]) == 0 for listing in listings]):
+        # If all listings would be empty, don't write listings
+        return
+
+    # Set up the paths for today's listings, both in the Airflow machine and Puhti
+    puhti_listing_dir = path_config["OUTPUT_DIR"] / "listings" / date.today()
     with ssh_hook.get_conn() as ssh_client:
-        _, stdout, stderr = ssh_client.exec_command(f"mkdir -p {listing_dir}")
+        _, stdout, stderr = ssh_client.exec_command(f"mkdir -p {puhti_listing_dir}")
+    airflow_listing_dir = path_config["AIRFLOW_LISTINGS_DIR"] / date.today()
+    if not os.path.isdir(airflow_listing_dir):
+        os.makedirs(folder_path)
 
     for listing in listings:
         if len(listing[1]) == 0:
+            # Skip if empty
             continue
-        with open(listing_dir / listing[0], "w") as listing_file:
+        with open(airflow_listing_dir / listing[0], "w") as listing_file:
             for _id in listing[1]:
+                # Write to Airflow
                 listing_file.write(_id + "\n")
+                with ssh_hook.get_conn() as ssh_client:
+                    sftp_client = ssh_client.open_sftp()
+                    # Then copy to Puhti
+                    sftp_client.put(
+                        airflow_listing_dir / listing[0], puhti_listing_dir / listing[0]
+                    )
 
 
 @task(task_id="create_restic_snapshot", trigger_rule="all_done")
