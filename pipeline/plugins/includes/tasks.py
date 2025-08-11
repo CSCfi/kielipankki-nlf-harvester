@@ -214,7 +214,7 @@ def publish_to_users(ssh_conn_id, source, destination):
 
 
 @task(task_id="generate_listings")
-def generate_listings(ssh_conn_id, set_id, published_data_dir):
+def generate_listings(ssh_conn_id, set_id, published_data_dir, path_config):
     """
     The following listings in the listings directory are generated:
       * bindings that were successfully added
