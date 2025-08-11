@@ -265,10 +265,10 @@ def generate_listings(ssh_conn_id, set_id, published_data_dir, path_config):
     )
 
     listings = [
-        ("added_bindings", binding_ids_added_successfully),
-        ("added_bindings_FAILED", binding_ids_failed_to_add),
-        ("deleted_bindings", binding_ids_deleted_successfully),
-        ("deleted_bindings_FAILED", binding_ids_failed_to_delete),
+        ("added_bindings.txt", binding_ids_added_successfully),
+        ("added_bindings_FAILED.txt", binding_ids_failed_to_add),
+        ("deleted_bindings.txt", binding_ids_deleted_successfully),
+        ("deleted_bindings_FAILED.txt", binding_ids_failed_to_delete),
     ]
 
     if all([len(listing[1]) == 0 for listing in listings]):

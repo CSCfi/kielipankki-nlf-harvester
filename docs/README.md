@@ -58,6 +58,14 @@ Versions of the data set will also be made available as [`restic`](https://resti
 
 See [versioning.md](versioning.md) for more information about previous versions of the dataset and how to access them.
 
+### Listings
+
+Listings of added and deleted files are maintained for each version. On Puhti, these are available under `/scratch/project_2006633/nlf-harvester/zip/listings`. Each time an update makes a modification to the zip files, a subdirectory for that date is created, eg. `/scratch/project_2006633/nlf-harvester/zip/listings/2025-08-11`. There, one or more of the following files will be generated:
+
+* `added_bindings.txt`: list of binding IDs that were added
+* `deleted_bindings.txt`: list of binding IDs that were deleted
+* `added_bindings_FAILED.txt`: list of binding IDs that were unsuccessfully attempted to retrieve
+* `deleted_bindings_FAILED.txt`: list of binding IDs that were unsuccessfully attempted to delete
 
 ## Structure of the dataset
 
