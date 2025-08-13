@@ -299,7 +299,8 @@ def generate_listings(ssh_conn_id, set_id, published_data_dir, path_config):
                     sftp_client = ssh_client.open_sftp()
                     # Then copy to Puhti
                     sftp_client.put(
-                        airflow_listing_dir / listing[0], puhti_listing_dir / listing[0]
+                        str(airflow_listing_dir / listing[0]),
+                        str(puhti_listing_dir / listing[0]),
                     )
 
 
