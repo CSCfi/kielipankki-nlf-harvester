@@ -6,6 +6,7 @@ from airflow.models import DagRun
 from requests.exceptions import RequestException
 
 import yaml
+from datetime import date
 
 # pylint does not understand that custom operators are not third party code
 # pylint: disable=wrong-import-order
