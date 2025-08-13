@@ -293,15 +293,15 @@ def generate_listings(ssh_conn_id, set_id, published_data_dir, path_config):
             continue
         with open(airflow_listing_dir / listing[0], "w") as listing_file:
             for _id in listing[1]:
-                # Write to Airflow
+                # Write to Airflow machine
                 listing_file.write(_id + "\n")
-                with ssh_hook.get_conn() as ssh_client:
-                    sftp_client = ssh_client.open_sftp()
-                    # Then copy to Puhti
-                    sftp_client.put(
-                        str(airflow_listing_dir / listing[0]),
-                        str(puhti_listing_dir / listing[0]),
-                    )
+        with ssh_hook.get_conn() as ssh_client:
+            sftp_client = ssh_client.open_sftp()
+            # Then copy to Puhti
+            sftp_client.put(
+                str(airflow_listing_dir / listing[0]),
+                str(puhti_listing_dir / listing[0]),
+            )
 
 
 @task(task_id="create_restic_snapshot", trigger_rule="all_done")
