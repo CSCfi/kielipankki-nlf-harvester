@@ -1,3 +1,4 @@
 click
 lxml
 sickle
+python-dateutil
