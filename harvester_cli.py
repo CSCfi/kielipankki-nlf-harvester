@@ -199,6 +199,7 @@ def check_zip_integrity(zip_file_path, binding_id_list_file, guess_prefix):
                                 f"{basepath}/alto/{contentfile.filename}"
                                 not in zip_file_namelist
                             ):
+                                errors_found += 1
                                 click.echo(
                                     f"  {binding_id}: missing ALTO: {contentfile.filename}"
                                 )
@@ -207,6 +208,7 @@ def check_zip_integrity(zip_file_path, binding_id_list_file, guess_prefix):
                                 f"{basepath}/access_img/pr-{contentfile.filename}"
                                 not in zip_file_namelist
                             ):
+                                errors_found += 1
                                 click.echo(
                                     f"  {binding_id}: missing img: {contentfile.filename}"
                                 )
