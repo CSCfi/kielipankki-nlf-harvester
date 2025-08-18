@@ -198,6 +198,8 @@ def check_zip_integrity(zip_file_path, binding_id_list_file, guess_prefix):
                             if (
                                 f"{basepath}/alto/{contentfile.filename}"
                                 not in zip_file_namelist
+                                and f"{basepath}/alto/al-{contentfile.filename}"
+                                not in zip_file_namelist
                             ):
                                 errors_found += 1
                                 click.echo(
@@ -205,7 +207,9 @@ def check_zip_integrity(zip_file_path, binding_id_list_file, guess_prefix):
                                 )
                         else:
                             if (
-                                f"{basepath}/access_img/pr-{contentfile.filename}"
+                                f"{basepath}/access_img/{contentfile.filename}"
+                                not in zip_file_namelist
+                                and f"{basepath}/access_img/pr-{contentfile.filename}"
                                 not in zip_file_namelist
                             ):
                                 errors_found += 1
