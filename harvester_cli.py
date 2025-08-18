@@ -231,9 +231,6 @@ def check_zip_integrity(zip_file_path, binding_id_list_file, guess_prefix):
     click.echo(f"Found {errors_found} errors")
 
 
-# mets/
-# alto/
-# access_img/pr-
 
 if __name__ == "__main__":
     cli()  # pylint: disable=no-value-for-parameter
