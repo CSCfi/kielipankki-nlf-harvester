@@ -149,6 +149,28 @@ def check_zip_integrity(zip_file_path, binding_id_list_file, guess_prefix):
     For each ID in binding_id_list_file, check that there is a METS associated
     with it, and that the files referenced by the METS are present. Check that
     nothing else is present.
+
+    Example of running this on Puhti:
+
+    check_zip_integrity.slurm:
+    ```
+    #!/bin/bash
+    #SBATCH --job-name=check_zip_integrity
+    #SBATCH --account=project_2006633
+    #SBATCH --partition=small
+    #SBATCH --time=8:00:00
+    #SBATCH --ntasks=1
+    #SBATCH --cpus-per-task=1
+    #SBATCH --mem-per-cpu=4000
+
+    DATA_DIR="/scratch/project_2006633/nlf-harvester/zip"
+    APPL_DIR="/projappl/project_2006633/kielipankki-nlf-harvester"
+    FILE=$(find "$DATA_DIR" -maxdepth 1 -type f | sed -n "${SLURM_ARRAY_TASK_ID}p")
+    source ${APPL_DIR}/venv/bin/activate
+    python3 ${APPL_DIR}/harvester_cli.py check-zip-integrity ${FILE} /scratch/project_2006633/shardwic-dev/col-861_ids.txt > /scratch/project_2006633/shardwic-dev/integrity_check_$(basename ${FILE}).txt
+    ```
+
+    Run with `sbatch --array=1-18 zip_integrity_check.slurm`
     """
 
     prefix = ""
@@ -229,7 +251,6 @@ def check_zip_integrity(zip_file_path, binding_id_list_file, guess_prefix):
         click.echo(superfluous_binding_id + ": extra METS (wasn't in binding list)")
         errors_found += 1
     click.echo(f"Found {errors_found} errors")
-
 
 
 if __name__ == "__main__":
