@@ -87,7 +87,7 @@
   ansible.builtin.copy:
     dest: "{{ puhti_robot_ssh_key_path }}"
     mode: "0600"
-    content: "{{ lookup('passwordstore', 'lb_passwords/airflow/private-key-robot_2006633_puhti') | replace('\\n', '\n') }}"
+    content: "{{ lookup('passwordstore', 'lb_passwords/airflow/private-key-robot_2006633_puhti', returnall=true) }}"
 
 # The or-operator ("||") means that the latter part of the command (new
 # connection creation) is only executed if the former (grepping for puhti_conn
