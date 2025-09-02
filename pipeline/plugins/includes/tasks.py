@@ -249,12 +249,10 @@ def generate_listings(ssh_conn_id, set_id, published_data_dir, path_config):
 
     ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
     with ssh_hook.get_conn() as ssh_client:
-        _, stdout, stderr = ssh_client.exec_command(
-            'find {published_data_dir} -type f -name "*.zip" -exec unzip -l {} \; | grep -Po "[0-9]+(?=_METS)"'
-        )
-    binding_ids_with_mets_files = set(
-        [line.rstrip("\n") for line in stdout.readlines()]
-    )
+        command = f'find {published_data_dir} -type f -name "*.zip" -exec unzip -l {{}} \; | grep -Po "[0-9]+(?=_METS)"'
+        _, stdout, stderr = ssh_client.exec_command(command)
+        bindings_found_lines = [line.rstrip("\n") for line in stdout.readlines()]
+    binding_ids_with_mets_files = set(bindings_found_lines)
     binding_ids_added_successfully = added_binding_ids.intersection(
         binding_ids_with_mets_files
     )
