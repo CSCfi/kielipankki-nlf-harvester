@@ -312,6 +312,7 @@ def create_restic_snapshot(ssh_conn_id, script_path, output_dir):
         task_id="lb_nlf_harvester_backup",
         ssh_conn_id=ssh_conn_id,  # Airflow connection ID (AIRFLOW_CONN_{CONN_ID})
         command='srun bash -c "sleep 20; echo Running task \$SLURM_PROCID on node \$(hostname)"',
+        host_environment_preamble=". /appl/profile/zz-csc-env.sh",
         slurm_options={
             "JOB_NAME": "lb_nlf_harvester_backup",
             "OUTPUT_FILE": "/scratch/project_2006633/shardwic-dev/slurmTEST-%j.out",
