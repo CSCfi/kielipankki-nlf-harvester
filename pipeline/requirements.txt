@@ -1,2 +1,2 @@
 apache-airflow-providers-ssh
-git+https://github.com/CSCfi@Kielipankki-add-gres-option
+git+https://github.com/CSCfi/Kielipankki-airflow-slurm@add-gres-option
