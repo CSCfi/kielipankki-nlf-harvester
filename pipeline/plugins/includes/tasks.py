@@ -313,7 +313,7 @@ def create_restic_snapshot(ssh_conn_id, script_path, output_dir):
     slurm_task = SSHSlurmOperator(
         task_id="lb_nlf_harvester_backup",
         ssh_conn_id=ssh_conn_id,  # Airflow connection ID (AIRFLOW_CONN_{CONN_ID})
-        command='srun bash -c "sleep 20; echo Running task \$SLURM_PROCID on node \$(hostname)"',
+        command='bash -c "sleep 20; echo Running task $SLURM_PROCID on node $(hostname)"',
         host_environment_preamble=". /appl/profile/zz-csc-env.sh",
         submit_on_host=True,
         slurm_options={
@@ -322,7 +322,7 @@ def create_restic_snapshot(ssh_conn_id, script_path, output_dir):
             "TIME": "01:00:00",
             "NODES": 1,
             "NTASKS": 1,
-            "ACCOUNT:": "project_2006633",
+            "ACCOUNT": "project_2006633",
             "CPUS_PER_TASK": 8,
             "PARTITION": "small",
             "MEM": "2G",
