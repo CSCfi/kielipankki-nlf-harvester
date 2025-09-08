@@ -60,10 +60,16 @@ for col in Variable.get("collections", deserialize_json=True):
 
         begin_download = EmptyOperator(task_id="begin_download")
         cancel_pipeline = EmptyOperator(task_id="cancel_pipeline")
+
+        restic_env = yaml.load(
+            open("/home/ubuntu/restic_env.yaml", "r"), Loader=yaml.FullLoader
+        )
+        slurm_setup_commands = [f'export {k}="{v}"' for k, v in restic_env.items()]
         create_restic_operator = SSHSlurmOperator(
             task_id="lb_nlf_harvester_backup",
             ssh_conn_id=SSH_CONN_ID,
             command='bash -c "sleep 20; echo Running task $SLURM_PROCID on node $(hostname)"',
+            setup_commands=slurm_setup_commands,
             host_environment_preamble=". /appl/profile/zz-csc-env.sh",
             submit_on_host=True,
             slurm_options={
@@ -78,9 +84,6 @@ for col in Variable.get("collections", deserialize_json=True):
                 "MEM": "2G",
             },
             tdelta_between_checks=10,  # Poll interval (in seconds) for job status
-            restic_env=yaml.load(
-                open("/home/ubuntu/restic_env.yaml", "r"), Loader=yaml.FullLoader
-            ),
         )
 
         check_if_download_should_begin(
