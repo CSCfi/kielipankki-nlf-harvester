@@ -65,8 +65,8 @@ for col in Variable.get("collections", deserialize_json=True):
             open("/home/ubuntu/restic_env.yaml", "r"), Loader=yaml.FullLoader
         )
         slurm_setup_commands = [f'export {k}="{v}"' for k, v in restic_env.items()]
-        create_restic_operator = SSHSlurmOperator(
-            task_id="lb_nlf_harvester_backup",
+        create_restic_snapshot = SSHSlurmOperator(
+            task_id="create_restic_snapshot",
             ssh_conn_id=SSH_CONN_ID,
             command='bash -c "sleep 20; echo Running task $SLURM_PROCID on node $(hostname)"',
             setup_commands=slurm_setup_commands,
