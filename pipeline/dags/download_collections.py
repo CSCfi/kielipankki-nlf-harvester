@@ -65,10 +65,12 @@ for col in Variable.get("collections", deserialize_json=True):
             open("/home/ubuntu/restic_env.yaml", "r"), Loader=yaml.FullLoader
         )
         slurm_setup_commands = [f'export {k}="{v}"' for k, v in restic_env.items()]
+        slurm_setup_commands.append("export TMPDIR=$LOCAL_SCRATCH")
         create_restic_snapshot = SSHSlurmOperator(
             task_id="create_restic_snapshot",
             ssh_conn_id=SSH_CONN_ID,
-            command='bash -c "sleep 20; echo Running task $SLURM_PROCID on node $(hostname)"',
+            command=f"restic backup --cache-dir $LOCAL_SCRATCH --host puhti.csc.fi {published_data_dir}",
+            modules=["allas"],
             setup_commands=slurm_setup_commands,
             host_environment_preamble=". /appl/profile/zz-csc-env.sh",
             submit_on_host=True,
@@ -82,8 +84,9 @@ for col in Variable.get("collections", deserialize_json=True):
                 "CPUS_PER_TASK": 8,
                 "PARTITION": "small",
                 "MEM": "2G",
+                "GRES": "nvme:32",
             },
-            tdelta_between_checks=10,  # Poll interval (in seconds) for job status
+            tdelta_between_checks=15 * 60,  # Poll interval (in seconds) for job status
         )
 
         check_if_download_should_begin(
