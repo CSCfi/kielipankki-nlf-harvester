@@ -7,17 +7,20 @@ assembled into targets, currently zip files.
 from datetime import timedelta
 import distutils
 from pathlib import Path
+import yaml
 
 from airflow.operators.empty import EmptyOperator
 from airflow.hooks.base import BaseHook
 from airflow.decorators import dag
 from airflow.models import Variable
 
+from airflow_slurm.ssh_slurm_operator import SSHSlurmOperator
+
 from includes.tasks import (
     check_if_download_should_begin,
     download_set,
     clear_temporary_directory,
-    create_restic_snapshot,
+    # create_restic_snapshot,
     publish_to_users,
     generate_listings,
 )
@@ -52,12 +55,33 @@ for col in Variable.get("collections", deserialize_json=True):
         doc_md=__doc__,
     )
     def download_dag():
-        begin_download = EmptyOperator(task_id="begin_download")
-
-        cancel_pipeline = EmptyOperator(task_id="cancel_pipeline")
-
         zip_creation_dir = path_config["OUTPUT_DIR"] / "targets"
         published_data_dir = path_config["OUTPUT_DIR"] / "zip"
+
+        begin_download = EmptyOperator(task_id="begin_download")
+        cancel_pipeline = EmptyOperator(task_id="cancel_pipeline")
+        create_restic_operator = SSHSlurmOperator(
+            task_id="lb_nlf_harvester_backup",
+            ssh_conn_id=SSH_CONN_ID,
+            command='bash -c "sleep 20; echo Running task $SLURM_PROCID on node $(hostname)"',
+            host_environment_preamble=". /appl/profile/zz-csc-env.sh",
+            submit_on_host=True,
+            slurm_options={
+                "JOB_NAME": "lb_nlf_harvester_backup",
+                "OUTPUT_FILE": "/scratch/project_2006633/shardwic-dev/slurmTEST-%j.out",
+                "TIME": "01:00:00",
+                "NODES": 1,
+                "NTASKS": 1,
+                "ACCOUNT": "project_2006633",
+                "CPUS_PER_TASK": 8,
+                "PARTITION": "small",
+                "MEM": "2G",
+            },
+            tdelta_between_checks=10,  # Poll interval (in seconds) for job status
+            restic_env=yaml.load(
+                open("/home/ubuntu/restic_env.yaml", "r"), Loader=yaml.FullLoader
+            ),
+        )
 
         check_if_download_should_begin(
             set_id=col["id"],
@@ -93,11 +117,11 @@ for col in Variable.get("collections", deserialize_json=True):
                 published_data_dir=published_data_dir,
                 path_config=path_config,
             )
-            >> create_restic_snapshot(
-                SSH_CONN_ID,
-                path_config["EXTRA_BIN_DIR"] / "create_snapshot.sh",
-                published_data_dir,
-            )
+            >> create_restic_snapshot  # (
+            #     SSH_CONN_ID,
+            #     path_config["EXTRA_BIN_DIR"] / "create_snapshot.sh",
+            #     published_data_dir,
+            # )
         )
 
     download_dag()
