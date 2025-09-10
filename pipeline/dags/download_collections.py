@@ -76,14 +76,14 @@ for col in Variable.get("collections", deserialize_json=True):
             submit_on_host=True,
             slurm_options={
                 "JOB_NAME": "lb_nlf_harvester_backup",
-                "OUTPUT_FILE": "/scratch/project_2006633/shardwic-dev/slurmTEST-%j.out",
-                "TIME": "01:00:00",
+                "OUTPUT_FILE": f"{path_config['OUTPUT_DIR'] / 'logs' / 'slurm' / 'slurm-backup-%j.out'}",
+                "TIME": "72:00:00",
                 "NODES": 1,
                 "NTASKS": 1,
                 "ACCOUNT": "project_2006633",
                 "CPUS_PER_TASK": 8,
                 "PARTITION": "small",
-                "MEM": "2G",
+                "MEM": "32G",
                 "GRES": "nvme:32",
             },
             tdelta_between_checks=15 * 60,  # Poll interval (in seconds) for job status
