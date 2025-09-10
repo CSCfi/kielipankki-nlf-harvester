@@ -2,10 +2,10 @@ from airflow.decorators import task, task_group
 from airflow.providers.http.sensors.http import HttpSensor
 from airflow.providers.ssh.hooks.ssh import SSHHook
 from airflow.models import DagRun
+from airflow.operators.python import get_current_context
 
 from requests.exceptions import RequestException
 
-import yaml
 from datetime import date
 import os
 
@@ -278,7 +278,9 @@ def generate_listings(ssh_conn_id, set_id, published_data_dir, path_config):
         return
 
     # Set up the paths for today's listings, both in the Airflow machine and Puhti
-    puhti_listing_dir = path_config["OUTPUT_DIR"] / "listings" / str(date.today())
+    puhti_listing_dir = (
+        path_config["OUTPUT_DIR"] / "logs" / "listings" / str(date.today())
+    )
     with ssh_hook.get_conn() as ssh_client:
         _, stdout, stderr = ssh_client.exec_command(f"mkdir -p {puhti_listing_dir}")
     airflow_listing_dir = path_config["AIRFLOW_LISTINGS_DIR"] / str(date.today())
@@ -299,29 +301,6 @@ def generate_listings(ssh_conn_id, set_id, published_data_dir, path_config):
             sftp_client.put(
                 str(airflow_listing_dir / listing[0]),
                 str(puhti_listing_dir / listing[0]),
-            )
-
-
-@task(task_id="create_restic_snapshot", trigger_rule="all_done")
-def create_restic_snapshot(ssh_conn_id, script_path, output_dir):
-    ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
-    with ssh_hook.get_conn() as ssh_client:
-        with open("/home/ubuntu/restic_env.yaml", "r") as fobj:
-            envs = yaml.load(fobj, Loader=yaml.FullLoader)
-
-        envs_str = " ".join([f"export {key}={value};" for key, value in envs.items()])
-        print("Creating snapshot of downloaded subsets")
-        _, stdout, stderr = ssh_client.exec_command(
-            f"{envs_str} sh {script_path} {output_dir}", get_pty=True
-        )
-
-        output = "\n".join(stdout.readlines())
-        print(output)
-
-        if stdout.channel.recv_exit_status() != 0:
-            error_msg = "\n".join(stderr.readlines())
-            raise CreateSnapshotError(
-                f"Creating snapshot failed with error:\n{error_msg}"
             )
 
 
