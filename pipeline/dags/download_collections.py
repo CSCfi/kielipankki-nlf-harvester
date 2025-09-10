@@ -20,7 +20,6 @@ from includes.tasks import (
     check_if_download_should_begin,
     download_set,
     clear_temporary_directory,
-    # create_restic_snapshot,
     publish_to_users,
     generate_listings,
 )
@@ -123,11 +122,7 @@ for col in Variable.get("collections", deserialize_json=True):
                 published_data_dir=published_data_dir,
                 path_config=path_config,
             )
-            >> create_restic_snapshot  # (
-            #     SSH_CONN_ID,
-            #     path_config["EXTRA_BIN_DIR"] / "create_snapshot.sh",
-            #     published_data_dir,
-            # )
+            >> create_restic_snapshot
         )
 
     download_dag()
