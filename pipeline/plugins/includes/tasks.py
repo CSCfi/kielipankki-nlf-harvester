@@ -304,53 +304,6 @@ def generate_listings(ssh_conn_id, set_id, published_data_dir, path_config):
             )
 
 
-# @task(task_id="create_restic_snapshot", trigger_rule="all_done")
-# def create_restic_snapshot(ssh_conn_id, script_path, output_dir):
-#     with open("/home/ubuntu/restic_env.yaml", "r") as fobj:
-#         envs = yaml.load(fobj, Loader=yaml.FullLoader)
-#     slurm_task = SSHSlurmOperator(
-#         task_id="lb_nlf_harvester_backup",
-#         ssh_conn_id=ssh_conn_id,  # Airflow connection ID (AIRFLOW_CONN_{CONN_ID})
-#         command='bash -c "sleep 20; echo Running task $SLURM_PROCID on node $(hostname)"',
-#         host_environment_preamble=". /appl/profile/zz-csc-env.sh",
-#         submit_on_host=True,
-#         slurm_options={
-#             "JOB_NAME": "lb_nlf_harvester_backup",
-#             "OUTPUT_FILE": "/scratch/project_2006633/shardwic-dev/slurmTEST-%j.out",
-#             "TIME": "01:00:00",
-#             "NODES": 1,
-#             "NTASKS": 1,
-#             "ACCOUNT": "project_2006633",
-#             "CPUS_PER_TASK": 8,
-#             "PARTITION": "small",
-#             "MEM": "2G",
-#         },
-#         tdelta_between_checks=10,  # Poll interval (in seconds) for job status
-#     )
-
-#     slurm_task.execute(context=get_current_context())
-
-# ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
-# with ssh_hook.get_conn() as ssh_client:
-#     with open("/home/ubuntu/restic_env.yaml", "r") as fobj:
-#         envs = yaml.load(fobj, Loader=yaml.FullLoader)
-
-#     envs_str = " ".join([f"export {key}={value};" for key, value in envs.items()])
-#     print("Creating snapshot of downloaded subsets")
-#     _, stdout, stderr = ssh_client.exec_command(
-#         f"{envs_str} sh {script_path} {output_dir}", get_pty=True
-#     )
-
-#     output = "\n".join(stdout.readlines())
-#     print(output)
-
-#     if stdout.channel.recv_exit_status() != 0:
-#         error_msg = "\n".join(stderr.readlines())
-#         raise CreateSnapshotError(
-#             f"Creating snapshot failed with error:\n{error_msg}"
-#         )
-
-
 class CreateSnapshotError(Exception):
     """
     Error raised when an error occurs during the creation of a restic snapshot
