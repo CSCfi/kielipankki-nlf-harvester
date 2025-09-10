@@ -278,7 +278,9 @@ def generate_listings(ssh_conn_id, set_id, published_data_dir, path_config):
         return
 
     # Set up the paths for today's listings, both in the Airflow machine and Puhti
-    puhti_listing_dir = path_config["OUTPUT_DIR"] / "listings" / str(date.today())
+    puhti_listing_dir = (
+        path_config["OUTPUT_DIR"] / "logs" / "listings" / str(date.today())
+    )
     with ssh_hook.get_conn() as ssh_client:
         _, stdout, stderr = ssh_client.exec_command(f"mkdir -p {puhti_listing_dir}")
     airflow_listing_dir = path_config["AIRFLOW_LISTINGS_DIR"] / str(date.today())
