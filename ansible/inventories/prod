@@ -19,3 +19,5 @@ all:
     pipeline_tmpdir_root: "/local_scratch/{{ puhti_robot_user }}/harvester"
     pipeline_extra_bin_dir: "/projappl/project_2006633/local/bin"
     restic_repository_bucket: nlf-harvester-versioning
+    backup_job_time_reservation: "48:00:00"
+    backup_job_memory_reservation: "32G"
