@@ -65,6 +65,7 @@ for col in Variable.get("collections", deserialize_json=True):
         )
         slurm_setup_commands = [f'export {k}="{v}"' for k, v in restic_env.items()]
         slurm_setup_commands.append("export TMPDIR=$LOCAL_SCRATCH")
+        slurm_config = Variable.get("slurm_config", deserialize_json=True)
         create_restic_snapshot = SSHSlurmOperator(
             task_id="create_restic_snapshot",
             ssh_conn_id=SSH_CONN_ID,
@@ -76,13 +77,13 @@ for col in Variable.get("collections", deserialize_json=True):
             slurm_options={
                 "JOB_NAME": "lb_nlf_harvester_backup",
                 "OUTPUT_FILE": f"{path_config['OUTPUT_DIR'] / 'logs' / 'slurm' / 'slurm-backup-%j.out'}",
-                "TIME": "72:00:00",
+                "TIME": slurm_config["TIME"],
                 "NODES": 1,
                 "NTASKS": 1,
                 "ACCOUNT": "project_2006633",
                 "CPUS_PER_TASK": 8,
                 "PARTITION": "small",
-                "MEM": "32G",
+                "MEM": slurm_config["MEM"],
                 "GRES": "nvme:32",
             },
             tdelta_between_checks=15 * 60,  # Poll interval (in seconds) for job status

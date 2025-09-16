@@ -22,5 +22,9 @@
     {% endif -%}
   {% endfor %}
 
-  ]
+  ],
+  "slurm_config": {
+    "TIME": "{{ backup_job_time_reservation }}",
+    "MEM": "{{ backup_job_memory_reservation }}"
+  }
 }
