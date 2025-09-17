@@ -48,7 +48,7 @@ for col in Variable.get("collections", deserialize_json=True):
 
     @dag(
         dag_id=current_dag_id,
-        schedule="@once",
+        schedule=Variable.get("schedule"),
         catchup=False,
         default_args=default_args,
         doc_md=__doc__,
