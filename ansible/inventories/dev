@@ -23,5 +23,6 @@ all:
         subset_size: 100
     restic_repository_bucket: harvester-versioning-dev
     restic_progress_fps: 0.1
+    pipeline_schedule: "@once"
     backup_job_time_reservation: "01:00:00"
     backup_job_memory_reservation: "8G"
