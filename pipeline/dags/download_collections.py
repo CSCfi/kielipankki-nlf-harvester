@@ -13,6 +13,8 @@ from airflow.operators.empty import EmptyOperator
 from airflow.hooks.base import BaseHook
 from airflow.decorators import dag
 from airflow.models import Variable
+from airflow.providers.ssh.operators.ssh import SSHOperator
+from airflow.providers.ssh.hooks.ssh import SSHHook
 
 from airflow_slurm.ssh_slurm_operator import SSHSlurmOperator
 
@@ -56,6 +58,7 @@ for col in Variable.get("collections", deserialize_json=True):
     def download_dag():
         zip_creation_dir = path_config["OUTPUT_DIR"] / "targets"
         published_data_dir = path_config["OUTPUT_DIR"] / "zip"
+        ssh_hook = SSHHook(ssh_conn_id=SSH_CONN_ID)
 
         begin_download = EmptyOperator(task_id="begin_download")
         cancel_pipeline = EmptyOperator(task_id="cancel_pipeline")
@@ -66,6 +69,7 @@ for col in Variable.get("collections", deserialize_json=True):
         slurm_setup_commands = [f'export {k}="{v}"' for k, v in restic_env.items()]
         slurm_setup_commands.append("export TMPDIR=$LOCAL_SCRATCH")
         slurm_config = Variable.get("slurm_config", deserialize_json=True)
+        slurm_log_file_path = f"{path_config['OUTPUT_DIR'] / 'logs' / 'slurm' / f'slurm-backup-{date.today()}.out'}"
         create_restic_snapshot = SSHSlurmOperator(
             task_id="create_restic_snapshot",
             ssh_conn_id=SSH_CONN_ID,
@@ -76,7 +80,7 @@ for col in Variable.get("collections", deserialize_json=True):
             submit_on_host=True,
             slurm_options={
                 "JOB_NAME": "lb_nlf_harvester_backup",
-                "OUTPUT_FILE": f"{path_config['OUTPUT_DIR'] / 'logs' / 'slurm' / 'slurm-backup-%j.out'}",
+                "OUTPUT_FILE": slurm_log_file_path,
                 "TIME": slurm_config["TIME"],
                 "NODES": 1,
                 "NTASKS": 1,
@@ -85,11 +89,16 @@ for col in Variable.get("collections", deserialize_json=True):
                 "PARTITION": "small",
                 "MEM": slurm_config["MEM"],
                 "GRES": "nvme:32",
-                "DEADLINE": (date.now() + timedelta(weeks=3)).strftime(
+                "DEADLINE": (date.today() + timedelta(weeks=3)).strftime(
                     "%Y-%m-%dT%H:%M:%S"
                 ),
             },
             tdelta_between_checks=15 * 60,  # Poll interval (in seconds) for job status
+        )
+
+        latest_hash_creation_command = (
+            'sed -nE "s/snapshot ([^ ]+) saved/\1/p" '
+            f'{slurm_log_file_path} > {path_config["OUTPUT_DIR"] / "logs" / "latest_version_string"}'
         )
 
         check_if_download_should_begin(
@@ -127,6 +136,11 @@ for col in Variable.get("collections", deserialize_json=True):
                 path_config=path_config,
             )
             >> create_restic_snapshot
+            >> SSHOperator(
+                task_id="log_latest_restic_version_string",
+                ssh_hook=ssh_hook,
+                command=latest_hash_creation_command,
+            )
         )
 
     download_dag()
