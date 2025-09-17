@@ -31,7 +31,7 @@ def get_most_recent_dag_run(dag_id):
 
 @dag(
     dag_id="fetch_binding_ids",
-    schedule="@once",
+    schedule=Variable.get("schedule"),
     default_args=default_args,
     catchup=False,
     doc_md=__doc__,
