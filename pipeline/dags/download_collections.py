@@ -4,7 +4,7 @@ Collections are split into subsets, and further into download batches, and
 assembled into targets, currently zip files.
 """
 
-from datetime import timedelta
+from datetime import date, timedelta
 import distutils
 from pathlib import Path
 import yaml
@@ -85,6 +85,9 @@ for col in Variable.get("collections", deserialize_json=True):
                 "PARTITION": "small",
                 "MEM": slurm_config["MEM"],
                 "GRES": "nvme:32",
+                "DEADLINE": (date.now() + timedelta(weeks=3)).strftime(
+                    "%Y-%m-%dT%H:%M:%S"
+                ),
             },
             tdelta_between_checks=15 * 60,  # Poll interval (in seconds) for job status
         )
