@@ -225,6 +225,7 @@ def generate_listings(ssh_conn_id, set_id, published_data_dir, path_config):
       * bindings that were supposed to be deleted, but are still present
     If a listing is empty, it is not generated.
 
+    We also clear the version string of the not-yet-backed up published data.
     """
     added_binding_ids = set(
         [
@@ -302,6 +303,10 @@ def generate_listings(ssh_conn_id, set_id, published_data_dir, path_config):
                 str(airflow_listing_dir / listing[0]),
                 str(puhti_listing_dir / listing[0]),
             )
+    with ssh_hook.get_conn() as ssh_client:
+        _, stdout, stderr = ssh_client.exec_command(
+            f"rm -f {path_config['OUTPUT_DIR'] / 'logs' / 'latest_version_string'}"
+        )
 
 
 class CreateSnapshotError(Exception):
