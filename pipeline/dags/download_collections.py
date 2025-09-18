@@ -69,7 +69,7 @@ for col in Variable.get("collections", deserialize_json=True):
         slurm_setup_commands = [f'export {k}="{v}"' for k, v in restic_env.items()]
         slurm_setup_commands.append("export TMPDIR=$LOCAL_SCRATCH")
         slurm_config = Variable.get("slurm_config", deserialize_json=True)
-        slurm_log_file_path = f"{path_config['OUTPUT_DIR'] / 'logs' / 'slurm' / f'slurm-backup-{date.today()}.out'}"
+        slurm_log_file_path = f"{path_config['OUTPUT_DIR'] / 'logs' / 'backups' / f'slurm-backup-{date.today()}.out'}"
         create_restic_snapshot = SSHSlurmOperator(
             task_id="create_restic_snapshot",
             ssh_conn_id=SSH_CONN_ID,
