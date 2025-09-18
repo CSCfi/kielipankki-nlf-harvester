@@ -10,7 +10,7 @@ Persistent Identifier of this document (to bookmark): [urn:nbn:fi:lb-202311261](
 
 ## Dataset size
 
-Approximate figures as of 2023:
+Approximate figures as of 2025:
 
 - **~700K bindings** (one binding typically being one issue of a newspaper or periodical, or a book)
 
@@ -48,15 +48,18 @@ The resulting target directories will have segmented paths, like `1/16/163/1631/
 For more advanced searching and extracting, consider extracting the metadata files as above, and using them to generate a list of binding IDs of interest. See our [example](https://github.com/CSCfi/kielipankki-nlf-harvester/blob/main/docs/apptainer/filter.py) of parsing and matching, and using either `unzip` or eg. Python's [zipfile](https://docs.python.org/3/library/zipfile.html) library for extracting the files you want.
 
 > [!WARNING]
-> The dataset will be updated periodically to keep up with newly digitized bindings and remove bindings that are no longer available for public access. This means that the dataset can change while your computations are in progress, which can lead to your analysis crashing or producing inconsistent results.
+> The dataset is currently updated once a month, at midnight on the first day of every month. This means that the dataset can change while your computations are in progress, which can lead to your analysis crashing or producing inconsistent results.
 
-Currently the only way to see if that has happened is to check the last edit time of the zip files by running `ls -l /scratch/project_2006633/nlf-harvester/zip/` on Puhti: if it is before your job started, your results have not been affected by an update.
+Logs of changes to the dataset are kept in `/scratch/project_2006633/nlf-harvester/logs/`. The directories under `logs/listings` are dates, like `2025-12-01/`, and correspond to updates made on that date. The contents of those directories are listings of added and deleted bindings. `logs/backups` contains logs from the backup process to Allas (see next section) and `logs/latest_version_string` contains the version key of the current contents of `zip/`.
 
 ### Previous versions in Allas
 
 Versions of the data set will also be made available as [`restic`](https://restic.net/) backups on [Allas](https://docs.csc.fi/data/Allas/introduction/). The retention policy of the previous versions is still open, so don't rely on old versions being available in the long term.
 
 See [versioning.md](versioning.md) for more information about previous versions of the dataset and how to access them.
+
+> [!WARNING]
+> The backup process may happen some time later than the update process, and consequently the contents of `zip/` may be newer than the the latest backup version. If `logs/latest_version_string` exists, the data in `zip/` exists as a backup with that version string.
 
 ### Listings
 
