@@ -97,7 +97,7 @@ for col in Variable.get("collections", deserialize_json=True):
         )
 
         latest_hash_creation_command = (
-            'sed -nE "s/snapshot ([^ ]+) saved/\1/p" '
+            'sed -nE "s/snapshot ([^ ]+) saved/\\1/p" '
             f'{slurm_log_file_path} > {path_config["OUTPUT_DIR"] / "logs" / "latest_version_string"}'
         )
 
