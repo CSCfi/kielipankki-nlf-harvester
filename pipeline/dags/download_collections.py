@@ -96,9 +96,13 @@ for col in Variable.get("collections", deserialize_json=True):
             tdelta_between_checks=15 * 60,  # Poll interval (in seconds) for job status
         )
 
+        # This command will be executed via SSHOperator at the end. If the backup log file doesn't exist, sed will
+        # return 2, which should raise an exception, and otherise if the result is emtpy or for some reason doesn't exist,
+        # test -s will return 1, raising an exception.
         latest_hash_creation_command = (
             'sed -nE "s/snapshot ([^ ]+) saved/\\1/p" '
-            f'{slurm_log_file_path} > {path_config["OUTPUT_DIR"] / "logs" / "latest_version_string"}'
+            f'{slurm_log_file_path} > {path_config["OUTPUT_DIR"] / "logs" / "latest_version_string"} '
+            f'test -s {path_config["OUTPUT_DIR"] / "logs" / "latest_version_string"}'
         )
 
         check_if_download_should_begin(
