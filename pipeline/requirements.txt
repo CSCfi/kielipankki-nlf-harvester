@@ -1,2 +1,2 @@
 apache-airflow-providers-ssh
-git+https://github.com/CSCfi/Kielipankki-airflow-slurm@remote-host-support
+git+https://github.com/CSCfi/Kielipankki-airflow-slurm
