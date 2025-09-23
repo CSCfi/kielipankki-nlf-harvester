@@ -282,7 +282,9 @@ def generate_listings(ssh_conn_id, set_id, published_data_dir, path_config):
         path_config["OUTPUT_DIR"] / "logs" / "listings" / str(date.today())
     )
     with ssh_hook.get_conn() as ssh_client:
-        _, stdout, stderr = ssh_client.exec_command(f"mkdir -p {puhti_listing_dir}")
+        _, stdout, stderr = ssh_client.exec_command(
+            f"umask a+rx; mkdir -p {puhti_listing_dir}"
+        )
     airflow_listing_dir = path_config["AIRFLOW_LISTINGS_DIR"] / str(date.today())
     if not os.path.isdir(airflow_listing_dir):
         os.makedirs(airflow_listing_dir)
