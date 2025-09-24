@@ -16,7 +16,7 @@ HTTP_CONN_ID = "nlf_http_conn"
 
 default_args = {
     "owner": "Kielipankki",
-    "start_date": "2022-10-01",
+    "start_date": "2024-01-01",
     "retry_delay": timedelta(minutes=5),
     "retries": Variable.get("retries"),
 }
@@ -29,9 +29,15 @@ def get_most_recent_dag_run(dag_id):
     return last_run
 
 
+schedule = Variable.get("schedule")
+if schedule == "@monthly":
+    # If we are on a monthly schedule, run this task on the last day of the month
+    schedule = "0 0 L * *"
+
+
 @dag(
     dag_id="fetch_binding_ids",
-    schedule=Variable.get("schedule"),
+    schedule=schedule,
     default_args=default_args,
     catchup=False,
     doc_md=__doc__,

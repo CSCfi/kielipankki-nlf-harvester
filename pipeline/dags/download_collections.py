@@ -36,7 +36,7 @@ HTTP_CONN_ID = "nlf_http_conn"
 
 default_args = {
     "owner": "Kielipankki",
-    "start_date": "2023-05-22",
+    "start_date": "2024-01-01",
     "retry_delay": timedelta(minutes=5),
     "retries": Variable.get("retries"),
 }
