@@ -101,7 +101,7 @@ for col in Variable.get("collections", deserialize_json=True):
         # test -s will return 1, raising an exception. umask is used to ensure access to regular users.
         latest_hash_creation_command = (
             'umask a+r; sed -nE "s/snapshot ([^ ]+) saved/\\1/p" '
-            f'{slurm_log_file_path} > {path_config["OUTPUT_DIR"] / "logs" / "latest_version_string"} '
+            f'{slurm_log_file_path} > {path_config["OUTPUT_DIR"] / "logs" / "latest_version_string"} && '
             f'test -s {path_config["OUTPUT_DIR"] / "logs" / "latest_version_string"}'
         )
 
