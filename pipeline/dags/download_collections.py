@@ -56,8 +56,6 @@ for col in Variable.get("collections", deserialize_json=True):
         doc_md=__doc__,
     )
     def download_dag():
-        zip_creation_dir = path_config["OUTPUT_DIR"] / "targets"
-        published_data_dir = path_config["OUTPUT_DIR"] / "zip"
         ssh_hook = SSHHook(ssh_conn_id=SSH_CONN_ID)
 
         begin_download = EmptyOperator(task_id="begin_download")
@@ -73,7 +71,7 @@ for col in Variable.get("collections", deserialize_json=True):
         create_restic_snapshot = SSHSlurmOperator(
             task_id="create_restic_snapshot",
             ssh_conn_id=SSH_CONN_ID,
-            command=f"restic backup --cache-dir $LOCAL_SCRATCH --host puhti.csc.fi {published_data_dir}",
+            command=f"restic backup --cache-dir $LOCAL_SCRATCH --host puhti.csc.fi {path_config['PUBLISHED_DATA_DIR']}",
             modules=["allas"],
             setup_commands=slurm_setup_commands,
             host_environment_preamble=". /appl/profile/zz-csc-env.sh",
@@ -130,13 +128,12 @@ for col in Variable.get("collections", deserialize_json=True):
             >> clear_temporary_directory(SSH_CONN_ID, path_config["TMPDIR_ROOT"])
             >> publish_to_users(
                 ssh_conn_id=SSH_CONN_ID,
-                source=zip_creation_dir,
-                destination=published_data_dir,
+                source=path_config["ZIP_CREATION_DIR"],
+                destination=path_config["PUBLISHED_DATA_DIR"],
             )
             >> generate_listings(
                 ssh_conn_id=SSH_CONN_ID,
                 set_id=col["id"],
-                published_data_dir=published_data_dir,
                 path_config=path_config,
             )
             >> create_restic_snapshot

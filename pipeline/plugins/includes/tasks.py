@@ -112,15 +112,14 @@ def download_set(
                     subset_base_name = set_id
 
                 file_download_dir = path_config["TMPDIR_ROOT"] / subset_base_name
-                target_path = (
-                    path_config["OUTPUT_DIR"] / "targets" / (subset_base_name + ".zip")
+                target_path = path_config["ZIP_CREATION_DIR"] / (
+                    subset_base_name + ".zip"
                 )
-                target_directory = path_config["OUTPUT_DIR"] / "targets"
                 intermediate_zip_directory = (
-                    path_config["OUTPUT_DIR"] / "intermediate_zip" / subset_base_name
+                    path_config["INTERMEDIATE_ZIP_DIR"] / subset_base_name
                 )
-                published_zip_path = (
-                    path_config["OUTPUT_DIR"] / "zip" / (subset_base_name + ".zip")
+                published_zip_path = path_config["PUBLISHED_DATA_DIR"] / (
+                    subset_base_name + ".zip"
                 )
 
                 prepare_download_location = PrepareDownloadLocationOperator(
@@ -130,7 +129,7 @@ def download_set(
                     ensure_dirs=[
                         file_download_dir,
                         intermediate_zip_directory,
-                        target_directory,
+                        path_config["ZIP_CREATION_DIR"],
                     ],
                     old_target_path=(None if initial_download else published_zip_path),
                     new_target_path=(None if initial_download else target_path),
@@ -215,7 +214,7 @@ def publish_to_users(ssh_conn_id, source, destination):
 
 
 @task(task_id="generate_listings")
-def generate_listings(ssh_conn_id, set_id, published_data_dir, path_config):
+def generate_listings(ssh_conn_id, set_id, path_config):
     """
     The following listings in the listings directory are generated:
       * bindings that were successfully added
@@ -249,7 +248,7 @@ def generate_listings(ssh_conn_id, set_id, published_data_dir, path_config):
 
     ssh_hook = SSHHook(ssh_conn_id=ssh_conn_id)
     with ssh_hook.get_conn() as ssh_client:
-        command = f'find {published_data_dir} -type f -name "*.zip" -exec unzip -l {{}} \; | grep -Po "[0-9]+(?=_METS)"'
+        command = f'find {path_config["PUBLISHED_DATA_DIR"]} -type f -name "*.zip" -exec unzip -l {{}} \; | grep -Po "[0-9]+(?=_METS)"'
         _, stdout, stderr = ssh_client.exec_command(command)
         bindings_found_lines = [line.rstrip("\n") for line in stdout.readlines()]
     binding_ids_with_mets_files = set(bindings_found_lines)

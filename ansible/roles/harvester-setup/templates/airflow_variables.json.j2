@@ -4,6 +4,9 @@
   "schedule": "{{ pipeline_schedule }}",
   "path_config": {
       "OUTPUT_DIR": "{{ pipeline_output_dir }}",
+      "INTERMEDIATE_ZIP_DIR": "{{ pipeline_output_dir }}/.intermediate_zip",
+      "ZIP_CREATION_DIR": "{{ pipeline_output_dir }}/.targets",
+      "PUBLISHED_DATA_DIR": "{{ pipeline_output_dir }}/zip",
       "TMPDIR_ROOT": "{{ pipeline_tmpdir_root }}",
       "EXTRA_BIN_DIR": "{{ pipeline_extra_bin_dir }}",
       "SUBSET_SPLIT_DIR": "{{ pipeline_subset_split_dir }}",
