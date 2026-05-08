@@ -10,7 +10,7 @@ all:
         128.214.253.232:
           ansible_user: ubuntu
           navbar_color: "#ff5800"
-    puhti:
+    hpc:
       hosts:
         puhti.csc.fi:
           ansible_user: "{{ puhti_robot_user }}"
@@ -19,8 +19,8 @@ all:
     harvested_collections:
       - id: col-861
         subset_size: 100000
-      - id: col-201
-        subset_size: 100
+#      - id: col-201
+#        subset_size: 100
     restic_repository_bucket: harvester-versioning-dev
     restic_progress_fps: 0.1
     pipeline_schedule: "@once"

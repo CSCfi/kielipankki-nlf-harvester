@@ -21,7 +21,7 @@ all:
         128.214.252.206:
           ansible_user: ubuntu
           navbar_color: "#ccc"
-    puhti:
+    hpc:
       hosts:
         puhti.csc.fi:
           ansible_user: "{{ puhti_robot_user }}"

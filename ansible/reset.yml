@@ -1,6 +1,6 @@
 ---
 
-# This playbook removes all data (on Puhti disk and in the Allas repo) and
+# This playbook removes all data (on HPC disk and in the Allas repo) and
 # reinitializes the repo.
 
 
@@ -17,7 +17,7 @@
           restic_repository_bucket == production_inventory.all.vars.restic_repository_bucket
 
 - name: Reset the data
-  hosts: puhti
+  hosts: hoc
   tasks:
     - name: Delete and recreate the bucket + repo in Allas
       ansible.builtin.shell: |
