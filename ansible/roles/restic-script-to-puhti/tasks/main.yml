@@ -5,7 +5,7 @@
     path: "{{ pipeline_extra_bin_dir }}"
     state: directory
 
-- name: Make sure that restic script exists in Puhti
+- name: Make sure that restic script exists in the HPC environment
   ansible.builtin.copy:
     src: ../files/create_snapshot.sh
     dest: "{{ pipeline_extra_bin_dir }}/create_snapshot.sh"
@@ -14,12 +14,13 @@
   ansible.builtin.shell: |
     module load allas
     restic snapshots --no-lock --json
-  delegate_to: puhti
   environment:
     AWS_SECRET_ACCESS_KEY: "{{ lookup('passwordstore', 'lb_passwords/airflow/aws_secret_access_key') }}"
     AWS_ACCESS_KEY_ID: "{{ lookup('passwordstore', 'lb_passwords/airflow/aws_access_key_id') }}"
     RESTIC_REPOSITORY: "{{ restic_repository }}"
     RESTIC_PASSWORD: "{{ lookup('passwordstore', 'lb_passwords/airflow/restic_password') }}"
+  delegate_to: "{{ item }}"
+  loop: "{{ groups['hpc'] }}"
   register: snapshot_list
   failed_when:  # Sanity check that fails the task if we get an unexpected output
     - not snapshot_list.stdout == "[]"  # repo exists, no snapshots
@@ -41,10 +42,11 @@
   ansible.builtin.shell: |
       module load allas
       restic init
-  delegate_to: puhti
   environment:
     AWS_SECRET_ACCESS_KEY: "{{ lookup('passwordstore', 'lb_passwords/airflow/aws_secret_access_key') }}"
     AWS_ACCESS_KEY_ID: "{{ lookup('passwordstore', 'lb_passwords/airflow/aws_access_key_id') }}"
     RESTIC_REPOSITORY: "{{ restic_repository }}"
     RESTIC_PASSWORD: "{{ lookup('passwordstore', 'lb_passwords/airflow/restic_password') }}"
+  delegate_to: "{{ item }}"
+  loop: "{{ groups['hpc'] }}"
   when: snapshot_list.rc != 0

@@ -18,7 +18,7 @@
           - "193.166.83.192/28" # CSC PaloAlto VPN Staff
 
 - name: Setup Puhti access for Airflow and install remote scripts
-  hosts: puhti
+  hosts: hpc
   roles:
     - public-key-to-puhti
     - restic-script-to-puhti
