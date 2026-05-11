@@ -30,6 +30,6 @@
     - airflow-config
     - airflow-db
     - nginx-setup
-    - harvester-setup
+    - { name: harvester-setup, when: not ansible_check_mode }
     - airflow-systemd-service
     - disable-reboot
