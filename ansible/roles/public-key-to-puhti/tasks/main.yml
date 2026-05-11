@@ -1,6 +1,6 @@
 ---
 
-- name: Add public SSH key to puhti for the robot account
+- name: Add public SSH key to the HPC environment for the robot account
   ansible.posix.authorized_key:
-    user: "{{ puhti_robot_user }}"
-    key: "{{ lookup('passwordstore', 'lb_passwords/airflow/public-key-robot_2006633_puhti') }}"
+    user: "{{ hpc_robot_user }}"
+    key: "{{ lookup('passwordstore', hpc_robot_ssh_public_key_location) }}"

@@ -33,7 +33,7 @@ $ source project_2006633-openrc.sh
 
 ## Add robot SSH key to keyring
 
-Some of the actions on Puhti must be carried out as the robot user when provisioning. To enable this, you must get the corresponding SSH key (`lb_passwords/airflow/private-key-robot_2006633_puhti`) and its password (`lb_passwords/airflow/private-key-password-robot_2006633_puhti`) from the password store.
+Some of the actions on Puhti must be carried out as the robot user when provisioning. To enable this, you must get the corresponding SSH key (see variable `hpc_robot_ssh_private_key_location`) and its password (see variable `hpc_robot_ssh_key_password_location`) from the password store.
 
 ## Run ansible playbook
 

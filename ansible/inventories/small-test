@@ -24,7 +24,7 @@ all:
     hpc:
       hosts:
         puhti.csc.fi:
-          ansible_user: "{{ puhti_robot_user }}"
+          ansible_user: "{{ hpc_robot_user }}"
   vars:
     pipeline_extra_bin_dir: "/projappl/project_2006633/local/bin/harvester-smalltest"
     harvested_collections:
