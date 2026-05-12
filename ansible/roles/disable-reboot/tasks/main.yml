@@ -4,12 +4,18 @@
     state: directory
   become: yes
 
+- name: Check whether daily check_reboot tasks exists
+  ansible.builtin.stat:
+    path: /etc/cron.daily/check_reboot
+  register: check_reboot_file
+
 - name: Copy check_reboot file from cron.daily to cron.disabled
-  ansible.builtin.copy: 
-    src: /etc/cron.daily/check_reboot
+  ansible.builtin.copy:
+    src: "{{ check_reboot_file.stat.path }}"
     dest: /etc/cron.disabled/check_reboot
     remote_src: yes
   become: yes
+  when: check_reboot_file.stat.exists
 
 - name: Remove check_reboot file from cron.daily
   ansible.builtin.file:
