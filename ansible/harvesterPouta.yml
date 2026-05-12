@@ -17,11 +17,11 @@
           - "193.166.85.0/24" #CSC Cisco VPN
           - "193.166.83.192/28" # CSC PaloAlto VPN Staff
 
-- name: Setup Puhti access for Airflow and install remote scripts
+- name: Setup HPC access for Airflow and install remote scripts
   hosts: hpc
   roles:
-    - public-key-to-puhti
-    - restic-script-to-puhti
+    - public-key-to-hpc
+    - restic-script-to-hpc
 
 - name: Install requirements for Airflow
   hosts: airflow
