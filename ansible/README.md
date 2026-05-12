@@ -38,7 +38,7 @@ Some of the actions on Puhti must be carried out as the robot user when provisio
 ## Run ansible playbook
 
 ```
-ansible-playbook -i inventories/dev harvesterPouta.yml --extra-vars initial_download=true
+ansible-playbook -i inventories/dev-puhti harvesterPouta.yml --extra-vars initial_download=true
 ```
 
 Adjust `initial_download` as needed (default is false for safe reprovisioning of the production environment). This can also be edited in the Airflow web GUI under variables. NB: The variable will not automatically flip to `false` when a collection is downloaded, allowing e.g. repeated full download testing or downloading different small collections from dev instances.
@@ -50,7 +50,7 @@ Have your `kielipouta` password and `Kielipankki-passwords` GPG key password at 
 If you only wish to update the DAG files and their dependencies instead of a
 full provisioning, you can run
 ```
-ansible-playbook harvesterPouta.yml -i inventories/dev --tags dag-update
+ansible-playbook harvesterPouta.yml -i inventories/dev-puhti --tags dag-update
 ```
 If the dependencies do not need to be updated, an even lighter
 `minimal-dag-update` tag is available.
@@ -59,7 +59,7 @@ If the dependencies do not need to be updated, an even lighter
 If you have a specific branch/tag/SHA-1 you wish to use, you can provide that:
 
 ```
-ansible-playbook harvesterPouta.yml -i inventories/dev --tags dag-update --extra-vars "harvester_branch=[KP-yourbranch]"
+ansible-playbook harvesterPouta.yml -i inventories/dev-puhti --tags dag-update --extra-vars "harvester_branch=[KP-yourbranch]"
 ```
 
 ## Creating multiple dev instances
@@ -75,7 +75,7 @@ If more than one development instance is in use simultaneously, they must be con
 
 If you need to get a fresh state for some testing, you can remove the data from Puhti and Allas by running
 ```
-ansible-playbook reset.yml -i inventories/dev
+ansible-playbook reset.yml -i inventories/dev-puhti
 ```
 
 NB: there are some guardrails in place to prevent accidentally deleting production data, but as this is a destructive operation, this should be handled with care.
