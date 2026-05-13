@@ -17,6 +17,16 @@
     - dag-update
     - minimal-dag-update
 
+- name: Ensure modern version of pip
+  ansible.builtin.pip:
+    name:
+      - pip
+      - setuptools
+      - wheel
+    state: latest
+  become: yes
+
+
 - name: Install required packages for harvester
   ansible.builtin.pip:
     requirements: "{{ harvester.path }}/requirements.txt"
