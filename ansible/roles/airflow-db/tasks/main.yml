@@ -86,10 +86,10 @@
 
 - name: Create Airflow admin user
   ansible.builtin.shell: >
-    airflow users create 
-    --username {{ airflow_username }} 
-    --password {{ airflow_password }} 
-    --firstname {{ airflow_firstname }} 
-    --lastname {{ airflow_lastname }} 
+    airflow users create
+    --username {{ airflow_username }}
+    --password {{ airflow_password }}
+    --firstname {{ airflow_firstname }}
+    --lastname {{ airflow_lastname }}
     --email {{ airflow_email }}
-    --role Admin 
+    --role Admin
