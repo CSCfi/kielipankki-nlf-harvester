@@ -1,0 +1,30 @@
+all:
+  hosts:
+    localhost:
+      ansible_connection: local
+      ansible_python_interpreter: "{{ansible_playbook_python}}"
+      floating_ip: 128.214.253.232
+  children:
+    airflow:
+      hosts:
+        128.214.253.232:
+          ansible_user: ubuntu
+          navbar_color: "#ff5800"
+    hpc:
+      hosts:
+        roihu.csc.fi:
+          ansible_user: "{{ hpc_robot_user }}"
+  vars:
+    pipeline_extra_bin_dir: "/projappl/project_2006633/local/bin/harvester-dev"
+    harvested_collections:
+      - id: col-861
+        subset_size: 100000
+#      - id: col-201
+#        subset_size: 100
+    restic_repository_bucket: harvester-versioning-dev
+    restic_progress_fps: 0.1
+    pipeline_schedule: "@once"
+    backup_job_time_reservation: "01:00:00"
+    backup_job_memory_reservation: "8G"
+    hpc_robot_user: "robot_2006633_roihu"
+    hpc_connection_host: "roihu-cpu-login2.csc.fi"

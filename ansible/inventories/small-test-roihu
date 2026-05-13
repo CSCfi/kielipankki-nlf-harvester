@@ -1,0 +1,41 @@
+---
+
+all:
+  hosts:
+    localhost:
+      ansible_connection: local
+      ansible_python_interpreter: "{{ansible_playbook_python}}"
+      floating_ip: 128.214.252.206
+      vm_name_postfix: small-test
+      servers:
+        - name: "{{ pouta_instance_name }}"
+          image: "{{ std_image }}"
+          flavor: standard.small
+          key_name: "{{ project_key }}"
+          security_groups: "{{ project_security_groups }}"
+          network: "{{ network }}"
+          meta:
+            group: "{{ instance_name }}"
+            hostname: "{{ pouta_instance_name }}"
+  children:
+    airflow:
+      hosts:
+        128.214.252.206:
+          ansible_user: ubuntu
+          navbar_color: "#ccc"
+    hpc:
+      hosts:
+        roihu-cpu.csc.fi:
+          ansible_user: "{{ hpc_robot_user }}"
+  vars:
+    pipeline_extra_bin_dir: "/projappl/project_2006633/local/bin/harvester-smalltest"
+    pipeline_schedule: "@once"
+    harvested_collections:
+      - id: col-861
+        subset_size: 100000
+    restic_repository_bucket: harvester-versioning-smalltest
+    restic_progress_fps: 0.1
+    backup_job_time_reservation: "01:00:00"
+    backup_job_memory_reservation: "8G"
+    hpc_robot_user: "robot_2006633_roihu"
+    hpc_connection_host: "roihu-cpu-login2.csc.fi"
