@@ -23,3 +23,5 @@ all:
     restic_repository_bucket: nlf-harvester-versioning
     backup_job_time_reservation: "48:00:00"
     backup_job_memory_reservation: "32G"
+    hpc_robot_user: "robot_2006633_puhti"
+    hpc_connection_host: "puhti-login12.csc.fi"
