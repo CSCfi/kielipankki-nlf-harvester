@@ -47,10 +47,11 @@
   community.postgresql.postgresql_user:
     name: postgres
     password: "{{ airflow_db_root_password }}"
-    login_host: 127.0.0.1
   become: true
   become_user: postgres
   ignore_errors: yes  # this only succeeds if the password has not already been set
+  vars:
+    ansible_ssh_pipelining: yes
 
 - name: "Create a Postgres database for Airflow"
   community.postgresql.postgresql_db:
