@@ -10,10 +10,17 @@
     src: ../files/create_snapshot.sh
     dest: "{{ pipeline_extra_bin_dir }}/create_snapshot.sh"
 
+- name: Run allas-conf for the project
+  ansible.builtin.shell: >
+    /bin/bash -ic "module load allas &&
+    echo {{ lookup('passwordstore', 'lb_passwords/airflow/robot_2006633_allas') }} |
+    {{ allas_conf_command }} -p project_2006633 -m S3 -u {{ allas_robot_user }}"
+  delegate_to: "{{ item }}"
+  loop: "{{ groups['hpc'] }}"
+
 - name: Check if the restic repository exists already
-  ansible.builtin.shell: |
-    module load allas
-    restic snapshots --no-lock --json
+  ansible.builtin.shell: >
+    /bin/bash -ic "module load allas > /dev/null && restic snapshots --no-lock --json"
   environment:
     AWS_SECRET_ACCESS_KEY: "{{ lookup('passwordstore', 'lb_passwords/airflow/aws_secret_access_key') }}"
     AWS_ACCESS_KEY_ID: "{{ lookup('passwordstore', 'lb_passwords/airflow/aws_access_key_id') }}"
@@ -30,9 +37,9 @@
   when: not ansible_check_mode
 
 - name: Create bucket for restic repository if not already present
-  ansible.builtin.shell: |
-    module load allas
-    s3cmd mb s3://$BUCKET_NAME --host=a3s.fi --host-bucket='%(bucket)s.a3s.fi'
+  ansible.builtin.shell: >
+    /bin/bash -ic "module load allas &&
+    s3cmd mb s3://$BUCKET_NAME --host=a3s.fi --host-bucket='%(bucket)s.a3s.fi'"
   environment:
     AWS_SECRET_ACCESS_KEY: "{{ lookup('passwordstore', 'lb_passwords/airflow/aws_secret_access_key') }}"
     AWS_ACCESS_KEY_ID: "{{ lookup('passwordstore', 'lb_passwords/airflow/aws_access_key_id') }}"
@@ -40,9 +47,9 @@
   when: not ansible_check_mode and "'The specified bucket does not exist' in snapshot_list.stderr"
 
 - name: Initiate a repository if not already present
-  ansible.builtin.shell: |
-      module load allas
-      restic init
+  ansible.builtin.shell: >
+    /bin/bash -ic "module load allas &&
+    restic init"
   environment:
     AWS_SECRET_ACCESS_KEY: "{{ lookup('passwordstore', 'lb_passwords/airflow/aws_secret_access_key') }}"
     AWS_ACCESS_KEY_ID: "{{ lookup('passwordstore', 'lb_passwords/airflow/aws_access_key_id') }}"

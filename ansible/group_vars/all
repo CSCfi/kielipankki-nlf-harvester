@@ -37,6 +37,8 @@ hpc_conn_conf:
   extra:
     key_file: "{{ hpc_robot_ssh_key_path }}"
 
+allas_robot_user: robot_200663_allas
+
 authorized_users:
   - ktegel
   - ajarven

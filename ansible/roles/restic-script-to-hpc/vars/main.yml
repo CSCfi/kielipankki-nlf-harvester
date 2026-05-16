@@ -1,0 +1,10 @@
+# On Roihu, `allas-conf` is not really an executable, but an alias instead:
+# ```
+# [jarvenp2@roihu-cpu-login4 ~]$ which allas-conf
+# alias allas-conf='source /appl/soft/manual/general/common/allas/allas-cli-utils/allas_conf -s '
+# ```
+# Aliases are not supported when the commands are run with `/bin/bash -ic` as
+# we do via Ansible, so we need to manually expand the alias. To keep things
+# simple and changes in one place even if we some day use `allas-conf` from
+# multiple places, we define the command as a variable.
+allas_conf_command: "source /appl/soft/manual/general/common/allas/allas-cli-utils/allas_conf -s "
