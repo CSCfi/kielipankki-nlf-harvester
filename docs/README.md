@@ -54,7 +54,7 @@ Logs of changes to the dataset are kept in `/scratch/project_2006633/nlf-harvest
 
 ### Previous versions in Allas
 
-Versions of the data set will also be made available as [`restic`](https://restic.net/) snapshots on [Allas](https://docs.csc.fi/data/Allas/introduction/). Snapshots will be kept for a duration of 3 years.
+Versions of the data set will also be made available as [`restic`](https://restic.net/) snapshots on [Allas](https://docs.csc.fi/data/Allas/introduction/). Snapshots will be kept for a duration of 3 years. The snapshots will not be backed up.
 
 See [versioning.md](versioning.md) for more information about previous versions of the dataset and how to access them.
 
