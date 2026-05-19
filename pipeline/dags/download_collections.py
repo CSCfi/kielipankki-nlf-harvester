@@ -31,7 +31,7 @@ path_config = Variable.get("path_config", deserialize_json=True)
 for path_name in path_config:
     path_config[path_name] = Path(path_config[path_name])
 
-SSH_CONN_ID = "puhti_conn"
+SSH_CONN_ID = "hpc_conn"
 HTTP_CONN_ID = "nlf_http_conn"
 
 default_args = {

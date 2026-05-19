@@ -34,7 +34,7 @@
 8. In order for the `download_altos_for_binding_to_puhti` DAG to function, you need to a SSH connection to Puhti in Admin -> Connections:
 
     - Select "Add a new record" from the **+** sign
-    - Set Connection Id to `puhti_conn`
+    - Set Connection Id to `hpc_conn`
     - Set Connection Type to `SSH`
     - Set Host to `puhti.csc.fi`
     - Set your Puhti username as Username

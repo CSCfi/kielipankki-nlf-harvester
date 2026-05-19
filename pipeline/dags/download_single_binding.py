@@ -34,7 +34,7 @@ BASE_PATH = "/scratch/project_2006633/nlf-harvester/downloads/temp_test/"
 TMPDIR = "/local_scratch/robot_2006633_puhti/harvester-temp"
 SET_ID = "col-681"
 # SET_ID = "sanomalehti"
-SSH_CONN_ID = "puhti_conn"
+SSH_CONN_ID = "hpc_conn"
 HTTP_CONN_ID = "nlf_http_conn"
 
 
