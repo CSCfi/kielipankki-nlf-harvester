@@ -12,7 +12,11 @@
 
 - name: Install Airflow
   ansible.builtin.pip:
-    name: apache-airflow[async,postgres,google]==2.11.0
+    name:
+      - apache-airflow[async]==2.11.0
+      - apache-airflow-providers-postgres
+      - apache-airflow-providers-ssh
+      - apache-airflow-providers-google
     extra_args: --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-2.11.0/constraints-3.10.txt"
   become: yes
 
