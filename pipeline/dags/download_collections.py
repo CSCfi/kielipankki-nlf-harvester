@@ -74,7 +74,7 @@ for col in Variable.get("collections", deserialize_json=True):
             command=f"restic backup --cache-dir $LOCAL_SCRATCH --host puhti.csc.fi {path_config['PUBLISHED_DATA_DIR']}",
             modules=["allas"],
             setup_commands=slurm_setup_commands,
-            host_environment_preamble=". /appl/profile/zz-csc-env.sh",
+            host_environment_preamble="",
             submit_on_host=True,
             slurm_options={
                 "JOB_NAME": "lb_nlf_harvester_backup",
