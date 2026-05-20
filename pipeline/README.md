@@ -39,7 +39,7 @@
     - Set Host to `puhti.csc.fi`
     - Set your Puhti username as Username
     - Set the password to your private SSH key as Password
-    - In the Extra-field, add the absolute path to your private SSH key (of which pair is in Puhti) in the following manner:   
+    - In the Extra-field, add the absolute path to your private SSH key (of which pair is in Puhti) in the following manner:
         ```{"key_file": "/your/path/.ssh/id_rsa"}```
 
 
