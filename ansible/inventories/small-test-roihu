@@ -10,7 +10,7 @@ all:
       servers:
         - name: "{{ pouta_instance_name }}"
           image: "{{ std_image }}"
-          flavor: standard.small
+          flavor: standard.large
           key_name: "{{ project_key }}"
           security_groups: "{{ project_security_groups }}"
           network: "{{ network }}"
@@ -31,8 +31,10 @@ all:
     pipeline_extra_bin_dir: "/projappl/project_2006633/local/bin/harvester-smalltest"
     pipeline_schedule: "@once"
     harvested_collections:
-      - id: col-861
-        subset_size: 100000
+#      - id: col-861
+#        subset_size: 100000
+      - id: col-201
+        subset_size: 100
     restic_repository_bucket: harvester-versioning-smalltest
     restic_progress_fps: 0.1
     backup_job_time_reservation: "01:00:00"
