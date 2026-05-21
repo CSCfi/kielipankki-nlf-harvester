@@ -85,7 +85,10 @@ class METS:
                 "IMGGRP",
                 "ACIMGGRP",
             ]:
-                page_number = int(file_element.attrib["SEQ"])
+                try:
+                    page_number = int(file_element.attrib["SEQ"])
+                except KeyError:
+                    page_number = int(file_element.attrib["GROUPID"])
                 self._files.append(
                     AccessImageFile(
                         binding_dc_identifier=self.binding_dc_identifier,
