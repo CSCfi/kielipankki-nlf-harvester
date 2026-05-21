@@ -93,7 +93,7 @@
   tags:
     - dag-update
 
-- name: Add private key for connecting to Puhti
+- name: Add private key for connecting to HPC
   ansible.builtin.copy:
     dest: "{{ hpc_robot_ssh_key_path }}"
     mode: "0600"
@@ -102,7 +102,7 @@
 # The or-operator ("||") means that the latter part of the command (new
 # connection creation) is only executed if the former (grepping for hpc_conn
 # in pre-existing connections) fails (i.e. hpc_conn not found).
-- name: Create SSH connection to Puhti if not already present
+- name: Create SSH connection to HPC if not already present
   ansible.builtin.shell: >
     airflow connections list | grep 'hpc_conn'
     ||
