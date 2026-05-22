@@ -89,6 +89,7 @@ for col in Variable.get("collections", deserialize_json=True):
                 "DEADLINE": (date.today() + timedelta(weeks=3)).strftime(
                     "%Y-%m-%dT%H:%M:%S"
                 ),
+                "WRAP": False,
             },
             tdelta_between_checks=15 * 60,  # Poll interval (in seconds) for job status
         )
