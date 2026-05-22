@@ -346,7 +346,7 @@ class PuhtiSshOperator(BaseOperator):
         else:
             modules_command = ""
 
-        full_command = f'/bin/bash -lc "{modules_command} {payload_command}"'
+        full_command = f'/bin/bash -ic "{modules_command} {payload_command}"'
 
         self.ssh_execute_and_raise(ssh_client, full_command)
 

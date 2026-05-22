@@ -71,7 +71,7 @@ for col in Variable.get("collections", deserialize_json=True):
         create_restic_snapshot = SSHSlurmOperator(
             task_id="create_restic_snapshot",
             ssh_conn_id=SSH_CONN_ID,
-            command=f"restic backup --cache-dir $LOCAL_SCRATCH --host puhti.csc.fi {path_config['PUBLISHED_DATA_DIR']}",
+            command=f"restic backup --cache-dir $LOCAL_SCRATCH --host roihu-cpu.csc.fi {path_config['PUBLISHED_DATA_DIR']}",
             modules=["allas"],
             setup_commands=slurm_setup_commands,
             host_environment_preamble="",
@@ -86,7 +86,6 @@ for col in Variable.get("collections", deserialize_json=True):
                 "CPUS_PER_TASK": 8,
                 "PARTITION": "small",
                 "MEM": slurm_config["MEM"],
-                "GRES": "nvme:32",
                 "DEADLINE": (date.today() + timedelta(weeks=3)).strftime(
                     "%Y-%m-%dT%H:%M:%S"
                 ),
