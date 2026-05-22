@@ -333,7 +333,7 @@ class PuhtiSshOperator(BaseOperator):
 
     def run_in_login_shell(self, ssh_client, payload_command, modules=""):
         """
-        Run a command on Puhti login shell as a human user would.
+        Run a command on a HPC login shell as a human user would.
 
         :param payload_command: Command to be run
         :type payload_command: str
@@ -346,14 +346,7 @@ class PuhtiSshOperator(BaseOperator):
         else:
             modules_command = ""
 
-        full_command = (
-            "/bin/bash -lc "
-            '"'
-            ". /appl/profile/zz-csc-env.sh && "
-            f"{modules_command}"
-            f"{payload_command}"
-            '"'
-        )
+        full_command = f'/bin/bash -lc "{modules_command} {payload_command}"'
 
         self.ssh_execute_and_raise(ssh_client, full_command)
 
