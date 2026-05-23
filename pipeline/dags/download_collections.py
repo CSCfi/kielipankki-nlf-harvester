@@ -64,7 +64,15 @@ for col in Variable.get("collections", deserialize_json=True):
         restic_env = yaml.load(
             open("/home/ubuntu/restic_env.yaml", "r"), Loader=yaml.FullLoader
         )
-        slurm_setup_commands = [f'export {k}="{v}"' for k, v in restic_env.items()]
+        slurm_environment_variables = [
+            f'export {k}="{v}"' for k, v in restic_env.items()
+        ]
+        slurm_csc_env_commands = [
+            "export CSC_ENV_INIT_NON_INTERACTIVE=yes",
+            "source /etc/profile.d/zz-csc-env.sh",
+            "module load allas",
+        ]
+        slurm_setup_commands = slurm_environment_variables + slurm_csc_env_commands
         slurm_setup_commands.append("export TMPDIR=$LOCAL_SCRATCH")
         slurm_config = Variable.get("slurm_config", deserialize_json=True)
         slurm_log_file_path = f"{path_config['OUTPUT_DIR'] / 'logs' / 'backups' / f'slurm-backup-{date.today()}.out'}"
@@ -72,7 +80,6 @@ for col in Variable.get("collections", deserialize_json=True):
             task_id="create_restic_snapshot",
             ssh_conn_id=SSH_CONN_ID,
             command=f"restic backup --cache-dir $LOCAL_SCRATCH --host roihu-cpu.csc.fi {path_config['PUBLISHED_DATA_DIR']}",
-            modules=["allas"],
             setup_commands=slurm_setup_commands,
             host_environment_preamble="",
             submit_on_host=True,
@@ -89,7 +96,6 @@ for col in Variable.get("collections", deserialize_json=True):
                 "DEADLINE": (date.today() + timedelta(weeks=3)).strftime(
                     "%Y-%m-%dT%H:%M:%S"
                 ),
-                "WRAP": False,
             },
             tdelta_between_checks=15 * 60,  # Poll interval (in seconds) for job status
         )
