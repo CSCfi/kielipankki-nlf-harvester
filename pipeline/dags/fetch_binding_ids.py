@@ -62,7 +62,7 @@ def fetch_bindings_dag():
 
             if Variable.get("initial_download", deserialize_json=True):
                 last_run = None
-                print("Fetching all bindings for collection {set_id}")
+                print(f"Fetching all bindings for collection {set_id}")
             else:
                 last_run = get_most_recent_dag_run(f"subset_download_{set_id}")
                 print(f"Fetching bindings for collection {set_id} since {last_run}")
