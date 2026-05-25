@@ -411,6 +411,15 @@ class RemoveDeletedBindingsOperator(HpcSshOperator):
     between our consecutive updates.
     """
 
+    # zip emits this warning once per affected entry on archives built by our
+    # multi-tool pipeline (zip + zipmerge), producing tens of thousands of lines
+    # on a large archive. The LFH/CD inconsistency is cosmetic; readers use the
+    # CD. Info-ZIP writes its diagnostics to stdout (not stderr), so we filter
+    # there and let any other lines through.
+    _SUPPRESS_KNOWN_ZIP_NOISE = (
+        "> >(grep -v 'Local Version Needed To Extract does not match CD')"
+    )
+
     def __init__(
         self,
         ssh_conn_id,
@@ -478,8 +487,8 @@ class RemoveDeletedBindingsOperator(HpcSshOperator):
         try:
             self.run_in_login_shell(
                 ssh_client,
-                f'zip -d {zip_path} {" ".join(deleted_binding_globs)}',
-                modules="libzip",
+                f"zip -d {zip_path} "
+                f'{" ".join(deleted_binding_globs)} {self._SUPPRESS_KNOWN_ZIP_NOISE}',
             )
         except ShellCommandError as e:
             if e.exit_code == 12:
@@ -504,8 +513,8 @@ class RemoveDeletedBindingsOperator(HpcSshOperator):
 
             self.run_in_login_shell(
                 ssh_client,
-                f'zip -d {zip_path} {" ".join(empty_dirs)}',
-                modules="libzip",
+                f"zip -d {zip_path} "
+                f'{" ".join(empty_dirs)} {self._SUPPRESS_KNOWN_ZIP_NOISE}',
             )
 
     def execute(self, context):
