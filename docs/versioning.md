@@ -10,7 +10,7 @@ The backups are stored in an [Allas](https://docs.csc.fi/data/Allas/introduction
 
 ## Cheatsheet
 
-On Puhti you need the `allas` module:
+On Roihu you need the `allas` module:
 ```
 $ module load allas
 ```
@@ -26,7 +26,7 @@ List snapshots:
 $ restic snapshots --no-lock
 ```
 
-Restore a single file from a specific snapshot into a [fast temporary disk](https://docs.csc.fi/computing/disk/#temporary-local-disk-areas) on Puhti:
+Restore a single file from a specific snapshot into a [fast temporary disk](https://docs.csc.fi/computing/disk/#temporary-local-disk-areas) on Roihu:
 ```
 $ restic restore 6fd4a7e4 -i col-861_16.zip -t $TMPDIR/example-directory/ --no-lock
 ```
@@ -34,7 +34,7 @@ $ restic restore 6fd4a7e4 -i col-861_16.zip -t $TMPDIR/example-directory/ --no-l
 
 ## Restic basics
 
-The intended purpose for [restic](https://restic.net/) is taking backups, but as it does incremental backups with unique identifiers for each backup and is easily available on Puhti, it was chosen as the tool to use for versioning the data set.
+The intended purpose for [restic](https://restic.net/) is taking backups, but as it does incremental backups with unique identifiers for each backup and is easily available on Roihu, it was chosen as the tool to use for versioning the data set.
 
 > [!NOTE]
 > The Allas bucket is read-only for users, so you always need to use the `--no-lock` flag with this data set to prevent restic trying to create a lock file in the bucket.
@@ -42,9 +42,9 @@ The intended purpose for [restic](https://restic.net/) is taking backups, but as
 This guide will not cover all functionality restic offers. For more information, see [the official documentation](https://restic.readthedocs.io). You can also get information about available commands and flags by running `restic --help` in command line, and more detailed information about a specific command with `restic [command] --help`, e.g. `restic restore --help`.
 
 
-### Getting started in Puhti
+### Getting started in Roihu
 
-The "allas" module on Puhti comes with the restic software. It can be activated with
+The "allas" module on Roihu comes with the restic software. It can be activated with
 ```
 $ module load allas
 ```
@@ -84,7 +84,7 @@ The paths can be relative (e.g. `example/restic_password.txt`) or absolute (e.g.
 To shorten the commands and make them more readable, you can also provide the values via environment variables. [The environment variable section in restic documentation](https://restic.readthedocs.io/en/latest/040_backup.html#environment-variables) has a full list of available environment variables, but in this case we would be using either `RESTIC_REPOSITORY_FILE` and `RESTIC_PASSWORD_FILE` or `RESTIC_REPOSITORY` and `RESTIC_PASSWORD`.
 
 > [!NOTE]
-> The environment variables are in effect for one session only, meaning that if you close the terminal window you are using or disconnect from Puhti, you need to set them again.
+> The environment variables are in effect for one session only, meaning that if you close the terminal window you are using or disconnect from Roihu, you need to set them again.
 
 The former requires the values to be present in the files as described in [values via files](#values-via-files). After that, you can set the environment variables
 ```
@@ -121,7 +121,7 @@ The repository is big, so it is normal that operations do take some time: second
 - Not enough CPU available for fast de-encryption and decompression
 - Using `mount` or `dump` instead of `restore` when fetching large files
 
-If doing heavy work against the repository is slow on your machine, you can likely improve performance by using CSC's environments such as Puhti.
+If doing heavy work against the repository is slow on your machine, you can likely improve performance by using CSC's environments such as Roihu.
 
 
 #### Access key ID does not exist
@@ -160,7 +160,7 @@ ID        Time                 Host                 Tags        Paths
 
 ## Referencing old versions
 
-Each snapshot of the dataset gets an unique identifier assigned by restic. These IDs are always alphanumeric and 8 characters long, e.g. "2f8df9e7". If it is important to know which version of the dataset was used for computations, the ID of the newest snapshot (i.e. the one whose files are currently available on Puhti) reported by `restic snapshot` should be noted.
+Each snapshot of the dataset gets an unique identifier assigned by restic. These IDs are always alphanumeric and 8 characters long, e.g. "2f8df9e7". If it is important to know which version of the dataset was used for computations, the ID of the newest snapshot (i.e. the one whose files are currently available on Roihu) reported by `restic snapshot` should be noted.
 
 Later it will be made possible to use the snapshot IDs as a part of the URN of the dataset to denote a specific version, but that is not yet officially supported.
 
@@ -170,7 +170,7 @@ Later it will be made possible to use the snapshot IDs as a part of the URN of t
 It is possible to browse the old versions of the data without extracting the backup if the repository is mounted on your local system.
 
 > [!NOTE]
-> Due to security reasons, users cannot create mounts on CSC supercomputers, so this will not work on Puhti.
+> Due to security reasons, users cannot create mounts on CSC supercomputers, so this will not work on Roihu.
 
 First you must create a directory in which the backups will be mounted, e.g.
 ```
@@ -238,7 +238,7 @@ Summary: Restored 5 / 1 files/dirs (3.866 GiB / 3.866 GiB) in 30:42
 ```
 
 > [!TIP]
-> On Puhti, you have two options for saving the data: [scratch](https://docs.csc.fi/computing/disk/#scratch-directory) and [temporary disk](https://docs.csc.fi/computing/disk/#temporary-local-disk-areas). Reading and writing from scratch (e.g. `/scratch/project_1234`) is slower but more quota is available. Reading from `$TMPDIR`, on the other hand, is fast, but storage space is more limited. See e.g. [Using CSC environment efficiently course material on disk areas](https://csc-training.github.io/csc-env-eff/#3-disk-areas) for more information.
+> On CSC HPC environments, you have two options for saving the data: [scratch](https://docs.csc.fi/computing/disk/#scratch-directory) and [temporary disk](https://docs.csc.fi/computing/disk/#temporary-local-disk-areas). Reading and writing from scratch (e.g. `/scratch/project_1234`) is slower but more quota is available. Reading from `$TMPDIR`, on the other hand, is fast, but storage space is more limited, and as the name suggests, the temporary directories will be purged after a while. See e.g. [Using CSC environment efficiently course material on disk areas](https://csc-training.github.io/csc-env-eff/#3-disk-areas) for more information.
 
 ## Extracting the whole backup
 

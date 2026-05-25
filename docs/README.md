@@ -29,11 +29,11 @@ At the moment, the harvesting does not automatically produce a list of files tha
 
 ## Accessing the dataset
 
-### The newest version on Puhti
+### The newest version on Roihu
 
-For immediate access on the shared file system, the newest dataset is kept in the directory `/scratch/project_2006633/nlf-harvester/zip/`. That directory should be accessible to all users on Puhti.
+For immediate access on the shared file system, the newest dataset is kept in the directory `/scratch/project_2006633/nlf-harvester/zip/`. That directory should be accessible to all users on Roihu.
 
-The [recommended way](https://docs.csc.fi/computing/disk/) to process the data on Puhti is to use a suitable compute node with a SSD drive and extract parts of it to the SSD drive. On interactive compute nodes (launched with `sinteractive`), this is `$TMPDIR`, and for batch jobs, this is `$LOCAL_SCRATCH`.
+The [recommended way](https://docs.csc.fi/computing/disk/) to process the data on Roihu is to use a suitable compute node with a NVMe storage and extract parts of the dataset to the NVMe. The default quota can be accessed under `$TMPDIR`. The default quotas on shared nodes are fairly small, but full node reservations have more sizeable quotas and it is also possible to request disaggregated storage to be mounted on your node. See docs.csc.fi for details.
 
 For example, the following command will extract binding `1416885` into `$TMPDIR`:
 
@@ -54,7 +54,7 @@ Logs of changes to the dataset are kept in `/scratch/project_2006633/nlf-harvest
 
 ### Previous versions in Allas
 
-Versions of the data set will also be made available as [`restic`](https://restic.net/) snapshots on [Allas](https://docs.csc.fi/data/Allas/introduction/). Snapshots will be kept for a duration of 3 years. The snapshots will not be backed up.
+Versions of the data set are also available as [`restic`](https://restic.net/) snapshots on [Allas](https://docs.csc.fi/data/Allas/introduction/). Snapshots will be kept for a duration of 3 years. The snapshots will not be backed up.
 
 See [versioning.md](versioning.md) for more information about previous versions of the dataset and how to access them.
 
@@ -63,7 +63,7 @@ See [versioning.md](versioning.md) for more information about previous versions 
 
 ### Listings
 
-Listings of added and deleted files are maintained for each version. On Puhti, these are available under `/scratch/project_2006633/nlf-harvester/zip/listings`. Each time an update makes a modification to the zip files, a subdirectory for that date is created, eg. `/scratch/project_2006633/nlf-harvester/zip/listings/2025-08-11`. There, one or more of the following files will be generated:
+Listings of added and deleted files are maintained for each version. On Roihu, these are available under `/scratch/project_2006633/nlf-harvester/zip/listings`. Each time an update makes a modification to the zip files, a subdirectory for that date is created, eg. `/scratch/project_2006633/nlf-harvester/zip/listings/2025-08-11`. There, one or more of the following files will be generated:
 
 * `added_bindings.txt`: list of binding IDs that were added
 * `deleted_bindings.txt`: list of binding IDs that were deleted
