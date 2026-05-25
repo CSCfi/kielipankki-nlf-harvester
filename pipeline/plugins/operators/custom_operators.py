@@ -1,4 +1,5 @@
 from requests.exceptions import RequestException
+import select
 import zipfile
 
 from airflow.models import BaseOperator
@@ -317,18 +318,37 @@ class HpcSshOperator(BaseOperator):
     def ssh_execute_and_raise(self, ssh_client, command):
         """
         Run the given command and raise ShellCommandError on non-zero return value.
+
+        Actively drains stdout/stderr from the channel while the remote command
+        runs. Without this, output that exceeds the channel's receive window
+        causes the remote process to block on write, which can deadlock long
+        commands that produce significant output (e.g. `zip -d` over a large
+        archive).
         """
-        _, stdout, stderr = ssh_client.exec_command(command)
+        _, stdout, _ = ssh_client.exec_command(command)
+        channel = stdout.channel
 
-        self.log.debug(stdout)
+        stdout_chunks = []
+        stderr_chunks = []
 
-        exit_code = stdout.channel.recv_exit_status()
+        def drain():
+            while channel.recv_ready():
+                stdout_chunks.append(channel.recv(65536))
+            while channel.recv_stderr_ready():
+                stderr_chunks.append(channel.recv_stderr(65536))
+
+        while not channel.exit_status_ready():
+            select.select([channel], [], [], 1.0)
+            drain()
+        drain()
+
+        exit_code = channel.recv_exit_status()
         if exit_code != 0:
             raise ShellCommandError(
                 exit_code=exit_code,
                 command=command,
-                stdout=stdout.read().decode("utf-8"),
-                stderr=stderr.read().decode("utf-8"),
+                stdout=b"".join(stdout_chunks).decode("utf-8", errors="replace"),
+                stderr=b"".join(stderr_chunks).decode("utf-8", errors="replace"),
             )
 
     def run_in_login_shell(self, ssh_client, payload_command, modules=""):
