@@ -29,6 +29,9 @@ At the moment, the harvesting does not automatically produce a list of files tha
 
 ## Accessing the dataset
 
+> [!NOTE]
+> The national supercomputer hardware at CSC is being upgraded: this documentation assumes you are using the dataset on [Roihu](https://docs.csc.fi/computing/systems-roihu/). It is currently in pilot use: if you still need to access the data set on Puhti, see [Puhti era documentation](https://github.com/CSCfi/kielipankki-nlf-harvester/tree/c9942c83dc78d57f1eb5d86432085f8f9f61ee76/docs). NB: Puhti computing services will be discontinued one month after Roihu general availability, and Puhti storage services (including this dataset) in August 2026. The data set on Puhti has ceased to update: the newest versions of dataset are available on Roihu and Allas.
+
 ### The newest version on Roihu
 
 For immediate access on the shared file system, the newest dataset is kept in the directory `/scratch/project_2006633/nlf-harvester/zip/`. That directory should be accessible to all users on Roihu.
