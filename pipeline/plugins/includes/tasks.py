@@ -276,13 +276,13 @@ def generate_listings(ssh_conn_id, set_id, path_config):
         # If all listings would be empty, don't write listings
         return
 
-    # Set up the paths for today's listings, both in the Airflow machine and Puhti
-    puhti_listing_dir = (
+    # Set up the paths for today's listings, both in the Airflow machine and HPC
+    hpc_listing_dir = (
         path_config["OUTPUT_DIR"] / "logs" / "listings" / str(date.today())
     )
     with ssh_hook.get_conn() as ssh_client:
         _, stdout, stderr = ssh_client.exec_command(
-            f"umask a+rx; mkdir -p {puhti_listing_dir}"
+            f"umask a+rx; mkdir -p {hpc_listing_dir}"
         )
     airflow_listing_dir = path_config["AIRFLOW_LISTINGS_DIR"] / str(date.today())
     if not os.path.isdir(airflow_listing_dir):
@@ -298,10 +298,10 @@ def generate_listings(ssh_conn_id, set_id, path_config):
                 listing_file.write(_id + "\n")
         with ssh_hook.get_conn() as ssh_client:
             sftp_client = ssh_client.open_sftp()
-            # Then copy to Puhti
+            # Then copy to HPC
             sftp_client.put(
                 str(airflow_listing_dir / listing[0]),
-                str(puhti_listing_dir / listing[0]),
+                str(hpc_listing_dir / listing[0]),
             )
     with ssh_hook.get_conn() as ssh_client:
         _, stdout, stderr = ssh_client.exec_command(
