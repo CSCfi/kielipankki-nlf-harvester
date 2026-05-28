@@ -44,7 +44,7 @@
     AWS_SECRET_ACCESS_KEY: "{{ lookup('passwordstore', 'lb_passwords/airflow/aws_secret_access_key') }}"
     AWS_ACCESS_KEY_ID: "{{ lookup('passwordstore', 'lb_passwords/airflow/aws_access_key_id') }}"
     BUCKET_NAME: "{{ restic_repository_bucket }}"
-  when: not ansible_check_mode and "'The specified bucket does not exist' in snapshot_list.stderr"
+  when: not ansible_check_mode and "'The specified bucket does not exist' in snapshot_list.results[0].stderr"
 
 - name: Initiate a repository if not already present
   ansible.builtin.shell: >
