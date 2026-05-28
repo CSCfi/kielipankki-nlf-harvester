@@ -5,7 +5,7 @@
 - [Access to Pouta](https://docs.csc.fi/accounts/how-to-add-service-access-for-project/)
 - Your cPouta project's [OpenStack RC file](https://docs.csc.fi/cloud/pouta/install-client/#configure-your-terminal-environment-for-openstack)
 - Key pair for cPouta instances. Created in https://pouta.csc.fi/ (Project > Compute > Key Pairs) and must be named "kielipouta".
-- A fresh copy of [`Kielipankki-passwords`](https://github.com/CSCfi/Kielipankki-passwords) repository to access the needed secrets for Airflow and Puhti, synced with your passwordstore.
+- A fresh copy of [`Kielipankki-passwords`](https://github.com/CSCfi/Kielipankki-passwords) repository to access the needed secrets for Airflow and HPC access, synced with your passwordstore.
 
 
 ## Install requirements
@@ -33,12 +33,12 @@ $ source project_2006633-openrc.sh
 
 ## Add robot SSH key to keyring
 
-Some of the actions on Puhti must be carried out as the robot user when provisioning. To enable this, you must get the corresponding SSH key (see variable `hpc_robot_ssh_private_key_location`) and its password (see variable `hpc_robot_ssh_key_password_location`) from the password store.
+Some of the actions in the HPC environment must be carried out as the robot user when provisioning. To enable this, you must get the corresponding SSH key (see variable `hpc_robot_ssh_private_key_location`) and its password (see variable `hpc_robot_ssh_key_password_location`) from the password store.
 
 ## Run ansible playbook
 
 ```
-ansible-playbook -i inventories/dev-puhti harvesterPouta.yml --extra-vars initial_download=true
+ansible-playbook -i inventories/dev-roihu harvesterPouta.yml --extra-vars initial_download=true
 ```
 
 Adjust `initial_download` as needed (default is false for safe reprovisioning of the production environment). This can also be edited in the Airflow web GUI under variables. NB: The variable will not automatically flip to `false` when a collection is downloaded, allowing e.g. repeated full download testing or downloading different small collections from dev instances.
@@ -50,7 +50,7 @@ Have your `kielipouta` password and `Kielipankki-passwords` GPG key password at 
 If you only wish to update the DAG files and their dependencies instead of a
 full provisioning, you can run
 ```
-ansible-playbook harvesterPouta.yml -i inventories/dev-puhti --tags dag-update
+ansible-playbook harvesterPouta.yml -i inventories/dev-roihu --tags dag-update
 ```
 If the dependencies do not need to be updated, an even lighter
 `minimal-dag-update` tag is available.
@@ -59,12 +59,12 @@ If the dependencies do not need to be updated, an even lighter
 If you have a specific branch/tag/SHA-1 you wish to use, you can provide that:
 
 ```
-ansible-playbook harvesterPouta.yml -i inventories/dev-puhti --tags dag-update --extra-vars "harvester_branch=[KP-yourbranch]"
+ansible-playbook harvesterPouta.yml -i inventories/dev-roihu --tags dag-update --extra-vars "harvester_branch=[KP-yourbranch]"
 ```
 
 ## Creating multiple dev instances
 
-If more than one development instance is in use simultaneously, they must be configured so that they won't overwrite each other's data in Puhti. This involves setting the following variables to non-default values (see production and dev inventories for one way of doing this):
+If more than one development instance is in use simultaneously, they must be configured so that they won't overwrite each other's data in the H PC environment. This involves setting the following variables to non-default values (see production and dev inventories for one way of doing this):
 - `pipeline_output_dir`
 - `pipeline_tmpdir_root`
 - `pipeline_extra_bin_dir`
@@ -73,9 +73,9 @@ If more than one development instance is in use simultaneously, they must be con
 
 ## Resetting the dev environment
 
-If you need to get a fresh state for some testing, you can remove the data from Puhti and Allas by running
+If you need to get a fresh state for some testing, you can remove the data from the HPC environment and Allas by running
 ```
-ansible-playbook reset.yml -i inventories/dev-puhti
+ansible-playbook reset.yml -i inventories/dev-roihu
 ```
 
 NB: there are some guardrails in place to prevent accidentally deleting production data, but as this is a destructive operation, this should be handled with care.

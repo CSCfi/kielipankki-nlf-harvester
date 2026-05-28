@@ -302,9 +302,9 @@ class PrepareDownloadLocationOperator(BaseOperator):
                 utils.ssh_execute(ssh_client, target_copy_command)
 
 
-class PuhtiSshOperator(BaseOperator):
+class HpcSshOperator(BaseOperator):
     """
-    Base class for operators that need to use Puhti like users do: load modules etc.
+    Base class for operators that need to use HPC like users do: load modules etc.
     """
 
     def __init__(self, ssh_conn_id, **kwargs):
@@ -351,7 +351,7 @@ class PuhtiSshOperator(BaseOperator):
         self.ssh_execute_and_raise(ssh_client, full_command)
 
 
-class CreateTargetOperator(PuhtiSshOperator):
+class CreateTargetOperator(HpcSshOperator):
     """
     Merge intermediate zips into a single distribution target.
 
@@ -381,7 +381,8 @@ class CreateTargetOperator(PuhtiSshOperator):
         ssh_hook = SSHHook(ssh_conn_id=self.ssh_conn_id)
         with ssh_hook.get_conn() as ssh_client:
             self.log.info(
-                "Merging intermediate zips into %s on Puhti", self.target_path
+                "Merging intermediate zips into %s on the HPC environment",
+                self.target_path,
             )
 
             # zipmerge -k will skip compression for files that were not compressed in the source zips
@@ -398,7 +399,7 @@ class CreateTargetOperator(PuhtiSshOperator):
             self.ssh_execute_and_raise(ssh_client, f"rm -r {self.data_source}")
 
 
-class RemoveDeletedBindingsOperator(PuhtiSshOperator):
+class RemoveDeletedBindingsOperator(HpcSshOperator):
     """
     Operatof for deleting files from our data set when they have been deleted at NLF.
 

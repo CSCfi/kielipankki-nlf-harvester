@@ -30,7 +30,7 @@
         AWS_ACCESS_KEY_ID: "{{ lookup('passwordstore', 'lb_passwords/airflow/aws_access_key_id') }}"
         RESTIC_REPOSITORY: "{{ restic_repository }}"
         RESTIC_PASSWORD: "{{ lookup('passwordstore', 'lb_passwords/airflow/restic_password') }}"
-    - name: Delete the data on Puhti
+    - name: Delete the data on the HPC environment
       ansible.builtin.file:
         path: "{{ pipeline_output_dir | default('/scratch/project_2006633/harvester-dev') }}"
         state: absent
