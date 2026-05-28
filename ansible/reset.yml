@@ -7,7 +7,7 @@
 - name: Sanity check
   hosts: localhost
   vars:
-    production_inventory: "{{ lookup('file', 'inventories/prod') | from_yaml }}"
+    production_inventory: "{{ lookup('file', 'inventories/prod-roihu') | from_yaml }}"
   tasks:
     - name: Prevent running against production
       fail:
