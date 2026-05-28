@@ -12,7 +12,7 @@ all:
           navbar_color: "#ff5800"
     hpc:
       hosts:
-        roihu.csc.fi:
+        roihu-cpu.csc.fi:
           ansible_user: "{{ hpc_robot_user }}"
   vars:
     pipeline_extra_bin_dir: "/projappl/project_2006633/local/bin/harvester-dev"
