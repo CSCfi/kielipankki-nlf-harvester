@@ -89,7 +89,7 @@ class StowBindingBatchOperator(BaseOperator):
         :return: Exit status from zip
         """
         _, stdout, _ = ssh_client.exec_command(
-            f"cd {source_dir}; zip --suffixes .jpg:.jpeg:.jp2 --recurse-paths {target_file} ./"
+            f"cd {source_dir}; zip -fz --suffixes .jpg:.jpeg:.jp2 --recurse-paths {target_file} ./"
         )
 
         return stdout.channel.recv_exit_status()
@@ -478,7 +478,7 @@ class RemoveDeletedBindingsOperator(HpcSshOperator):
         try:
             self.run_in_login_shell(
                 ssh_client,
-                f'zip -d {zip_path} {" ".join(deleted_binding_globs)}',
+                f'zip -fz -d {zip_path} {" ".join(deleted_binding_globs)}',
                 modules="libzip",
             )
         except ShellCommandError as e:
@@ -504,7 +504,7 @@ class RemoveDeletedBindingsOperator(HpcSshOperator):
 
             self.run_in_login_shell(
                 ssh_client,
-                f'zip -d {zip_path} {" ".join(empty_dirs)}',
+                f'zip -fz -d {zip_path} {" ".join(empty_dirs)}',
                 modules="libzip",
             )
 
