@@ -26,7 +26,7 @@ List snapshots:
 $ restic snapshots --no-lock
 ```
 
-Restore a single file from a specific snapshot into a [fast temporary disk](https://docs.csc.fi/computing/disk/#temporary-local-disk-areas) on Roihu:
+Restore a single file from a specific snapshot into a [fast temporary disk](https://docs.csc.fi/computing/roihu-disk/#temporary-local-disk-areas) on Roihu:
 ```
 $ restic restore 6fd4a7e4 -i col-861_16.zip -t $TMPDIR/example-directory/ --no-lock
 ```
@@ -238,7 +238,7 @@ Summary: Restored 5 / 1 files/dirs (3.866 GiB / 3.866 GiB) in 30:42
 ```
 
 > [!TIP]
-> On CSC HPC environments, you have two options for saving the data: [scratch](https://docs.csc.fi/computing/disk/#scratch-directory) and [temporary disk](https://docs.csc.fi/computing/disk/#temporary-local-disk-areas). Reading and writing from scratch (e.g. `/scratch/project_1234`) is slower but more quota is available. Reading from `$TMPDIR`, on the other hand, is fast, but storage space is more limited, and as the name suggests, the temporary directories will be purged after a while. See e.g. [Using CSC environment efficiently course material on disk areas](https://csc-training.github.io/csc-env-eff/#3-disk-areas) for more information.
+> On CSC HPC environments, you have two options for saving the data: [scratch](https://docs.csc.fi/computing/roihu-disk/#scratch-directory) and [temporary disk](https://docs.csc.fi/computing/roihu-disk#temporary-local-disk-areas). Reading and writing from scratch (e.g. `/scratch/project_1234`) is slower but more quota is available. Reading from `$TMPDIR`, on the other hand, is fast, but storage space is more limited, and as the name suggests, the temporary directories will be purged after a while. See e.g. [Using CSC environment efficiently course material on disk areas](https://csc-training.github.io/csc-env-eff/#3-disk-areas) for more information.
 
 ## Extracting the whole backup
 
