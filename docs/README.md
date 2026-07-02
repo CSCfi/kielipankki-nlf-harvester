@@ -48,7 +48,7 @@ The following will extract all metadata files:
 
 The resulting target directories will have segmented paths, like `1/16/163/1631/16318/16318/mets/16318_METS.xml`, and you can extract multiple times with different filters into the same target directory.
 
-For more advanced searching and extracting, consider extracting the metadata files as above, and using them to generate a list of binding IDs of interest. See our [example](https://github.com/CSCfi/kielipankki-nlf-harvester/blob/main/docs/apptainer/filter.py) of parsing and matching, and using either `unzip` or eg. Python's [zipfile](https://docs.python.org/3/library/zipfile.html) library for extracting the files you want.
+For more advanced searching and extracting, consider extracting the metadata files as above, and using them to generate a list of binding IDs of interest. See our [example](examples/filter.py) of parsing and matching, and using either `unzip` or eg. Python's [zipfile](https://docs.python.org/3/library/zipfile.html) library for extracting the files you want.
 
 > [!WARNING]
 > The dataset is currently updated once a month, at midnight on the first day of every month. This means that the dataset can change while your computations are in progress, which can lead to your analysis crashing or producing inconsistent results.
