@@ -55,3 +55,7 @@ servers:
     meta:
       group: "{{ instance_name }}"
       hostname: "{{ pouta_instance_name }}"
+
+koivu_project_number: 2000680
+koivu_use_case: "harvester-provisioning"
+koivu_retention_months: 6
