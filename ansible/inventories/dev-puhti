@@ -28,3 +28,5 @@ all:
     backup_job_memory_reservation: "8G"
     hpc_robot_user: "robot_2006633_puhti"
     hpc_connection_host: "puhti-login12.csc.fi"
+    koivu_ansible_retention_months: 1
+    protected_host: false
