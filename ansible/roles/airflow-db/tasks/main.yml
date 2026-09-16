@@ -66,7 +66,7 @@
     name: "{{ airflow_db_user }}"
     password: "{{ airflow_db_password }}"
     state: present
-    db: "{{ airflow_db_name }}"
+    login_db: "{{ airflow_db_name }}"
     login_user: postgres
     login_password: "{{ airflow_db_root_password }}"
     login_host: 127.0.0.1
@@ -74,7 +74,7 @@
 - name: Grant database privileges for airflow user
   community.postgresql.postgresql_privs:
     type: database
-    database: "{{ airflow_db_name }}"
+    login_db: "{{ airflow_db_name }}"
     role: "{{ airflow_db_user }}"
     privs: ALL
     login_user: postgres
