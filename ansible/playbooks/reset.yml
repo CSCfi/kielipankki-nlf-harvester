@@ -7,7 +7,7 @@
 - name: Sanity check
   hosts: localhost
   vars:
-    production_inventory: "{{ lookup('file', 'inventories/prod-roihu') | from_yaml }}"
+    production_inventory: "{{ lookup('file', '../inventories/prod-roihu') | from_yaml }}"
   tasks:
     - name: Prevent running against production
       fail:
@@ -21,6 +21,8 @@
   tasks:
     - name: Delete and recreate the bucket + repo in Allas
       ansible.builtin.shell: |
+        export CSC_ENV_INIT_NON_INTERACTIVE=yes
+        source /etc/profile.d/zz-csc-env.sh
         module load allas
         s3cmd del --recursive --force s3://harvester-versioning-dev --host=a3s.fi --host-bucket='%(bucket)s.a3s.fi'
         s3cmd mb s3://harvester-versioning-dev --host=a3s.fi --host-bucket='%(bucket)s.a3s.fi'

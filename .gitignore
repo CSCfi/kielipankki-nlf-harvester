@@ -24,3 +24,5 @@ airflow/
 !.gitkeep
 
 binding_ids/
+
+.ansible
