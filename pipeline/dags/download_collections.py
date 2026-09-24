@@ -73,13 +73,12 @@ for col in Variable.get("collections", deserialize_json=True):
             "module load allas",
         ]
         slurm_setup_commands = slurm_environment_variables + slurm_csc_env_commands
-        slurm_setup_commands.append("export TMPDIR=$LOCAL_SCRATCH")
         slurm_config = Variable.get("slurm_config", deserialize_json=True)
         slurm_log_file_path = f"{path_config['OUTPUT_DIR'] / 'logs' / 'backups' / f'slurm-backup-{date.today()}.out'}"
         create_restic_snapshot = SSHSlurmOperator(
             task_id="create_restic_snapshot",
             ssh_conn_id=SSH_CONN_ID,
-            command=f"restic backup --cache-dir $LOCAL_SCRATCH --host roihu-cpu.csc.fi {path_config['PUBLISHED_DATA_DIR']}",
+            command=f"restic backup --cache-dir $TMPDIR --host roihu-cpu.csc.fi {path_config['PUBLISHED_DATA_DIR']}",
             setup_commands=slurm_setup_commands,
             host_environment_preamble="",
             submit_on_host=True,
