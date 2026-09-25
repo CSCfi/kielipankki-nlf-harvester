@@ -4,7 +4,7 @@ Collections are split into subsets, and further into download batches, and
 assembled into targets, currently zip files.
 """
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 import distutils
 from pathlib import Path
 import yaml
@@ -52,6 +52,7 @@ for col in Variable.get("collections", deserialize_json=True):
         dag_id=current_dag_id,
         schedule=Variable.get("schedule"),
         catchup=False,
+        max_active_runs=1,
         default_args=default_args,
         doc_md=__doc__,
     )
@@ -73,13 +74,13 @@ for col in Variable.get("collections", deserialize_json=True):
             "module load allas",
         ]
         slurm_setup_commands = slurm_environment_variables + slurm_csc_env_commands
-        slurm_setup_commands.append("export TMPDIR=$LOCAL_SCRATCH")
         slurm_config = Variable.get("slurm_config", deserialize_json=True)
-        slurm_log_file_path = f"{path_config['OUTPUT_DIR'] / 'logs' / 'backups' / f'slurm-backup-{date.today()}.out'}"
+        log_dateformat = "%Y-%m-%dT%H%M"
+        slurm_log_file_path = f"{path_config['OUTPUT_DIR'] / 'logs' / 'backups' / f'slurm-backup-{datetime.now().strftime(log_dateformat)}.out'}"
         create_restic_snapshot = SSHSlurmOperator(
             task_id="create_restic_snapshot",
             ssh_conn_id=SSH_CONN_ID,
-            command=f"restic backup --cache-dir $LOCAL_SCRATCH --host roihu-cpu.csc.fi {path_config['PUBLISHED_DATA_DIR']}",
+            command=f"restic backup --cache-dir $TMPDIR --host roihu-cpu.csc.fi {path_config['PUBLISHED_DATA_DIR']}",
             setup_commands=slurm_setup_commands,
             host_environment_preamble="",
             submit_on_host=True,
@@ -103,9 +104,12 @@ for col in Variable.get("collections", deserialize_json=True):
         # This command will be executed via SSHOperator at the end. If the backup log file doesn't exist, sed will
         # return 2, which should raise an exception, and otherise if the result is emtpy or for some reason doesn't exist,
         # test -s will return 1, raising an exception. umask is used to ensure access to regular users.
+        backups_dir = path_config["OUTPUT_DIR"] / "logs" / "backups"
         latest_hash_creation_command = (
-            'umask a+r; sed -nE "s/snapshot ([^ ]+) saved/\\1/p" '
-            f'{slurm_log_file_path} > {path_config["OUTPUT_DIR"] / "logs" / "latest_version_string"} && '
+            "umask a+r; "
+            f"LATEST_LOG=$(ls -t {backups_dir}/slurm-backup-*.out | head -n 1) && "
+            'sed -nE "s/snapshot ([^ ]+) saved/\\1/p" "$LATEST_LOG" > '
+            f'{path_config["OUTPUT_DIR"] / "logs" / "latest_version_string"} && '
             f'test -s {path_config["OUTPUT_DIR"] / "logs" / "latest_version_string"}'
         )
 
